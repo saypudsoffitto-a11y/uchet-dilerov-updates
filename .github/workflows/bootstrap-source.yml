@@ -1,4 +1,4 @@
-name: Bootstrap app source from 8.9.10 release asset
+name: Bootstrap app source from existing 8.9.10 installer
 
 on:
   push:
@@ -20,28 +20,50 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download source ZIP from release 8.9.10
+      - name: Download current Windows installer
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path '_bootstrap' -Force | Out-Null
-          gh release download '8.9.10' --repo "$env:GITHUB_REPOSITORY" --pattern 'Uchet_dilerov_Windows_8_9_10_Fixes_FINAL.zip' --dir '_bootstrap'
-          $zip = Get-ChildItem '_bootstrap' -Filter '*.zip' | Select-Object -First 1
-          if (!$zip) { throw 'Source ZIP was not found in release 8.9.10.' }
-          Expand-Archive -Path $zip.FullName -DestinationPath '_bootstrap/extracted' -Force
+          gh release download '8.9.10' --repo "$env:GITHUB_REPOSITORY" --pattern 'Uchet-dilerov-Setup-8.9.10-x64.exe' --dir '_bootstrap'
+          $setup = Get-ChildItem '_bootstrap' -Filter '*.exe' | Select-Object -First 1
+          if (!$setup) { throw '8.9.10 Setup was not found in the release.' }
+          Write-Host "Downloaded $($setup.FullName)"
 
-      - name: Copy application source into app folder
+      - name: Extract Electron app from installer
         shell: pwsh
         run: |
-          $package = Get-ChildItem '_bootstrap/extracted' -Recurse -Filter 'package.json' | Select-Object -First 1
-          if (!$package) { throw 'package.json was not found inside source ZIP.' }
-          $source = Split-Path $package.FullName -Parent
-          New-Item -ItemType Directory -Path 'app' -Force | Out-Null
-          Get-ChildItem $source -Force | Where-Object { $_.Name -notin @('node_modules','dist') } | ForEach-Object {
-            Copy-Item $_.FullName -Destination 'app' -Recurse -Force
-          }
-          if (!(Test-Path 'app/package.json')) { throw 'app/package.json was not copied.' }
+          $setup = Get-ChildItem '_bootstrap' -Filter '*.exe' | Select-Object -First 1
+          New-Item -ItemType Directory -Path '_bootstrap/unpacked' -Force | Out-Null
+          & 7z x $setup.FullName '-o_bootstrap/unpacked' -y
+          if ($LASTEXITCODE -ne 0) { throw '7-Zip could not unpack the Setup.' }
 
-      - name: Commit app source
+          # electron-builder NSIS may contain a nested app-64.7z archive.
+          for ($round = 1; $round -le 3; $round++) {
+            $asar = Get-ChildItem '_bootstrap/unpacked' -Recurse -Filter 'app.asar' -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($asar) { break }
+            $nested = Get-ChildItem '_bootstrap/unpacked' -Recurse -File -ErrorAction SilentlyContinue | Where-Object { $_.Extension -in @('.7z','.zip') }
+            if (!$nested) { break }
+            foreach ($archive in $nested) {
+              $dest = Join-Path '_bootstrap/unpacked_nested' ("round${round}_" + $archive.BaseName)
+              New-Item -ItemType Directory -Path $dest -Force | Out-Null
+              & 7z x $archive.FullName ("-o" + $dest) -y | Out-Null
+            }
+            if (Test-Path '_bootstrap/unpacked_nested') {
+              Copy-Item '_bootstrap/unpacked_nested/*' '_bootstrap/unpacked' -Recurse -Force -ErrorAction SilentlyContinue
+              Remove-Item '_bootstrap/unpacked_nested' -Recurse -Force -ErrorAction SilentlyContinue
+            }
+          }
+
+          $asar = Get-ChildItem '_bootstrap/unpacked' -Recurse -Filter 'app.asar' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (!$asar) { throw 'resources/app.asar was not found inside the installer.' }
+          Write-Host "Found $($asar.FullName)"
+
+          if (Test-Path 'app') { Remove-Item 'app' -Recurse -Force }
+          npx --yes @electron/asar extract $asar.FullName 'app'
+          if ($LASTEXITCODE -ne 0) { throw 'Could not extract app.asar.' }
+          if (!(Test-Path 'app/package.json')) { throw 'app/package.json was not recovered.' }
+
+      - name: Commit recovered application source
         shell: pwsh
         run: |
           git config user.name "github-actions[bot]"
@@ -49,7 +71,7 @@ jobs:
           git add app
           git diff --cached --quiet
           if ($LASTEXITCODE -eq 0) {
-            Write-Host 'No source changes to commit.'
+            Write-Host 'Application source is already present and unchanged.'
             exit 0
           }
           git commit -m 'Bootstrap application source for automatic releases'
