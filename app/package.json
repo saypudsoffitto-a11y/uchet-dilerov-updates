@@ -1,8 +1,8 @@
 {
   "name": "uchet-dilerov",
-  "version": "8.9.14",
+  "version": "8.9.15",
   "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11",
-  "main": "main.js",
+  "main": "main-8915.js",
   "scripts": {
     "start": "electron .",
     "test:electron": "electron --version",
@@ -19,8 +19,10 @@
     "files": [
       "index.html",
       "main.js",
+      "main-8915.js",
       "preload.js",
       "renderer-patch.js",
+      "assistant-patch.js",
       "package.json",
       "tovar.csv",
       "newmatros_clients.json",
