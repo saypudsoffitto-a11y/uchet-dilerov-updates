@@ -1,0 +1,87 @@
+name: Verify 8.9.15 Windows build
+
+on:
+  push:
+    branches:
+      - auto-update-voice-assistant-4
+    paths:
+      - 'app/**'
+      - '.github/workflows/verify-8-9-15.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Syntax checks
+        shell: pwsh
+        run: |
+          node --check app/main.js
+          node --check app/main-8915.js
+          node --check app/preload.js
+          node --check app/renderer-patch.js
+          node --check app/assistant-patch.js
+          node --check app/ui-fix-8915.js
+
+      - name: Static safety and UI checks
+        shell: pwsh
+        run: |
+          $a = Get-Content app/assistant-patch.js -Raw
+          if ($a -notmatch 'Удаление товаров голосом') { throw 'Missing voice delete safety lock' }
+          if ($a -notmatch 'alwaysConfirm') { throw 'Missing mandatory confirmation setting' }
+          if ($a -notmatch 'smartAssistantMic') { throw 'Missing explicit microphone button' }
+          if ($a -notmatch 'assistantSettingsBtn') { throw 'Missing settings button' }
+          if ($a -notmatch 'Добавь чёрный кантик') { throw 'Missing sale voice command example' }
+          $m = Get-Content app/main.js -Raw
+          if ($m -notmatch 'update:checkAndInstall') { throw 'Missing auto update IPC' }
+          if ($m -notmatch 'sha256') { throw 'Missing update checksum verification' }
+          $u = Get-Content app/ui-fix-8915.js -Raw
+          if ($u -notmatch 'MutationObserver') { throw 'Dynamic dealer input reliability fix missing' }
+          if ($u -notmatch 'dealerModalCloseX') { throw 'Dealer modal X close button missing' }
+          if ($u -notmatch 'closeDealerModal') { throw 'Dealer card auto-close missing' }
+          if ($u -notmatch 'originalMakePayment') { throw 'Payment auto-close/reset hook missing' }
+          $p = Get-Content app/package.json -Raw
+          if ($p -notmatch 'ui-fix-8915.js') { throw 'UI fix not included in build package' }
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: Build Windows Setup and Portable
+        working-directory: app
+        run: npm run build:win
+
+      - name: Verify outputs
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          if ($version -ne '8.9.15') { throw "Unexpected version: $version" }
+          $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
+          $portable = "app/dist/Uchet-dilerov-Portable-$version-x64.exe"
+          if (!(Test-Path $setup)) { throw "Setup missing: $setup" }
+          if (!(Test-Path $portable)) { throw "Portable missing: $portable" }
+          if ((Get-Item $setup).Length -lt 50000000) { throw 'Setup file is unexpectedly small' }
+          if ((Get-Item $portable).Length -lt 50000000) { throw 'Portable file is unexpectedly small' }
+          Get-FileHash $setup -Algorithm SHA256
+          Get-FileHash $portable -Algorithm SHA256
+
+      - name: Smoke launch portable app
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          $portable = Resolve-Path "app/dist/Uchet-dilerov-Portable-$version-x64.exe"
+          $p = Start-Process -FilePath $portable -PassThru
+          Start-Sleep -Seconds 12
+          if ($p.HasExited) { throw "Portable app exited too early with code $($p.ExitCode)" }
+          Stop-Process -Id $p.Id -Force
+          Write-Host 'Portable application stayed alive during smoke test.'
