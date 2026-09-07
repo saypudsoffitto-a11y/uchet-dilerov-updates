@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Учёт дилеров</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--text:#172033;--muted:#687386;--blue:#1667d9;--blue2:#eaf2ff;--red:#b42318;--green:#087a4b;--line:#e5e9f0;--sidebar:#152238;--sidebar2:#1d2f4b;--shadow:0 8px 26px rgba(23,32,51,.07)}
+*{box-sizing:border-box}html,body{min-height:100%}body{margin:0;font-family:"Segoe UI Variable","Segoe UI",Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:15px;font-weight:450;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+header{position:fixed;left:0;right:0;top:0;height:68px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 24px 0 250px;z-index:30;box-shadow:0 1px 4px #00000008}
+header b{font-size:21px}header small{color:var(--muted);font-weight:600}
+nav{position:fixed;left:0;top:0;bottom:0;width:226px;background:linear-gradient(180deg,var(--sidebar),#101b2c);padding:18px 12px;display:flex;flex-direction:column;gap:5px;z-index:40;overflow:auto}
+.brand{color:#fff;padding:5px 10px 18px;font-weight:800;font-size:20px}.brand span{display:block;font-size:12px;font-weight:500;color:#aebbd0;margin-top:4px}.navLabel{color:#8392aa;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:13px 10px 5px}
+button,.btn{border:0;border-radius:10px;padding:10px 13px;font:inherit;font-weight:650;cursor:pointer;transition:.15s}button:hover,.btn:hover{filter:brightness(.98)}button:disabled{opacity:.45;cursor:not-allowed}
+nav button{width:100%;text-align:left;background:transparent;color:#dce5f4;padding:11px 12px;font-weight:650;position:relative}nav button:hover{background:var(--sidebar2)}nav button.active{background:#2a4771;color:#fff;box-shadow:inset 3px 0 0 #64a1ff}.primary{background:var(--blue);color:white}.secondary{background:#eef2f6;color:#283548}.dangerBtn{background:#fff0f0;color:var(--red)}
+main{margin-left:226px;padding:92px 28px 36px;max-width:1600px}section>h2{margin:0 0 18px;font-size:26px}.hidden{display:none!important}
+.card{background:var(--card);border:1px solid #edf0f4;border-radius:15px;padding:18px;box-shadow:var(--shadow)}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}.big{font-size:25px;font-weight:780;margin-top:8px}.danger{color:var(--red)}.ok{color:var(--green)}.muted{color:var(--muted)}
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.full{grid-column:1/-1}label{display:flex;flex-direction:column;gap:6px;color:#4b5768;font-weight:600}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid #ccd4df;border-radius:10px;background:#fff;font:inherit;outline:none}input:focus,select:focus,textarea:focus{border-color:#75a8ec;box-shadow:0 0 0 3px #eaf2ff}
+.search{border:1px solid #b9c6d8;font-size:16px;background:#fff;pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important;cursor:text}.search:focus{background:#fff}
+table{width:100%;border-collapse:collapse;border-spacing:0;background:#fff;border:1px solid #d8dee7;border-radius:0;overflow:hidden;box-shadow:0 3px 12px #00000005}th,td{padding:8px 10px;border:1px solid #d8dee7;text-align:left;vertical-align:top}th{background:#f8fafc;color:#566274;font-size:13px}tr:last-child td{border-bottom:1px solid #d8dee7}.clickable{cursor:pointer}.clickable td{transition:background .12s ease,color .12s ease,box-shadow .12s ease}.clickable:hover td{background:#eaf3ff!important}.clickable:hover td:first-child{box-shadow:inset 4px 0 0 var(--blue)}.clickable:hover b{color:#0d56b8}.clickable:focus td{background:#eaf3ff!important;outline:none}
+.navIcon{display:inline-flex;width:20px;height:20px;align-items:center;justify-content:center;margin-right:8px;vertical-align:-4px}.navIcon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.choiceList{grid-column:1/-1;max-height:250px;overflow:auto;border:1px solid #d8dee7;border-radius:8px;background:#fff}.choiceRow{display:flex;justify-content:space-between;gap:12px;padding:7px 10px;border-bottom:1px solid #d8dee7;cursor:pointer}.choiceRow:last-child{border-bottom:0}.choiceRow:hover,.choiceRow.active{background:#eaf3ff;box-shadow:inset 4px 0 0 var(--blue)}.choiceRow b{font-weight:750}.choiceRow .muted{font-size:12px}.selectedBox{grid-column:1/-1;background:#f7faff;border:1px solid #cfe0f7;padding:10px 12px;border-radius:10px;font-weight:700}.hiddenField{display:none!important}
+.tag{display:inline-block;background:#eef2f6;border-radius:99px;padding:3px 8px;font-size:12px}.actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}.thumb{width:60px;height:60px;border-radius:8px;object-fit:cover;background:#f1f3f5}.cart{margin-top:18px}
+.quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:0 0 22px}.quick button{background:#fff;border:1px solid var(--line);box-shadow:var(--shadow);padding:17px;text-align:left;color:var(--text)}.quick button b{display:block;font-size:16px;margin-bottom:4px}.quick button span{font-size:13px;color:var(--muted);font-weight:500}.quick button:hover{border-color:#a9c8f3;background:#fbfdff}
+.sectionHint{margin:-8px 0 18px;color:var(--muted)}
+.receipt{background:#fff;border:1px solid #222;padding:24px;max-width:920px;margin:18px auto;color:#111}.receipt h2{text-align:center;margin:0 0 14px}.receipt .meta{display:grid;grid-template-columns:1fr 1fr;gap:6px 20px;margin-bottom:14px}.receipt table{border-radius:0;border:1px solid #222;box-shadow:none}.receipt th,.receipt td{border:1px solid #222}.receipt .total{text-align:right;font-size:18px;font-weight:750;margin-top:12px}.receipt .sign{margin-top:28px;display:flex;justify-content:space-between}
+@media print{body *{visibility:hidden!important}#receiptPrint,#receiptPrint *{visibility:visible!important}#receiptPrint{position:absolute;left:0;top:0;width:100%;max-width:none;margin:0;border:0;box-shadow:none}.actions{display:none!important}}
+.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:center;justify-content:center;z-index:80;padding:20px}.modal.hidden{display:none}.modalBox{background:#fff;border-radius:16px;max-width:1100px;width:100%;max-height:88vh;overflow:auto;padding:22px;box-shadow:0 25px 80px #0004}
+.statusPill{display:inline-flex;align-items:center;gap:7px;background:#eff8f3;color:#087a4b;padding:6px 10px;border-radius:99px;font-weight:700;font-size:12px}.statusPill:before{content:"";width:8px;height:8px;border-radius:50%;background:#14a663}
+
+th[draggable="true"]{cursor:grab;user-select:none;position:relative}.colResize{position:absolute;right:-4px;top:0;width:9px;height:100%;cursor:col-resize;z-index:5}.resizingCol{cursor:col-resize!important;user-select:none!important}th.dragging{opacity:.45}th.dragOver{outline:2px dashed #6b8fc8;outline-offset:-3px}.searchHit{outline:3px solid #8ebcf5;outline-offset:-3px;background:#f3f8ff!important}
+@media(max-width:1200px){.grid{grid-template-columns:repeat(3,1fr)}.quick{grid-template-columns:repeat(2,1fr)}}
+.qtyModalBox{max-width:590px}.qtyModalBox input{pointer-events:auto!important;user-select:text!important;-webkit-user-select:text!important;cursor:text}.qtyProductName{font-size:19px;font-weight:800;margin:4px 0 2px}.qtyProductMeta{color:var(--muted);font-size:13px;margin-bottom:16px}.qtyGrid{display:grid;grid-template-columns:1fr 120px;gap:12px;align-items:end}.qtyMoneyRow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}.qtyMoneyCard{background:#f7faff;border:1px solid #d8e6f7;border-radius:12px;padding:13px}.qtyMoneyCard span{display:block;color:var(--muted);font-size:13px;margin-bottom:5px}.qtyMoneyCard b{font-size:22px}.qtyTotalCard{background:#eef8f2;border-color:#cde8d7}.qtyHelp{margin:12px 0 0;color:var(--muted);font-size:13px}
+
+.sortBar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 14px}.sortBar label{font-weight:700}.sortBar select{min-width:220px}.sortBar .muted{margin-left:auto}
+.dealerSummary{display:grid;grid-template-columns:110px 1fr auto;gap:18px;align-items:center}.dealerAvatar{width:96px;height:96px;border-radius:16px;object-fit:cover;background:#eef2f6;border:1px solid var(--line)}.dealerAvatarPlaceholder{display:flex;align-items:center;justify-content:center;font-size:34px;color:#7f8da3}.dealerMeta b{font-size:20px}.dealerMeta div{margin-top:5px;color:var(--muted)}.collapsible.hidden{display:none}.paymentTableWrap{overflow:auto}.inlineStat{font-weight:750}.miniBtn{padding:8px 10px}.initialDebt{background:#fff7e8;border:1px solid #f1d49a;color:#7b5310}
+
+#dealerEditPanel.hidden{display:none!important}
+#products .productTable{border-collapse:collapse;border-spacing:0;border-radius:0;box-shadow:none;table-layout:auto}
+#products .productTable th,#products .productTable td{padding:7px 9px;border:1px solid #d8dee7;vertical-align:middle;font-size:13px;line-height:1.2}
+#products .productTable th{background:#f4f6f8;font-weight:700;white-space:nowrap}
+#products .productTable td:nth-child(4){min-width:260px;white-space:normal}
+#products .productTable td:not(:nth-child(4)){white-space:nowrap}#products .productTable{width:max-content;min-width:100%}#products{overflow-x:auto}.historyGrid th,.historyGrid td{border:1px solid #d8dee7}.historyGrid{border-collapse:collapse}.serverOk{color:#17833b;font-weight:700}.serverBad{color:#c62828;font-weight:700}
+#products .productTable .actions{gap:5px;flex-wrap:nowrap}
+#products .productTable .actions button{padding:6px 8px;font-size:12px;border-radius:7px}
+/* 8.9.10: таблицы, ресайз и компактная новая продажа */
+#products .productTable{table-layout:fixed;width:100%;min-width:0}
+#products .productTable th,#products .productTable td{min-width:0!important;max-width:none;overflow:hidden;text-overflow:ellipsis}
+#products .productTable td:nth-child(3){white-space:normal}
+#products .productTable td:not(:nth-child(3)){white-space:nowrap}
+#sales .saleProductFilters{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(320px,1.6fr);gap:10px;grid-column:1/-1}
+#sales #saleProductList{max-height:430px;min-height:300px;border-radius:6px;font-size:13px}
+#sales #saleProductList .choiceRow{display:grid;grid-template-columns:minmax(0,1fr) 120px;align-items:center;padding:5px 8px;line-height:1.15;border-bottom:1px solid #d8dee7}
+#sales #saleProductList .choiceRow b{font-size:13px}
+#sales #saleProductList .choiceRow .muted{display:none}
+#sales .cart table{font-size:13px}
+#sales .cart th,#sales .cart td{padding:5px 7px;line-height:1.15;vertical-align:middle}
+#sales .cart h3{margin-bottom:8px}
+.stockTransferToggle{margin-bottom:14px}
+#stockTransferPanel.hidden{display:none!important}
+.navBadge{position:absolute;right:10px;top:8px;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#d92d20;color:#fff;font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #152238}.nmNotice{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff2f0;border:1px solid #f4b8b1;color:#8f1f17;border-radius:12px;padding:11px 13px;margin-bottom:14px}.nmNotice b{color:#b42318}.receiptEditInput{width:100%;min-width:58px;padding:5px 6px;border:1px solid #b8c3d1;border-radius:6px;font-size:13px;background:#fff}.receiptEditInput:focus{border-color:#75a8ec;box-shadow:0 0 0 2px #eaf2ff}.receiptEditHelp{font-size:12px;color:#667085;margin:0 0 8px}.nmPriceToggle{margin-bottom:12px}
+@media print{.receiptEditInput{border:0!important;box-shadow:none!important;padding:0!important;background:transparent!important;color:#111!important}.receiptEditHelp{display:none!important}}
+
+
+.dealerHistoryDetail{width:max-content;min-width:100%;font-size:12px}.dealerHistoryDetail th,.dealerHistoryDetail td{padding:5px 7px;vertical-align:middle;white-space:nowrap}.dealerHistoryDetail td:nth-child(3){white-space:normal;min-width:180px}.tableWrap{overflow:auto;max-width:100%}
+</style>
+</head>
+<body>
+<nav>
+<div class="brand">Учёт дилеров<span>Windows · версия 8.9.10</span></div>
+<div class="navLabel">Основное</div>
+<button class="active" data-section="home" onclick="show('home',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Главная</button>
+<button data-section="dealers" onclick="show('dealers',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg></span>Дилеры</button>
+<div class="navLabel">Продажи и деньги</div>
+<button data-section="sales" onclick="show('sales',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg></span>Новая продажа</button>
+<button data-section="payments" onclick="show('payments',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M8 4h6a4 4 0 0 1 0 8H8"/><path d="M8 4v16M8 16h8M8 8h7"/></svg></span>Оплата</button>
+<button data-section="debts" onclick="show('debts',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M8 4h8l2 5-6 3-6-3z"/><path d="M12 12v8"/></svg></span>Долги</button>
+<button data-section="history" onclick="show('history',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6l4 2"/></svg></span>История</button>
+<div class="navLabel">Справочники</div>
+<button data-section="products" onclick="show('products',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg></span>Товары</button>
+<button data-section="groups" onclick="show('groups',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/><path d="M7 3v4M13 10v4M17 17v4"/></svg></span>Группы товаров</button>
+<div class="navLabel">Интеграция</div>
+<button data-section="newmatros" onclick="show('newmatros',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M4 8h14l-3-3M20 16H6l3 3"/></svg></span>NewMatRos<span id="nmNavBadge" class="navBadge hidden">0</span></button>
+<div class="navLabel">Обслуживание</div>
+<button data-section="sync" onclick="show('sync',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M4 7h16v10H4z"/><path d="M8 12h8M12 8v8"/></svg></span>Общий сервер</button>
+<button data-section="backup" onclick="show('backup',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>Резервная копия</button>
+<button data-section="updates" onclick="show('updates',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/></svg></span>Обновление</button>
+</nav>
+<header><b id="pageTitle">Главная</b><span class="statusPill">Windows 10/11</span></header>
+<main>
+<section id="home">
+<h2>Главная</h2>
+<p class="sectionHint">Вся важная информация и самые частые действия — на одном экране.</p>
+<div class="quick">
+<button onclick="go('sales')"><b>＋ Новая продажа</b><span>Создать накладную и добавить долг</span></button>
+<button onclick="go('payments')"><b>₽ Принять оплату</b><span>Уменьшить долг дилера</span></button>
+<button onclick="go('newmatros')"><b>↔ Импорт NewMatRos</b><span>Загрузить потолок из INI</span></button>
+<button onclick="go('debts')"><b>📌 Посмотреть долги</b><span>Все дилеры и остатки</span></button>
+</div>
+<div class="grid">
+<div class="card">Дилеров<div class="big" id="dcount">0</div></div>
+<div class="card clickable" onclick="show('products')">Товаров<div class="big" id="pcount">0</div></div>
+<div class="card">Продаж<div class="big" id="saleCount">0</div></div>
+<div class="card">Общий долг<div class="big danger" id="debtTotal">0 ₽</div></div>
+<div class="card">Общая прибыль<div class="big ok" id="profitTotal">0 ₽</div></div>
+</div>
+<br><h2>Дилеры и текущие долги</h2>
+<table><thead><tr><th>Дилер</th><th>Телефон</th><th>Город</th><th>Текущий долг</th></tr></thead><tbody id="homeDealerRows"></tbody></table>
+</section>
+
+<section id="dealers" class="hidden">
+<h2>Дилеры</h2><p class="sectionHint">Поиск, карточки, покупки, оплаты и долги дилеров.</p>
+<div class="actions" style="margin-bottom:14px"><button class="primary" onclick="toggleNewDealerForm()">＋ Добавить нового дилера</button></div>
+<div id="newDealerForm" class="card form hidden">
+<input id="dname" placeholder="Имя / название дилера"><input id="dphone" placeholder="Телефон / WhatsApp">
+<input id="dcity" placeholder="Город"><input id="dnote" placeholder="Примечание">
+<div class="full actions"><button class="primary" onclick="addDealer()">Сохранить дилера</button><button class="secondary" onclick="toggleNewDealerForm(false)">Отмена</button></div>
+</div><div id="newDealerSpacer"></div>
+<div class="card"><h3 style="margin-top:0">Клиенты NewMatRos</h3><p class="muted">Основной список дилеров переносится из NewMatRos. Старую программу «Склад» для дилеров не используем.</p><div class="actions"><button class="primary" onclick="importBundledNewMatRosClients(true)">Загрузить / обновить клиентов NewMatRos</button><span id="newmatrosClientImportStatus" class="muted"></span></div></div><br>
+<input class="search" id="dealerSearch" placeholder="🔎 Поиск дилера по имени или телефону" oninput="renderDealers()"><br><br><div class="sortBar"><label>Сортировать:</label><select id="dealerSort" onchange="renderDealers()"><option value="name">По имени</option><option value="recent">По последней сделке</option><option value="debt_desc">По долгу: больше сначала</option><option value="debt_asc">По долгу: меньше сначала</option><option value="paid_desc">По оплатам: больше сначала</option></select></div>
+<table><thead><tr><th>Дилер</th><th>Телефон</th><th>Город</th><th>Долг</th></tr></thead><tbody id="dealerRows"></tbody></table>
+</section>
+
+<section id="debts" class="hidden">
+<h2>Долги</h2><p class="sectionHint">Нажми на строку дилера, чтобы увидеть все продажи, накладные и оплаты.</p><input class="search" id="debtSearch" placeholder="🔎 Найти дилера по имени или телефону" oninput="renderDebts()"><br><br><div class="sortBar"><label>Сортировать:</label><select id="debtSort" onchange="renderDebts()"><option value="recent">По последней сделке</option><option value="debt_desc">По долгу: больше сначала</option><option value="debt_asc">По долгу: меньше сначала</option><option value="sales_desc">По продажам</option><option value="paid_desc">По оплатам</option><option value="name">По имени</option></select></div>
+<table><thead><tr><th>Дилер</th><th>Сумма продаж</th><th>Оплачено</th><th>Остаток</th></tr></thead><tbody id="debtRows"></tbody></table>
+<p class="muted">Нажми на дилера, чтобы открыть все покупки, чеки и оплаты.</p>
+</section>
+
+<section id="groups" class="hidden">
+<h2>Группы товаров</h2><p class="sectionHint">Группы помогают быстрее находить товары при продаже.</p><div class="card form">
+<input id="gname" placeholder="Например: Светильники"><input id="gnote" placeholder="Примечание">
+<button class="primary" onclick="addGroup()">Добавить группу</button></div><br>
+<table><thead><tr><th>Группа</th><th>Примечание</th><th>Товаров</th></tr></thead><tbody id="groupRows"></tbody></table>
+</section>
+
+<section id="products" class="hidden">
+<h2>Товары</h2><p class="sectionHint">Товары идут единым списком. Заголовки столбцов можно перетаскивать мышью. Ширину столбца можно менять, потянув за его правую границу — порядок и ширина сохраняются.</p><div class="actions" style="margin-bottom:14px"><button class="primary" onclick="toggleAddProductForm()">＋ Добавить товар</button><button class="secondary stockTransferToggle" onclick="toggleStockTransfer()">Перенос из программы «Склад»</button></div><div id="addProductForm" class="card form hidden">
+<select id="pgroup"></select><input id="pname" placeholder="Название товара">
+<input id="particle" placeholder="Артикул">
+<input id="pbuy" type="number" step=".01" placeholder="Цена закупки, ₽">
+<input id="pretail" type="number" step=".01" placeholder="Розничная цена, ₽">
+<input id="pwholesale" type="number" step=".01" placeholder="Оптовая цена, ₽">
+<select id="punit"><option value="шт">шт</option><option value="пог. м">пог. м</option><option value="м">м</option><option value="м²">м²</option><option value="компл.">компл.</option></select>
+<label class="btn secondary">Выбрать фотографию<input id="pphoto" type="file" accept="image/*" style="display:none"></label>
+<button class="primary" onclick="addProduct()">Добавить товар</button>
+</div><br>
+<div id="stockTransferPanel" class="card hidden"><h3 style="margin-top:0">Перенос из программы «Склад»</h3><p class="muted">Можно загрузить твой экспорт товаров. Группы создаются автоматически, товары не дублируются, а уже созданные дилеры и история сохраняются.</p><div class="actions"><button class="primary" onclick="importBundledStockProducts()">Загрузить мои товары из tovar.csv</button><button class="secondary" onclick="importStockProductsFromCsv()">Выбрать другой CSV из «Склад»</button><button class="secondary" onclick="toggleStockTransfer(false)">Закрыть</button></div><p id="stockImportStatus" class="muted"></p></div><br>
+<input class="search" id="productListSearch" placeholder="🔎 Поиск товара по названию, артикулу или группе" oninput="renderProducts()"><br><br><div class="sortBar"><label>Сортировать:</label><select id="productSort" onchange="renderProducts()"><option value="name">По названию</option><option value="group">По типу / группе</option><option value="article">По артикулу</option><option value="retail_desc">По розничной цене ↓</option><option value="retail_asc">По розничной цене ↑</option><option value="wholesale_desc">По оптовой цене ↓</option><option value="stock_desc">По остатку</option></select></div>
+<table class="productTable"><thead><tr><th>Группа</th><th>Артикул</th><th>Товар</th><th>Остаток</th><th>Ед.</th><th>Закупка</th><th>Розница</th><th>Опт</th><th></th></tr></thead><tbody id="productRows"></tbody></table>
+</section>
+
+<section id="sales" class="hidden">
+<h2>Новая продажа</h2><p class="sectionHint">Выбери дилера, добавь один или несколько товаров и сформируй товарную накладную.</p>
+<div class="card form">
+<input class="search full" id="saleDealerSearch" placeholder="Поиск дилера по имени или телефону" autocomplete="off" oninput="renderSaleDealers()" onkeydown="saleDealerKey(event)">
+<input id="saleDealer" type="hidden"><div id="saleDealerSelected" class="selectedBox">Дилер не выбран</div><div id="saleDealerList" class="choiceList"></div>
+<label>Тип цены<select id="priceType"><option value="retail">Розничная цена</option><option value="wholesale">Оптовая цена</option></select></label>
+<label>Цена, ₽<input id="salePrice" type="number" step=".01" placeholder="Например, 700 ₽"></label>
+<div class="saleProductFilters"><label>Группа товаров<select id="saleProductGroup" onchange="saleProductCursor=0;renderSaleProducts()"><option value="">Все группы</option></select></label><label>Название товара<input class="search" id="saleProductSearch" placeholder="Поиск по названию товара" autocomplete="off" oninput="saleProductCursor=0;renderSaleProducts()" onkeydown="saleProductKey(event)"></label></div>
+<input id="saleProduct" type="hidden"><div id="saleProductList" class="choiceList"></div>
+<div class="full" id="selectedPhoto"></div>
+<p class="full muted" style="margin:0">Один клик — выбрать товар. Двойной клик — указать количество и сразу добавить товар в текущий чек.</p>
+<button class="secondary" onclick="fillDefaultPrice()">Подставить цену</button>
+<button class="primary" onclick="promptQtyAndAddSelected()">Добавить выбранный товар</button>
+</div>
+<div class="cart">
+<h3>Товары в продаже</h3>
+<table><thead><tr><th>Артикул</th><th>Наименование</th><th>Кол-во</th><th>Цена, ₽</th><th>Сумма, ₽</th><th></th></tr></thead><tbody id="cartRows"></tbody></table>
+<div class="actions" style="margin-top:12px"><button class="primary" onclick="saveSale()">Сохранить продажу и сформировать накладную</button><button class="secondary" onclick="clearCart()">Очистить</button></div>
+</div>
+<div id="receiptArea"></div>
+</section>
+
+<section id="payments" class="hidden">
+<h2>Оплата</h2><p class="sectionHint">Выбери дилера, укажи сумму и способ оплаты. Долг уменьшится автоматически.</p>
+<div id="paymentChooser"><input class="search" id="paymentDealerSearch" placeholder="🔎 Поиск дилера по имени или телефону" oninput="renderPaymentDealers()"><br><br><div class="sortBar"><label>Сортировать дилеров:</label><select id="paymentSort" onchange="renderPaymentDealers()"><option value="recent">По последней операции</option><option value="debt_desc">По долгу</option><option value="paid_desc">По оплатам</option><option value="name">По имени</option></select></div>
+<div class="paymentTableWrap"><table><thead><tr><th>Дилер</th><th>Телефон</th><th>Текущий долг</th><th>Последняя оплата</th><th>Дата последней операции</th><th></th></tr></thead><tbody id="paymentDealerList"></tbody></table></div><br></div>
+<div id="paymentSelected" class="card hidden" style="margin-bottom:14px"></div>
+<div id="paymentForm" class="card form hidden">
+<select id="payDealer"></select>
+<input id="payAmount" type="number" step=".01" min="0" placeholder="Сумма оплаты">
+<select id="payMethod"><option value="">Выберите способ оплаты</option><option value="Наличные">Наличные</option><option value="Перевод">Перевод</option></select>
+<input id="payNote" placeholder="Примечание">
+<button class="primary" onclick="makePayment()">Сохранить оплату</button>
+</div>
+</section>
+
+<section id="history" class="hidden">
+<h2>История операций</h2><p class="sectionHint">Все продажи, накладные и оплаты.</p><div class="sortBar"><label>Сортировать:</label><select id="historySort" onchange="renderHistory()"><option value="date_desc">По дате: новые сверху</option><option value="date_asc">По дате: старые сверху</option><option value="sale">По типу: продажи</option><option value="payment">По типу: оплаты</option><option value="amount_desc">По сумме ↓</option><option value="dealer">По дилеру</option></select></div>
+<table class="historyGrid"><thead><tr><th>Дата</th><th>Тип</th><th>Описание</th><th>Сумма</th><th>Действие / документ</th></tr></thead><tbody id="historyRows"></tbody></table>
+</section>
+
+
+<section id="newmatros" class="hidden">
+<h2>Импорт из NewMatRos</h2><p class="sectionHint">Автоматическая связь с NewMatRos: после выгрузки заказа программа сама найдёт дилера, рассчитает заказ и добавит долг.</p>
+<div id="nmNotification" class="nmNotice hidden"><div><b>🔴 Новая выгрузка NewMatRos</b><div id="nmNotificationText"></div></div><button class="secondary" onclick="clearNewMatRosNotification()">Просмотрено</button></div>
+<div class="card">
+<p><b>Автоматическая связь включена:</b> программа следит за папкой <code>C:\NewMatRos Standart</code>. В NewMatRos достаточно нажать обычную «Выгрузку в 1С» и сохранить INI в эту папку — сама 1С не нужна.</p>
+<div class="actions">
+<button class="primary" onclick="chooseNewMatRosIni()">Выбрать INI-файл</button>
+<button class="secondary" id="nmWatchBtn" onclick="toggleNewMatRosWatch()">Включить наблюдение за папкой</button>
+</div>
+<p id="nmStatus" class="muted">Ожидается файл NewMatRos.</p>
+</div>
+<br>
+<button class="secondary nmPriceToggle" onclick="toggleNewMatRosPrices()">⚙ Цены для автоматического расчёта</button>
+<div id="nmPricePanel" class="card hidden">
+<h3>Цены для автоматического расчёта</h3>
+<p class="muted">Заполняются один раз. После этого каждый новый INI из NewMatRos проводится автоматически: создаётся один чек и увеличивается долг дилера.</p>
+<div class="form">
+<label>Деловой отход, ₽/м²<input id="nmPriceBusinessWaste" type="number" step="0.01" min="0"></label><label>Узкая плёнка ≤ 3,60 м, ₽/м²<input id="nmPriceMaterialNarrow" type="number" step="0.01" min="0"></label><label>Широкая плёнка ≥ 3,80 м, ₽/м²<input id="nmPriceMaterialWide" type="number" step="0.01" min="0"></label>
+<label>Гарпун, ₽/м<input id="nmPriceHarpoon" type="number" step="0.01" min="0"></label>
+<label>Угол, ₽/шт<input id="nmPriceCorner" type="number" step="0.01" min="0"></label>
+<label>Криволинейный участок, ₽/м<input id="nmPriceCurve" type="number" step="0.01" min="0"></label>
+<label>Вырез, ₽/м<input id="nmPriceCutout" type="number" step="0.01" min="0"></label>
+<label>Шов, ₽/м<input id="nmPriceSeam" type="number" step="0.01" min="0"></label>
+<label>Доплата на заказ, ₽<input id="nmPriceFixed" type="number" step="0.01" min="0"></label>
+<label><input id="nmAutoPost" type="checkbox" style="width:auto"> Автоматически проводить каждый новый заказ и увеличивать долг</label>
+<div class="full actions"><button class="primary" onclick="saveNewMatRosSettings()">Сохранить цены</button><button class="secondary" onclick="toggleNewMatRosPrices(false)">Закрыть</button></div>
+</div>
+</div>
+<br>
+<div id="nmPreview"></div>
+</section>
+
+
+<section id="sync" class="hidden">
+<h2>Общий сервер</h2><p class="sectionHint">Оба компьютера могут работать с одной общей базой через интернет.</p>
+<div class="card form">
+<label class="full">Адрес сервера<input id="syncServerUrl" placeholder="https://server.example.com"></label>
+<label class="full">Секретный ключ<input id="syncToken" type="password" placeholder="Ключ доступа"></label>
+<label><input id="syncEnabled" type="checkbox" style="width:auto"> Автоматическая синхронизация</label>
+<label>Интервал, секунд<input id="syncInterval" type="number" min="3" value="5"></label>
+<div class="full actions"><button class="primary" onclick="saveSyncSettings()">Сохранить и подключить</button><button class="secondary" onclick="syncPull(true)">Загрузить с сервера</button><button class="secondary" onclick="syncPush(true)">Отправить на сервер</button></div>
+<p id="syncStatus" class="full muted">Сервер не настроен.</p>
+</div></section>
+
+<section id="backup" class="hidden">
+<h2>Резервная копия</h2><p class="sectionHint">Сохраняй копию перед обновлением или переносом программы на другой компьютер.</p><div class="card"><p>Перед обновлением или переносом обязательно сохрани резервную копию.</p>
+<div class="actions"><button class="primary" onclick="exportData()">Скачать резервную копию</button>
+<label class="btn secondary">Восстановить из файла<input type="file" accept=".json" style="display:none" onchange="importData(event)"></label></div></div>
+</section>
+
+<section id="updates" class="hidden">
+<h2>Обновление</h2><p class="sectionHint">Информация о версии и безопасное сохранение данных перед обновлением.</p><div class="card">
+<p><b>Текущая версия: <span id="updateCurrentVersion">8.9.10</span> · Windows</b></p>
+<p>Данные хранятся отдельно от программы и сохраняются при установке новой версии.</p>
+<label>Адрес сервера обновлений<input id="updateManifestUrl" placeholder="https://.../latest.json"></label>
+<p class="muted">Адрес нужно указать один раз. После этого кнопка сама проверяет новую версию, скачивает установщик и запускает обновление.</p>
+<div class="actions"><button class="primary" onclick="checkForUpdate()">Проверить и установить обновление</button> <button class="secondary" onclick="installUpdateFromFile()">Установить обновление из файла</button><button class="secondary" onclick="exportData()">Сохранить резервную копию</button></div>
+<p id="updateStatus" class="muted"></p>
+</div>
+</section>
+</main>
+
+
+<div id="productModal" class="modal hidden"><div class="modalBox">
+<div class="actions" style="justify-content:space-between"><h2>Карточка товара</h2><button class="secondary" onclick="closeProductModal()">Закрыть</button></div>
+<div class="form">
+<input type="hidden" id="editProductId">
+<label>Название товара<input id="editPname" placeholder="Название товара"></label>
+<label>Группа<select id="editPgroup"></select></label>
+<label>Артикул<input id="editParticle" placeholder="Артикул"></label>
+<label>Цена закупки, ₽<input id="editPbuy" type="number" step=".01"></label>
+<label>Розничная цена, ₽<input id="editPretail" type="number" step=".01"></label>
+<label>Оптовая цена, ₽<input id="editPwholesale" type="number" step=".01"></label>
+<label>Единица измерения<select id="editPunit"><option value="шт">шт</option><option value="пог. м">пог. м</option><option value="м">м</option><option value="м²">м²</option><option value="компл.">компл.</option></select></label>
+<div class="full"><div id="editPhotoPreview"></div><br>
+<label class="btn secondary">Заменить фотографию<input id="editPphoto" type="file" accept="image/*" style="display:none" onchange="previewEditPhoto()"></label></div>
+<div class="full actions"><button class="primary" onclick="saveProductEdit()">Сохранить изменения</button></div>
+</div>
+<p class="muted">Изменения применяются к будущим продажам. Старые продажи и чеки сохраняют прежние данные.</p>
+</div></div>
+
+<div id="dealerModal" class="modal hidden"><div class="modalBox">
+<div class="actions" style="justify-content:space-between"><h2 id="modalTitle">Дилер</h2><button class="secondary" onclick="closeDealerModal()">Закрыть</button></div>
+<div id="dealerModalBody"></div>
+</div></div>
+
+<div id="receiptViewModal" class="modal hidden"><div class="modalBox"><div class="actions" style="justify-content:space-between"><h2>Сохранённый чек</h2><button class="secondary" onclick="closeReceiptView()">Закрыть</button></div><div id="receiptViewBody"></div></div></div>
+
+<div id="qtyModal" class="modal hidden"><div class="modalBox qtyModalBox">
+<div class="actions" style="justify-content:space-between"><h2 style="margin:0">Добавление товара</h2><button class="secondary" onclick="closeQtyModal()">Закрыть</button></div>
+<div class="qtyProductName" id="qtyProductName">Товар</div><div class="qtyProductMeta" id="qtyProductMeta"></div>
+<div class="qtyGrid"><label>Количество<input id="qtyModalInput" type="number" min="0.001" step="0.001" value="1" oninput="updateQtyModalTotal()" onkeydown="qtyModalKey(event)"></label><label>Ед. измерения<input id="qtyModalUnit" readonly></label></div>
+<div class="qtyMoneyRow"><div class="qtyMoneyCard"><span>Цена</span><b id="qtyModalPrice">0 ₽</b></div><div class="qtyMoneyCard qtyTotalCard"><span>Общая сумма</span><b id="qtyModalTotal">0 ₽</b></div></div>
+<p class="qtyHelp">Измени количество и нажми Enter или «Добавить в чек».</p>
+<div class="actions" style="justify-content:flex-end;margin-top:16px"><button class="secondary" onclick="closeQtyModal()">Отмена</button><button class="primary" onclick="confirmQtyModal()">Добавить в чек</button></div>
+</div></div>
+
+<div id="initialDebtModal" class="modal hidden"><div class="modalBox qtyModalBox">
+<div class="actions" style="justify-content:space-between"><h2 style="margin:0">Внести начальный долг</h2><button class="secondary" onclick="closeInitialDebtModal()">Закрыть</button></div>
+<p id="initialDebtDealerName" class="qtyProductMeta"></p>
+<label>Сумма начального долга, ₽<input id="initialDebtAmount" type="number" min="0.01" step="0.01" placeholder="Например, 120000" onkeydown="initialDebtKey(event)"></label>
+<label style="margin-top:12px">Примечание<input id="initialDebtNote" value="Перенесено из тетради / прежнего учёта" onkeydown="initialDebtKey(event)"></label>
+<div class="actions" style="justify-content:flex-end;margin-top:16px"><button class="secondary" onclick="closeInitialDebtModal()">Отмена</button><button class="primary" onclick="confirmInitialDebt()">Сохранить долг</button></div>
+</div></div>
+
+<div id="debtReportModal" class="modal hidden"><div class="modalBox"><div class="actions" style="justify-content:space-between"><h2 style="margin:0">Отчёт по долгу</h2><button class="secondary" onclick="closeDebtReport()">Закрыть</button></div><div id="debtReportBody"></div></div></div>
+
+<script>
+const KEY='uchet_dilerov_v8';
+let state=load();
+let cart=[];
+
+function norm(x){x=x||{};x.dealers=x.dealers||[];x.groups=x.groups||[];x.products=x.products||[];x.ops=x.ops||[];x.receiptSeq=x.receiptSeq||1;x.newmatros=x.newmatros||{prices:{material:0,harpoon:0,corner:0,curve:0,cutout:0,seam:0,fixed:0},autoPost:true,watching:true};x.newmatros.prices=x.newmatros.prices||{};x.newmatros.notifications=x.newmatros.notifications||{unread:0,lastText:'',lastTs:0,lastKey:''};if(!x.newmatros.autoLinkV1){x.newmatros.watching=true;x.newmatros.autoPost=true;x.newmatros.autoLinkV1=true}x.update=x.update||{manifestUrl:''};x.sync=x.sync||{enabled:false,url:'',token:'',interval:5,revision:0};x.newmatros.prices.materialNarrow=+x.newmatros.prices.materialNarrow||0;x.newmatros.prices.materialWide=+x.newmatros.prices.materialWide||0;x.newmatros.prices.businessWaste=+x.newmatros.prices.businessWaste||0;return x}
+function load(){try{let r=localStorage.getItem(KEY);if(r)return norm(JSON.parse(r))}catch(e){}return norm({})}
+let syncSaveTimer=null,syncApplying=false;function save(){localStorage.setItem(KEY,JSON.stringify(state));render();if(!syncApplying&&state.sync&&state.sync.enabled){clearTimeout(syncSaveTimer);syncSaveTimer=setTimeout(()=>syncPush(false),350)}}
+function money(n){return (+n||0).toLocaleString('ru-RU',{maximumFractionDigits:2})+' ₽'}
+function esc(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function show(id,b){document.querySelectorAll('main>section').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));if(b)b.classList.add('active');if(id==='products'){toggleAddProductForm(false);toggleStockTransfer(false)}if(id==='newmatros')toggleNewMatRosPrices(false);let h=document.querySelector('#'+id+'>h2');if(window.pageTitle)pageTitle.textContent=h?h.textContent:'Учёт дилеров';render()}
+function go(id){let b=document.querySelector('nav button[data-section="'+id+'"]');show(id,b)}
+function salesOf(id){return state.ops.filter(o=>o.dealerId==id&&o.type==='sale').reduce((s,o)=>s+(+o.total||0),0)}
+function paidOf(id){return state.ops.filter(o=>o.dealerId==id&&o.type==='payment').reduce((s,o)=>s+(+o.total||0),0)}
+function initialDebtOf(id){return state.ops.filter(o=>o.dealerId==id&&o.type==='initial_debt').reduce((s,o)=>s+(+o.total||0),0)}
+function debtOf(id){return initialDebtOf(id)+salesOf(id)-paidOf(id)}
+function profitTotal(){return state.ops.filter(o=>o.type==='sale').reduce((s,o)=>s+(+o.profit||0),0)}
+function opTime(o){if(o&&Number.isFinite(+o.ts))return +o.ts;let s=String(o&&o.date||'');let m=s.match(/(\d{1,2})[.\/](\d{1,2})[.\/](\d{4}),?\s*(\d{1,2})?:?(\d{2})?:?(\d{2})?/);if(m)return new Date(+m[3],+m[2]-1,+m[1],+(m[4]||0),+(m[5]||0),+(m[6]||0)).getTime();return +o.id||0}
+function lastDealerActivity(id){let a=state.ops.filter(o=>o.dealerId==id);return a.length?Math.max(...a.map(opTime)):0}
+
+
+function toggleNewDealerForm(force){let el=document.getElementById('newDealerForm');if(!el)return;let show=force===undefined?el.classList.contains('hidden'):!!force;el.classList.toggle('hidden',!show);if(show)setTimeout(()=>dname.focus(),50)}
+function addDealer(){let n=dname.value.trim();if(!n)return alert('Укажи имя дилера');state.dealers.push({id:Date.now(),name:n,phone:dphone.value.trim(),city:dcity.value.trim(),note:dnote.value.trim(),photo:''});dname.value=dphone.value=dcity.value=dnote.value='';toggleNewDealerForm(false);save()}
+function addGroup(){let n=gname.value.trim();if(!n)return alert('Укажи группу');state.groups.push({id:Date.now(),name:n,note:gnote.value.trim()});gname.value=gnote.value='';save()}
+
+function imageToDataURL(file){return new Promise((resolve,reject)=>{let fr=new FileReader();fr.onload=()=>{let im=new Image();im.onload=()=>{let max=700,scale=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');c.width=Math.round(im.width*scale);c.height=Math.round(im.height*scale);c.getContext('2d').drawImage(im,0,0,c.width,c.height);resolve(c.toDataURL('image/jpeg',.78))};im.onerror=reject;im.src=fr.result};fr.onerror=reject;fr.readAsDataURL(file)})}
+function toggleAddProductForm(force){let el=document.getElementById('addProductForm');if(!el)return;let show=force===undefined?el.classList.contains('hidden'):!!force;el.classList.toggle('hidden',!show);if(show)setTimeout(()=>pname.focus(),50)}
+function toggleStockTransfer(force){let el=document.getElementById('stockTransferPanel');if(!el)return;let show=force===undefined?el.classList.contains('hidden'):!!force;el.classList.toggle('hidden',!show)}
+async function addProduct(){let gid=+pgroup.value,n=pname.value.trim(),a=particle.value.trim(),buy=+pbuy.value,r=+pretail.value,w=+pwholesale.value;if(!gid)return alert('Выбери группу');if(!n)return alert('Укажи товар');if(r<=0||w<=0)return alert('Укажи розничную и оптовую цену');let photo='';if(pphoto.files&&pphoto.files[0])photo=await imageToDataURL(pphoto.files[0]);state.products.push({id:Date.now(),groupId:gid,name:n,article:a,buyPrice:buy,retailPrice:r,wholesalePrice:w,unit:(punit&&punit.value)||'шт',photo,archived:false});pname.value=particle.value=pbuy.value=pretail.value=pwholesale.value='';if(window.punit)punit.value='шт';pphoto.value='';toggleAddProductForm(false);save()}
+
+
+let pendingEditPhoto=null;
+function editProduct(id){
+  let p=state.products.find(x=>x.id==id); if(!p)return;
+  editProductId.value=p.id;
+  editPname.value=p.name||'';
+  editParticle.value=p.article||'';
+  editPbuy.value=p.buyPrice||0;
+  editPretail.value=p.retailPrice||0;
+  editPwholesale.value=p.wholesalePrice||0;if(window.editPunit)editPunit.value=p.unit||'шт';
+  editPgroup.innerHTML='<option value="">Выберите группу</option>'+state.groups.map(g=>'<option value="'+g.id+'">'+esc(g.name)+'</option>').join('');
+  editPgroup.value=String(p.groupId||'');
+  pendingEditPhoto=p.photo||'';
+  editPhotoPreview.innerHTML=pendingEditPhoto?'<img class="thumb" style="width:140px;height:140px" src="'+pendingEditPhoto+'">':'<span class="muted">Фото не добавлено</span>';
+  editPphoto.value='';
+  productModal.classList.remove('hidden');;toggleAddProductForm(false)
+}
+function closeProductModal(){productModal.classList.add('hidden');pendingEditPhoto=null}
+async function previewEditPhoto(){
+  if(editPphoto.files&&editPphoto.files[0]){
+    pendingEditPhoto=await imageToDataURL(editPphoto.files[0]);
+    editPhotoPreview.innerHTML='<img class="thumb" style="width:140px;height:140px" src="'+pendingEditPhoto+'">';
+  }
+}
+function saveProductEdit(){
+  let id=+editProductId.value,p=state.products.find(x=>x.id==id);if(!p)return;
+  let name=editPname.value.trim(),gid=+editPgroup.value,buy=+editPbuy.value,retail=+editPretail.value,wholesale=+editPwholesale.value;
+  if(!name)return alert('Укажи название товара');
+  if(!gid)return alert('Выбери группу');
+  if(retail<=0||wholesale<=0)return alert('Розничная и оптовая цена должны быть больше 0');
+  p.name=name;
+  p.groupId=gid;
+  p.article=editParticle.value.trim();
+  p.buyPrice=buy;
+  p.retailPrice=retail;
+  p.wholesalePrice=wholesale;
+  p.unit=(window.editPunit&&editPunit.value)||p.unit||'шт';
+  if(pendingEditPhoto!==null)p.photo=pendingEditPhoto;
+  p.updatedAt=new Date().toLocaleString('ru-RU');
+  save();
+  closeProductModal();
+  alert('Карточка товара обновлена. Старые чеки и продажи не изменены.');
+}
+function delProduct(id){let p=state.products.find(x=>x.id==id);if(!p)return;if(state.ops.some(o=>o.type==='sale'&&Array.isArray(o.items)&&o.items.some(i=>i.productId==id))){if(confirm('Товар уже участвовал в продажах. Архивировать его?')){p.archived=true;save()}return}if(!confirm('Удалить товар «'+p.name+'»?'))return;if(!confirm('Подтверди ещё раз: удалить товар без возможности восстановления?'))return;state.products=state.products.filter(x=>x.id!=id);save()}
+function changePhoto(id){let inp=document.createElement('input');inp.type='file';inp.accept='image/*';inp.onchange=async()=>{if(!inp.files[0])return;let p=state.products.find(x=>x.id==id);p.photo=await imageToDataURL(inp.files[0]);save()};inp.click()}
+
+
+function csvNum(v){return Number(String(v??'').replace(/\s/g,'').replace(',','.'))||0}
+function parseSemicolonCsv(text){
+  // Экспорт «Склад» содержит одиночные кавычки в отдельных полях.
+  // Парсим построчно, чтобы одна повреждённая кавычка не склеивала половину файла.
+  text=String(text||'').replace(/^\uFEFF/,'');
+  return text.split(/\r?\n/).map(line=>line.split(';').map(v=>String(v||'').trim().replace(/^"|"$/g,''))).filter(r=>r.some(x=>String(x).trim()));
+}
+function normalizePhone(v){return String(v||'').replace(/\D/g,'').replace(/^8(?=\d{10}$)/,'7')}
+function ensureGroupByName(name){
+  name=String(name||'Без группы').trim()||'Без группы';
+  let g=state.groups.find(x=>String(x.name||'').trim().toLowerCase()===name.toLowerCase());
+  if(!g){g={id:Date.now()+Math.floor(Math.random()*1000000),name,note:'Импортировано из программы «Склад»'};state.groups.push(g)}
+  return g;
+}
+function importStockProductRows(rows){
+  let added=0,updated=0,skipped=0;
+  rows.forEach((r,idx)=>{
+    if(r.length<2)return;
+    let article=String(r[0]||'').trim(), name=String(r[1]||'').trim();
+    if(!name || /наименован/i.test(name))return;
+    let extraInfo=String(r[2]||'').trim(), oldAux=csvNum(r[3]), groupName=String(r[4]||'Без группы').trim(), stock=csvNum(r[5]), unit=String(r[6]||'').trim(), price=csvNum(r[7])||Math.max(oldAux,0);
+    let g=ensureGroupByName(groupName), keyArticle=article.toLowerCase(), keyName=name.toLowerCase();
+    // В исходном «Склад» встречаются одинаковые артикулы у разных названий и одинаковые названия у разных артикулов.
+    // Поэтому совпадением считаем только пару «артикул + название», чтобы не терять реальные строки.
+    let p=state.products.find(x=>String(x.article||'').trim().toLowerCase()===keyArticle && String(x.name||'').trim().toLowerCase()===keyName);
+    if(p){
+      p.groupId=g.id;p.name=name;p.article=article||p.article||'';p.retailPrice=price||p.retailPrice||0;p.wholesalePrice=price||p.wholesalePrice||0;p.stock=stock;p.unit=unit;p.extraInfo=extraInfo;p.source='Склад CSV';p.oldAux=oldAux;p.archived=false;updated++;
+    }else{
+      state.products.push({id:Date.now()+idx+Math.floor(Math.random()*100000),groupId:g.id,name,article,buyPrice:0,retailPrice:price,wholesalePrice:price,photo:'',stock,unit,extraInfo,oldAux,source:'Склад CSV',archived:false});added++;
+    }
+  });
+  save();
+  return {added,updated,skipped,total:added+updated};
+}
+async function getCsvPayload(kind){
+  if(window.stockAPI&&window.stockAPI.chooseCsv)return await window.stockAPI.chooseCsv(kind||'products');
+  return await new Promise(resolve=>{let inp=document.createElement('input');inp.type='file';inp.accept='.csv,text/csv,text/plain';inp.onchange=async()=>{let f=inp.files&&inp.files[0];if(!f)return resolve({canceled:true});let b=await f.arrayBuffer(),u=new Uint8Array(b),text;try{text=new TextDecoder('windows-1251').decode(u)}catch(e){text=new TextDecoder('utf-8').decode(u)}resolve({canceled:false,name:f.name,text})};inp.click()});
+}
+async function importBundledStockProducts(){
+  if(!window.stockAPI||!window.stockAPI.loadBundledProducts)return alert('Встроенный список доступен только в приложении Windows. Можно нажать «Выбрать другой CSV».');
+  let r=await window.stockAPI.loadBundledProducts();if(!r||r.canceled||!r.text)return alert(r&&r.error?r.error:'Не удалось открыть встроенный tovar.csv');
+  let rows=parseSemicolonCsv(r.text),res=importStockProductRows(rows);state.stockMigrationDone=true;save();stockImportStatus.textContent='Готово: добавлено '+res.added+', обновлено '+res.updated+'. Всего обработано '+res.total+' товаров.';alert('Товары перенесены. Дилеры, продажи и долги сохранены.');toggleStockTransfer(false);
+}
+async function importStockProductsFromCsv(){
+  let r=await getCsvPayload('products');if(!r||r.canceled||!r.text)return;
+  let rows=parseSemicolonCsv(r.text),res=importStockProductRows(rows);stockImportStatus.textContent='Файл '+(r.name||'CSV')+': добавлено '+res.added+', обновлено '+res.updated+'.';alert('Импорт товаров завершён.');toggleStockTransfer(false);
+}
+function normalizeDealerName(v){return String(v||'').trim().toLowerCase().replace(/ё/g,'е').replace(/\s+/g,' ')}
+function mergeDealerFields(d,c){
+  const pairs=[['phone','phone'],['city','city'],['company','company'],['fio','fio'],['address','address'],['email','email'],['www','www'],['clientGroup','group'],['paymentMethod','paymentMethod'],['shippingMethod','shippingMethod']];
+  pairs.forEach(([dk,ck])=>{if(!d[dk]&&c[ck])d[dk]=String(c[ck]).trim()});
+  if(c.note&&!d.note)d.note=String(c.note).trim();
+  d.source=d.source||'NewMatRos';
+}
+function importNewMatRosClientRows(clients){
+  let added=0,updated=0,skipped=0;
+  (clients||[]).forEach((c,idx)=>{
+    let name=String(c.name||c.company||c.fio||'').trim();if(!name){skipped++;return}
+    let phone=normalizePhone(c.phone||'');
+    let d=phone?state.dealers.find(x=>normalizePhone(x.phone)===phone):null;
+    if(!d){let nn=normalizeDealerName(name);d=state.dealers.find(x=>normalizeDealerName(x.name)===nn)}
+    if(d){mergeDealerFields(d,c);updated++;}
+    else{d={id:Date.now()+idx+Math.floor(Math.random()*100000),name,phone:String(c.phone||'').trim(),city:String(c.city||'').trim(),company:String(c.company||'').trim(),fio:String(c.fio||'').trim(),address:String(c.address||'').trim(),email:String(c.email||'').trim(),www:String(c.www||'').trim(),clientGroup:String(c.group||'').trim(),paymentMethod:String(c.paymentMethod||'').trim(),shippingMethod:String(c.shippingMethod||'').trim(),note:String(c.note||'').trim(),source:'NewMatRos'};state.dealers.push(d);added++;}
+  });
+  return {added,updated,skipped,total:(clients||[]).length};
+}
+async function importBundledNewMatRosClients(manual){
+  if(!window.clientsAPI||!window.clientsAPI.loadBundledNewMatRosClients){if(manual)alert('Импорт клиентов NewMatRos доступен в приложении Windows.');return}
+  try{
+    let r=await window.clientsAPI.loadBundledNewMatRosClients();if(!r||r.canceled||!Array.isArray(r.clients)){if(manual)alert(r&&r.error||'Не удалось загрузить список клиентов');return}
+    let res=importNewMatRosClientRows(r.clients);state.newmatrosClientMigrationVersion=1;save();
+    if(window.newmatrosClientImportStatus)newmatrosClientImportStatus.textContent='Обработано '+res.total+': добавлено '+res.added+', обновлено '+res.updated+'.';
+    if(manual)alert('Клиенты NewMatRos перенесены: добавлено '+res.added+', обновлено '+res.updated+'.');
+  }catch(e){console.error('NewMatRos client import',e);if(manual)alert('Ошибка импорта клиентов: '+e.message)}
+}
+async function autoImportBundledNewMatRosClientsOnce(){
+  if((state.newmatrosClientMigrationVersion||0)>=1)return;
+  await importBundledNewMatRosClients(false);
+}
+
+
+function sortDealers(arr,mode){return arr.slice().sort((a,b)=>{if(mode==='recent')return lastDealerActivity(b.id)-lastDealerActivity(a.id)||String(a.name||'').localeCompare(String(b.name||''),'ru');if(mode==='debt_desc')return debtOf(b.id)-debtOf(a.id);if(mode==='debt_asc')return debtOf(a.id)-debtOf(b.id);if(mode==='sales_desc')return salesOf(b.id)-salesOf(a.id);if(mode==='paid_desc')return paidOf(b.id)-paidOf(a.id);return String(a.name||'').localeCompare(String(b.name||''),'ru',{numeric:true,sensitivity:'base'})})}
+function renderDealers(){let q=(dealerSearch?.value||'').toLowerCase();let arr=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q));arr=sortDealers(arr,(window.dealerSort&&dealerSort.value)||'name');dealerRows.innerHTML=arr.map(d=>'<tr class="clickable" onclick="openDealer('+d.id+')"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.phone)+'</td><td>'+esc(d.city)+'</td><td class="'+(debtOf(d.id)>0?'danger':'ok')+'"><b>'+money(debtOf(d.id))+'</b></td></tr>').join('')}
+function renderDebts(){let q=(debtSearch?.value||'').toLowerCase();let arr=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q));arr=sortDealers(arr,(window.debtSort&&debtSort.value)||'recent');debtRows.innerHTML=arr.map(d=>'<tr class="clickable" tabindex="0" onclick="openDealer('+d.id+')"><td><b>'+esc(d.name)+'</b><br><span class="muted">'+esc(d.phone||'')+'</span></td><td>'+money(salesOf(d.id))+'</td><td class="ok">'+money(paidOf(d.id))+'</td><td class="'+(debtOf(d.id)>0?'danger':'ok')+'"><b>'+money(debtOf(d.id))+'</b></td></tr>').join('')}
+function renderSaleProductGroups(){if(!window.saleProductGroup)return;let cur=saleProductGroup.value||'';saleProductGroup.innerHTML='<option value="">Все группы</option>'+state.groups.slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ru')).map(g=>'<option value="'+g.id+'">'+esc(g.name)+'</option>').join('');saleProductGroup.value=[...saleProductGroup.options].some(o=>o.value===cur)?cur:''}
+function renderProducts(){let q=(productListSearch?.value||'').toLowerCase();let arr=state.products.filter(p=>{let g=state.groups.find(x=>x.id==p.groupId);return (p.name+' '+(p.article||'')+' '+(g?.name||'')).toLowerCase().includes(q)});let mode=(window.productSort&&productSort.value)||'name';arr.sort((a,b)=>{let ga=state.groups.find(x=>x.id==a.groupId)?.name||'',gb=state.groups.find(x=>x.id==b.groupId)?.name||'';if(mode==='group')return ga.localeCompare(gb,'ru')||String(a.name||'').localeCompare(String(b.name||''),'ru');if(mode==='article')return String(a.article||'').localeCompare(String(b.article||''),'ru',{numeric:true});if(mode==='retail_desc')return (+b.retailPrice||0)-(+a.retailPrice||0);if(mode==='retail_asc')return (+a.retailPrice||0)-(+b.retailPrice||0);if(mode==='wholesale_desc')return (+b.wholesalePrice||0)-(+a.wholesalePrice||0);if(mode==='stock_desc')return (+b.stock||0)-(+a.stock||0);return String(a.name||'').localeCompare(String(b.name||''),'ru',{numeric:true,sensitivity:'base'})});productRows.innerHTML=arr.map(p=>{let g=state.groups.find(x=>x.id==p.groupId);return '<tr class="clickable" onclick="editProduct('+p.id+')"><td>'+esc(g?.name||'')+'</td><td>'+esc(p.article||'')+'</td><td><b>'+esc(p.name)+'</b>'+(p.extraInfo?'<br><span class="muted">'+esc(p.extraInfo)+'</span>':'')+(p.archived?' <span class="tag">Архив</span>':'')+'</td><td>'+((+p.stock||0).toLocaleString('ru-RU',{maximumFractionDigits:3}))+'</td><td>'+esc(p.unit||'шт')+'</td><td>'+money(p.buyPrice)+'</td><td>'+money(p.retailPrice)+'</td><td>'+money(p.wholesalePrice)+'</td><td><div class="actions"><button class="secondary" onclick="event.stopPropagation();editProduct('+p.id+')">Открыть</button>'+(p.archived?'<span class="muted">В архиве</span>':'<button class="dangerBtn" onclick="event.stopPropagation();delProduct('+p.id+')">Удалить</button>')+'</div></td></tr>'}).join('');applyStoredColumnOrders()}
+
+function renderPaymentDealers(){let q=(paymentDealerSearch?.value||'').toLowerCase();let list=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q));list=sortDealers(list,(window.paymentSort&&paymentSort.value)||'recent');paymentDealerList.innerHTML=list.map(d=>{let pops=state.ops.filter(o=>o.dealerId==d.id&&o.type==='payment').slice().sort((a,b)=>opTime(b)-opTime(a)),lastPay=pops[0],lastAct=lastDealerActivity(d.id);return '<tr class="clickable" onclick="selectPayDealer('+d.id+')"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.phone||'')+'</td><td class="'+(debtOf(d.id)>0?'danger':'ok')+'"><b>'+money(debtOf(d.id))+'</b></td><td>'+(lastPay?money(lastPay.total):'—')+'</td><td>'+(lastAct?new Date(lastAct).toLocaleString('ru-RU'):'—')+'</td><td><button class="primary miniBtn" onclick="event.stopPropagation();selectPayDealer('+d.id+')">Выбрать</button></td></tr>'}).join('')}
+function selectPayDealer(id){let d=state.dealers.find(x=>x.id==id);if(!d)return;payDealer.value=String(id);paymentChooser.classList.add('hidden');paymentSelected.classList.remove('hidden');paymentForm.classList.remove('hidden');paymentSelected.innerHTML='<div class="actions" style="justify-content:space-between"><div><b>'+esc(d.name)+'</b><br><span class="muted">'+esc(d.phone||'')+' · долг: '+money(debtOf(d.id))+'</span></div><button class="secondary" onclick="clearPayDealer()">Назад к выбору дилера</button></div>';setTimeout(()=>payAmount.focus(),50)}
+function clearPayDealer(){payDealer.value='';paymentChooser.classList.remove('hidden');paymentSelected.classList.add('hidden');paymentForm.classList.add('hidden');paymentSelected.innerHTML='';setTimeout(()=>paymentDealerSearch.focus(),50)}
+function makePayment(){let d=state.dealers.find(x=>x.id==payDealer.value),a=+payAmount.value,m=payMethod.value;if(!d)return alert('Выбери дилера');if(!a||a<=0)return alert('Укажи сумму оплаты');if(!m)return alert('Выбери способ оплаты');let beforeDebt=debtOf(d.id);if(a>beforeDebt&&beforeDebt>0&&!confirm('Оплата больше текущего долга на '+money(a-beforeDebt)+'. Всё равно сохранить?'))return;let op={id:Date.now(),ts:Date.now(),type:'payment',date:new Date().toLocaleString('ru-RU'),dealerId:d.id,dealer:d.name,total:a,method:m,note:payNote.value.trim(),beforeDebt:beforeDebt,afterDebt:beforeDebt-a};state.ops.push(op);payAmount.value='';payMethod.value='';payNote.value='';save();showDebtReport(d.id,op.id)}
+
+let saleDealerCursor=0,saleProductCursor=0;
+function renderSaleDealers(){let q=(saleDealerSearch?.value||'').trim().toLowerCase();let arr=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q)).slice(0,40);saleDealerCursor=Math.min(saleDealerCursor,Math.max(0,arr.length-1));saleDealerList.innerHTML=arr.map((d,i)=>'<div class="choiceRow '+(i===saleDealerCursor?'active':'')+'" onmousedown="selectSaleDealer('+d.id+')"><div><b>'+esc(d.name)+'</b><div class="muted">'+esc(d.phone||'')+'</div></div><span>'+money(debtOf(d.id))+'</span></div>').join('')}
+function selectSaleDealer(id){let d=state.dealers.find(x=>x.id==id);if(!d)return;saleDealer.value=String(d.id);saleDealerSearch.value=d.name;saleDealerSelected.textContent='Выбран дилер: '+d.name+(d.phone?' · '+d.phone:'');saleDealerList.innerHTML=''}
+function saleDealerKey(e){let rows=[...saleDealerList.querySelectorAll('.choiceRow')];if(e.key==='ArrowDown'){e.preventDefault();saleDealerCursor=Math.min(rows.length-1,saleDealerCursor+1);renderSaleDealers()}else if(e.key==='ArrowUp'){e.preventDefault();saleDealerCursor=Math.max(0,saleDealerCursor-1);renderSaleDealers()}else if(e.key==='Enter'&&rows.length){e.preventDefault();let q=(saleDealerSearch.value||'').trim().toLowerCase(),arr=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q)).slice(0,40);if(arr[saleDealerCursor])selectSaleDealer(arr[saleDealerCursor].id)}}
+function renderSaleProducts(){let q=(saleProductSearch?.value||'').trim().toLowerCase(),gid=(window.saleProductGroup&&saleProductGroup.value)||'';let arr=state.products.filter(p=>!p.archived&&(!gid||String(p.groupId)===String(gid))&&String(p.name||'').toLowerCase().includes(q)).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ru',{numeric:true,sensitivity:'base'})).slice(0,160);saleProductCursor=Math.min(saleProductCursor,Math.max(0,arr.length-1));saleProductList.innerHTML=arr.map((p,i)=>'<div class="choiceRow '+(i===saleProductCursor?'active':'')+'" onclick="selectSaleProduct('+p.id+')" ondblclick="selectSaleProduct('+p.id+');promptQtyAndAddSelected()"><div><b>'+esc(p.name)+'</b></div><span>'+money(priceType.value==='wholesale'?p.wholesalePrice:p.retailPrice)+'</span></div>').join('')}
+function selectSaleProduct(id){let p=state.products.find(x=>x.id==id);if(!p)return;saleProduct.value=String(p.id);showSelectedPhoto();[...saleProductList.querySelectorAll('.choiceRow')].forEach(x=>x.classList.remove('active'))}
+function saleProductKey(e){let q=(saleProductSearch.value||'').trim().toLowerCase(),gid=(window.saleProductGroup&&saleProductGroup.value)||'',arr=state.products.filter(p=>!p.archived&&(!gid||String(p.groupId)===String(gid))&&String(p.name||'').toLowerCase().includes(q)).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ru',{numeric:true,sensitivity:'base'})).slice(0,160);if(e.key==='ArrowDown'){e.preventDefault();saleProductCursor=Math.min(arr.length-1,saleProductCursor+1);renderSaleProducts()}else if(e.key==='ArrowUp'){e.preventDefault();saleProductCursor=Math.max(0,saleProductCursor-1);renderSaleProducts()}else if(e.key==='Enter'&&arr.length){e.preventDefault();selectSaleProduct(arr[saleProductCursor].id);promptQtyAndAddSelected()}}
+function showSelectedPhoto(){let p=state.products.find(x=>x.id==saleProduct.value);selectedPhoto.innerHTML=p?(p.photo?'<img class="thumb" style="width:130px;height:130px" src="'+p.photo+'"><div><b>'+esc(p.name)+'</b></div>':'<div><b>'+esc(p.name)+'</b></div>'):'';fillDefaultPrice()}
+function fillDefaultPrice(){let p=state.products.find(x=>x.id==saleProduct.value);if(!p)return;salePrice.value=priceType.value==='wholesale'?p.wholesalePrice:p.retailPrice}
+priceType.addEventListener('change',()=>{fillDefaultPrice();renderSaleProducts()});
+function addToCart(qty){let p=state.products.find(x=>x.id==saleProduct.value),q=+(qty||1),price=+salePrice.value;if(!p)return alert('Выбери товар');if(!Number.isFinite(q)||q<=0)return alert('Количество должно быть больше 0');if(price<=0)return alert('Укажи цену');let existing=cart.find(i=>i.productId==p.id&&+i.price===price);if(existing){existing.qty+=q;existing.total=existing.price*existing.qty;existing.profit=(existing.price-existing.buyPrice)*existing.qty}else cart.push({productId:p.id,article:p.article||'',name:p.name,qty:q,unit:p.unit||'шт',price,buyPrice:+p.buyPrice||0,total:price*q,profit:(price-(+p.buyPrice||0))*q});renderCart()}
+let qtyModalProductId=null;
+function promptQtyAndAddSelected(){let p=state.products.find(x=>x.id==saleProduct.value);if(!p)return alert('Сначала выбери товар');qtyModalProductId=p.id;let price=+salePrice.value||0;qtyProductName.textContent=p.name||'Товар';qtyProductMeta.textContent=(p.article?'Артикул: '+p.article+' · ':'')+'Цена указана в рублях';qtyModalUnit.value=p.unit||'шт';qtyModalInput.value='1';qtyModalPrice.textContent=money(price);updateQtyModalTotal();qtyModal.classList.remove('hidden');forceInputFocus(qtyModalInput,true)}
+function updateQtyModalTotal(){let q=Number(String(qtyModalInput.value||'0').replace(',','.'))||0,price=+salePrice.value||0;qtyModalPrice.textContent=money(price);qtyModalTotal.textContent=money(q*price)}
+function qtyModalKey(e){if(e.key==='Enter'){e.preventDefault();confirmQtyModal()}else if(e.key==='Escape'){e.preventDefault();closeQtyModal()}}
+function confirmQtyModal(){let p=state.products.find(x=>x.id==qtyModalProductId);if(!p)return closeQtyModal();let q=Number(String(qtyModalInput.value||'').replace(',','.'));if(!Number.isFinite(q)||q<=0){alert('Укажи правильное количество');qtyModalInput.focus();return}addToCart(q);closeQtyModal();saleProductSearch.focus();saleProductSearch.select()}
+function closeQtyModal(){qtyModal.classList.add('hidden');qtyModalProductId=null}
+function renderCart(){cartRows.innerHTML=cart.map((i,idx)=>'<tr class="clickable"><td>'+esc(i.article)+'</td><td><b>'+esc(i.name)+'</b></td><td>'+i.qty+' '+esc(i.unit||'шт')+'</td><td>'+money(i.price)+'</td><td>'+money(i.total)+'</td><td><button class="dangerBtn" onclick="cart.splice('+idx+',1);renderCart()">Убрать</button></td></tr>').join('')}
+function clearCart(){cart=[];renderCart()}
+
+function saveSale(){let d=state.dealers.find(x=>x.id==saleDealer.value);if(!d)return alert('Выбери дилера');if(!cart.length)return alert('Добавь хотя бы один товар');let total=cart.reduce((s,i)=>s+i.total,0),profit=cart.reduce((s,i)=>s+i.profit,0),num=state.receiptSeq++,date=new Date().toLocaleString('ru-RU');let op={id:Date.now(),ts:Date.now(),type:'sale',date,dealerId:d.id,dealer:d.name,receiptNo:num,items:cart.map(x=>({...x})),total,profit};state.ops.push(op);cart=[];save();renderReceipt(op,d);renderCart();saleProductSearch.value='';saleProduct.value='';selectedPhoto.innerHTML='';renderSaleProducts()}
+function renderReceiptHtml(op,d){let rows=(op.items||[]).map((i,n)=>'<tr><td>'+(n+1)+'</td><td>'+esc(i.article)+'</td><td>'+esc(i.name)+'</td><td><input class="receiptEditInput" type="number" min="0.01" step="0.01" value="'+(+i.qty||0)+'" onchange="editReceiptItem('+op.id+','+n+',\'qty\',this.value)"> '+esc(i.unit||'шт')+'</td><td><input class="receiptEditInput" type="number" min="0" step="0.01" value="'+(+i.price||0)+'" onchange="editReceiptItem('+op.id+','+n+',\'price\',this.value)"></td><td>'+money(i.total)+'</td></tr>').join('');return '<div class="receipt" id="receiptPrint" data-receipt-op-id="'+op.id+'"><h2>ТОВАРНАЯ НАКЛАДНАЯ № '+op.receiptNo+' от '+esc(op.date)+'</h2><div class="meta"><div><b>Поставщик:</b> ____________________</div><div><b>Покупатель:</b> '+esc(d.name)+'</div></div><p class="receiptEditHelp">Количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.</p><table><thead><tr><th>№</th><th>Артикул</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total">Итого: '+money(op.total)+'</div><p><b>Остаток долга:</b> '+money(debtOf(d.id))+'</p><div class="sign"><span>Отпустил: ____________</span><span>Получил: ____________</span></div><div class="actions" style="margin-top:20px"><button class="primary" onclick="printReceipt()">Распечатать</button><button class="primary" onclick="downloadReceipt('+op.id+')">Скачать накладную</button><button class="primary" onclick="sendWhatsApp('+op.id+')">Отправить в WhatsApp</button></div></div>'}
+function renderReceipt(op,d){receiptArea.innerHTML=renderReceiptHtml(op,d)}
+function editReceiptItem(opId,itemIndex,field,value){let op=state.ops.find(x=>x.id==opId&&x.type==='sale');if(!op||!op.items||!op.items[itemIndex])return;let v=Number(String(value||'').replace(',','.'));if(!Number.isFinite(v)||(field==='qty'&&v<=0)||(field==='price'&&v<0)){alert(field==='qty'?'Количество должно быть больше 0':'Цена не может быть отрицательной');refreshReceiptViews(opId);return}let item=op.items[itemIndex];item[field]=v;item.total=(+item.qty||0)*(+item.price||0);item.profit=((+item.price||0)-(+item.buyPrice||0))*(+item.qty||0);op.total=op.items.reduce((sum,x)=>sum+(+x.total||0),0);op.profit=op.items.reduce((sum,x)=>sum+(+x.profit||0),0);save();refreshReceiptViews(opId)}
+function refreshReceiptViews(opId){let op=state.ops.find(x=>x.id==opId),d=op&&state.dealers.find(x=>x.id==op.dealerId);if(!op||!d)return;let html=renderReceiptHtml(op,d);if(receiptArea.querySelector('[data-receipt-op-id="'+opId+'"]'))receiptArea.innerHTML=html;if(receiptViewBody.querySelector('[data-receipt-op-id="'+opId+'"]'))receiptViewBody.innerHTML=html}
+function printReceipt(){window.print()}
+function receiptText(op){let d=state.dealers.find(x=>x.id==op.dealerId),lines=['ТОВАРНАЯ НАКЛАДНАЯ № '+op.receiptNo+' от '+op.date,'Покупатель: '+(d?.name||op.dealer),''];op.items.forEach(i=>lines.push((i.article?i.article+' · ':'')+i.name+' — '+i.qty+' '+(i.unit||'шт')+' × '+money(i.price)+' = '+money(i.total)));lines.push('','ИТОГО: '+money(op.total),'Остаток долга: '+money(debtOf(op.dealerId)));return lines.join('\n')}
+async function sendWhatsApp(id){let op=state.ops.find(x=>x.id==id),d=op&&state.dealers.find(x=>x.id==op.dealerId);if(!op)return;let phone=d&&d.phone?d.phone:'';if(!window.whatsappAPI||!window.whatsappAPI.send)return alert('Отправка через WhatsApp Desktop доступна только в установленном приложении Windows.');let r=await window.whatsappAPI.send({phone,text:receiptText(op)});if(!r||!r.ok)alert((r&&r.message)||'Не удалось открыть WhatsApp Desktop. Проверь, что приложение WhatsApp установлено на компьютере.')}
+function downloadReceipt(id){let op=state.ops.find(x=>x.id==id);if(!op)return;let b=new Blob([receiptText(op)],{type:'text/plain;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Товарная_накладная_'+op.receiptNo+'.txt';a.click();URL.revokeObjectURL(a.href)}
+
+function dealerOpType(o){if(o.type==='sale')return 'Продажа / накладная № '+o.receiptNo;if(o.type==='payment')return 'Оплата';if(o.type==='initial_debt')return 'Начальный долг';return 'Операция'}
+function dealerOpDescription(o){if(o.type==='sale')return (o.items||[]).map(i=>esc(i.name)+' × '+i.qty+' '+esc(i.unit||'шт')).join('<br>');if(o.type==='initial_debt')return esc(o.note||'Перенесено из прежнего учёта');return esc(o.method||'')+(o.note?' · '+esc(o.note):'')}
+function dealerHistoryRows(ops,d){let rows=[];(ops||[]).forEach(o=>{if(o.type==='sale'){let items=o.items||[];if(!items.length)items=[{name:'Продажа',qty:'',unit:'',price:'',total:o.total}];items.forEach((i,n)=>{rows.push('<tr><td>'+esc(o.date)+'</td><td>'+esc('Накладная № '+(o.receiptNo||''))+'</td><td>'+esc(i.name||'Товар')+'</td><td>'+esc(i.qty??'')+(i.unit?' '+esc(i.unit):'')+'</td><td>'+money(+i.price||0)+'</td><td>'+money(Number.isFinite(+i.total)?+i.total:(+i.qty||0)*(+i.price||0))+'</td><td>'+(n===0?money(o.total):'')+'</td><td>'+(n===0?'<button class="secondary miniBtn" onclick="showReceiptFromHistory('+o.id+')">Открыть чек</button>':'')+'</td></tr>')})}else if(o.type==='payment'){rows.push('<tr><td>'+esc(o.date)+'</td><td>Оплата</td><td>'+esc(o.method||'Оплата')+(o.note?' · '+esc(o.note):'')+'</td><td>—</td><td>—</td><td>'+money(o.total)+'</td><td>'+money(o.total)+'</td><td><button class="secondary miniBtn" onclick="showDebtReport('+d.id+','+o.id+')">Отчёт по долгу</button></td></tr>')}else if(o.type==='initial_debt'){rows.push('<tr><td>'+esc(o.date)+'</td><td>Начальный долг</td><td>'+esc(o.note||'Перенесено из прежнего учёта')+'</td><td>—</td><td>—</td><td>'+money(o.total)+'</td><td>'+money(o.total)+'</td><td></td></tr>')}else{rows.push('<tr><td>'+esc(o.date)+'</td><td>'+dealerOpType(o)+'</td><td>'+dealerOpDescription(o)+'</td><td>—</td><td>—</td><td>'+money(o.total)+'</td><td>'+money(o.total)+'</td><td></td></tr>')}});return rows.join('')}
+function openDealer(id){let d=state.dealers.find(x=>x.id==id);if(!d)return;modalTitle.textContent=d.name;let ops=state.ops.filter(o=>o.dealerId==id).slice().sort((a,b)=>opTime(b)-opTime(a));let avatar=d.photo?'<img class="dealerAvatar" src="'+d.photo+'">':'<div class="dealerAvatar dealerAvatarPlaceholder">👤</div>';let html='<div class="card dealerSummary">'+avatar+'<div class="dealerMeta"><b>'+esc(d.name)+'</b><div>'+esc(d.phone||'Телефон не указан')+'</div><div>'+esc(d.city||'')+(d.company?' · '+esc(d.company):'')+'</div></div><div class="actions"><button class="secondary" onclick="toggleDealerEdit('+d.id+')">Изменить карточку</button><label class="btn secondary">Фото / логотип<input type="file" accept="image/*" style="display:none" onchange="saveDealerPhoto('+d.id+',event)"></label></div></div><br>';
+html+='<div id="dealerEditPanel" class="card form hidden"><label>Имя / название<input id="dealerEditName" value="'+esc(d.name)+'"></label><label>Телефон<input id="dealerEditPhone" value="'+esc(d.phone||'')+'"></label><label>Город<input id="dealerEditCity" value="'+esc(d.city||'')+'"></label><label>Компания<input id="dealerEditCompany" value="'+esc(d.company||'')+'"></label><label>ФИО<input id="dealerEditFio" value="'+esc(d.fio||'')+'"></label><label>Адрес<input id="dealerEditAddress" value="'+esc(d.address||'')+'"></label><label>E-mail<input id="dealerEditEmail" value="'+esc(d.email||'')+'"></label><label>Сайт<input id="dealerEditWww" value="'+esc(d.www||'')+'"></label><label>Группа клиента<input id="dealerEditGroup" value="'+esc(d.clientGroup||'')+'"></label><label>Способ оплаты<input id="dealerEditPay" value="'+esc(d.paymentMethod||'')+'"></label><label>Способ отгрузки<input id="dealerEditShip" value="'+esc(d.shippingMethod||'')+'"></label><label>Примечание<input id="dealerEditNote" value="'+esc(d.note||'')+'"></label><div class="full actions"><button class="primary" onclick="saveDealerEdit('+d.id+')">Сохранить карточку</button><button class="secondary" onclick="toggleDealerEdit('+d.id+',false)">Отмена</button></div></div><br>';
+html+='<div class="grid" style="grid-template-columns:repeat(3,1fr)"><div class="card">Продажи<div class="big">'+money(salesOf(id))+'</div></div><div class="card">Оплачено<div class="big ok">'+money(paidOf(id))+'</div></div><div class="card">Долг<div class="big danger">'+money(debtOf(id))+'</div><div class="muted" style="margin-top:6px">Начальный долг: '+money(initialDebtOf(id))+'</div></div></div><br>';
+html+='<div class="actions"><button class="initialDebt" onclick="addInitialDebt('+d.id+')">＋ Внести начальный долг</button><button class="secondary" onclick="showDebtReport('+d.id+')">Отчёт по долгу</button></div><br><h3>Все покупки, чеки и оплаты</h3><div class="tableWrap"><table class="historyGrid dealerHistoryDetail"><thead><tr><th>Дата</th><th>Тип / документ</th><th>Товар / описание</th><th>Количество</th><th>Цена</th><th>Итог по товару / оплате</th><th>Итого документ</th><th>Действие</th></tr></thead><tbody>'+dealerHistoryRows(ops,d)+'</tbody></table></div>';dealerModalBody.innerHTML=html;dealerModal.classList.remove('hidden')}
+function toggleDealerEdit(id,force){let el=document.getElementById('dealerEditPanel');if(!el)return;let show=force===undefined?el.classList.contains('hidden'):!!force;el.classList.toggle('hidden',!show);if(show)setTimeout(()=>dealerEditName.focus(),50)}
+async function saveDealerPhoto(id,e){let d=state.dealers.find(x=>x.id==id),f=e&&e.target&&e.target.files&&e.target.files[0];if(!d||!f)return;try{d.photo=await imageToDataURL(f);save();openDealer(id)}catch(_){alert('Не удалось сохранить изображение')}}
+let initialDebtDealerId=null;
+function addInitialDebt(id){let d=state.dealers.find(x=>x.id==id);if(!d)return;initialDebtDealerId=id;initialDebtDealerName.textContent='Дилер: '+d.name;initialDebtAmount.value='';initialDebtNote.value='Перенесено из тетради / прежнего учёта';initialDebtModal.classList.remove('hidden');forceInputFocus(initialDebtAmount,true)}
+function initialDebtKey(e){if(e.key==='Enter'){e.preventDefault();confirmInitialDebt()}else if(e.key==='Escape'){e.preventDefault();closeInitialDebtModal()}}
+function confirmInitialDebt(){let d=state.dealers.find(x=>x.id==initialDebtDealerId);if(!d)return closeInitialDebtModal();let a=Number(String(initialDebtAmount.value||'').replace(/\s/g,'').replace(',','.'));if(!Number.isFinite(a)||a<=0){alert('Укажи сумму больше 0');forceInputFocus(initialDebtAmount,true);return}state.ops.push({id:Date.now(),ts:Date.now(),type:'initial_debt',date:new Date().toLocaleString('ru-RU'),dealerId:d.id,dealer:d.name,total:a,note:initialDebtNote.value.trim()||'Начальный долг'});save();closeInitialDebtModal();openDealer(d.id)}
+function closeInitialDebtModal(){initialDebtModal.classList.add('hidden');initialDebtDealerId=null}
+function saveDealerEdit(id){let d=state.dealers.find(x=>x.id==id);if(!d)return;d.name=dealerEditName.value.trim()||d.name;d.phone=dealerEditPhone.value.trim();d.city=dealerEditCity.value.trim();d.company=dealerEditCompany.value.trim();d.fio=dealerEditFio.value.trim();d.address=dealerEditAddress.value.trim();d.email=dealerEditEmail.value.trim();d.www=dealerEditWww.value.trim();d.clientGroup=dealerEditGroup.value.trim();d.paymentMethod=dealerEditPay.value.trim();d.shippingMethod=dealerEditShip.value.trim();d.note=dealerEditNote.value.trim();save();openDealer(id);alert('Карточка дилера сохранена')}
+function closeDealerModal(){dealerModal.classList.add('hidden')}
+function showReceiptFromHistory(id){let op=state.ops.find(x=>x.id==id),d=op&&state.dealers.find(x=>x.id==op.dealerId);if(!op||!d)return;receiptViewBody.innerHTML=renderReceiptHtml(op,d);receiptViewModal.classList.remove('hidden')}
+function closeReceiptView(){receiptViewModal.classList.add('hidden');receiptViewBody.innerHTML=''}
+
+function forceInputFocus(el,selectAll){if(!el)return;let attempt=()=>{try{el.removeAttribute('readonly');el.disabled=false;el.tabIndex=0;el.focus({preventScroll:true});if(selectAll&&el.select)el.select()}catch(_){}};attempt();requestAnimationFrame(()=>{attempt();requestAnimationFrame(attempt)});setTimeout(attempt,80)}
+function setupInputReliability(){document.addEventListener('pointerdown',e=>{let t=e.target;if(t&&t.matches&&t.matches('input:not([type="file"]),textarea,select'))setTimeout(()=>forceInputFocus(t,false),0)},true);document.querySelectorAll('input:not([type="file"]),textarea,select').forEach(el=>{el.tabIndex=0;el.addEventListener('click',()=>forceInputFocus(el,false))})}
+function debtBeforePayment(op){if(Number.isFinite(+op.beforeDebt))return +op.beforeDebt;let t=opTime(op),d=op.dealerId,total=0;state.ops.filter(x=>x.dealerId==d&&opTime(x)<t).sort((a,b)=>opTime(a)-opTime(b)).forEach(x=>{if(x.type==='sale'||x.type==='initial_debt')total+=+x.total||0;else if(x.type==='payment')total-=+x.total||0});return total}
+function showDebtReport(dealerId,paymentId){let d=state.dealers.find(x=>x.id==dealerId);if(!d)return;let p=paymentId?state.ops.find(x=>x.id==paymentId&&x.type==='payment'):state.ops.filter(x=>x.dealerId==dealerId&&x.type==='payment').sort((a,b)=>opTime(b)-opTime(a))[0];let before=p?debtBeforePayment(p):debtOf(dealerId),paid=p?(+p.total||0):0,after=p?(Number.isFinite(+p.afterDebt)?+p.afterDebt:before-paid):debtOf(dealerId);let date=p?p.date:new Date().toLocaleString('ru-RU');debtReportBody.innerHTML='<div class="receipt" id="debtReportPrint"><h2>ОТЧЁТ ПО ДОЛГУ</h2><p><b>Дилер:</b> '+esc(d.name)+'</p><p><b>Дата:</b> '+esc(date)+'</p><div class="grid" style="grid-template-columns:repeat(3,1fr)"><div class="card">Долг до оплаты<div class="big">'+money(before)+'</div></div><div class="card">Оплачено<div class="big ok">'+money(paid)+'</div></div><div class="card">Остаток<div class="big danger">'+money(after)+'</div></div></div><p style="margin-top:18px"><b>Текущий долг:</b> '+money(debtOf(dealerId))+'</p><div class="actions" style="margin-top:18px"><button class="primary" onclick="printDebtReport()">Распечатать / сохранить PDF</button><button class="primary" onclick="sendDebtReportWhatsApp('+dealerId+','+(p?p.id:'null')+')">Отправить в WhatsApp</button><button class="secondary" onclick="downloadDebtReport('+dealerId+','+(p?p.id:'null')+')">Скачать отчёт</button></div></div>';debtReportModal.classList.remove('hidden')}
+function closeDebtReport(){debtReportModal.classList.add('hidden');debtReportBody.innerHTML=''}
+function printDebtReport(){let oldId=document.getElementById('receiptPrint');if(oldId)oldId.id='receiptPrintOld';let el=document.getElementById('debtReportPrint');if(el)el.id='receiptPrint';window.print();if(el)el.id='debtReportPrint';let old=document.getElementById('receiptPrintOld');if(old)old.id='receiptPrint'}
+function debtReportText(dealerId,paymentId){let d=state.dealers.find(x=>x.id==dealerId),p=paymentId?state.ops.find(x=>x.id==paymentId&&x.type==='payment'):state.ops.filter(x=>x.dealerId==dealerId&&x.type==='payment').sort((a,b)=>opTime(b)-opTime(a))[0];let before=p?debtBeforePayment(p):debtOf(dealerId),paid=p?(+p.total||0):0,after=p?(Number.isFinite(+p.afterDebt)?+p.afterDebt:before-paid):debtOf(dealerId);return 'Отчёт по долгу\nДилер: '+(d?.name||'')+'\nДата: '+(p?.date||new Date().toLocaleString('ru-RU'))+'\nДолг до оплаты: '+money(before)+'\nОплачено: '+money(paid)+'\nОстаток: '+money(after)+'\nТекущий долг: '+money(debtOf(dealerId))}
+function downloadDebtReport(dealerId,paymentId){let b=new Blob([debtReportText(dealerId,paymentId)],{type:'text/plain;charset=utf-8'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Отчёт_по_долгу_'+dealerId+'.txt';a.click();URL.revokeObjectURL(a.href)}
+async function sendDebtReportWhatsApp(dealerId,paymentId){let d=state.dealers.find(x=>x.id==dealerId);if(!d||!d.phone)return alert('У дилера не указан телефон WhatsApp');if(!window.whatsappAPI||!window.whatsappAPI.send)return alert('Отправка через WhatsApp Desktop доступна только в установленном приложении Windows.');let r=await window.whatsappAPI.send({phone:d.phone,text:debtReportText(dealerId,paymentId)});if(!r||!r.ok)alert((r&&r.message)||'Не удалось открыть WhatsApp Desktop. Проверь, что приложение WhatsApp установлено на компьютере.')}
+
+function exportData(){let b=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='Учет_дилеров_резерв_'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let x=norm(JSON.parse(r.result));if(confirm('Восстановить данные из файла?')){state=x;save();alert('Данные восстановлены')}}catch(_){alert('Неверный файл')}};r.readAsText(f)}
+
+
+
+let nmCurrent=null;
+let nmPreviewItems=[];
+function nmNum(v){return Number(String(v??'').replace(',','.'))||0}
+function nmPhone(v){let d=String(v||'').replace(/\D/g,'');if(d.length===11&&d[0]==='8')d='7'+d.slice(1);return d}
+function parseIni(text){
+  let out={},section='';
+  String(text||'').replace(/^\uFEFF/,'').split(/\r?\n/).forEach(line=>{
+    line=line.trim();if(!line||line.startsWith(';')||line.startsWith('#'))return;
+    let m=line.match(/^\[(.+?)\]$/);if(m){section=m[1];out[section]=out[section]||{};return}
+    let i=line.indexOf('=');if(i<0)return;let k=line.slice(0,i).trim(),v=line.slice(i+1).trim();out[section]=out[section]||{};out[section][k]=v;
+  });
+  return out;
+}
+function decodeIniBytes(bytes){
+  if(typeof bytes==='string')return bytes;
+  let u=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes||[]);
+  try{return new TextDecoder('windows-1251').decode(u)}catch(e){return new TextDecoder('utf-8').decode(u)}
+}
+function nmPrices(){return state.newmatros.prices||{}}
+function nmBuildItems(data){
+  let z=data['Заказ']||{},p=nmPrices(),items=[];
+  function add(article,name,qty,price,unit){qty=nmNum(qty);price=nmNum(price);if(qty>0&&price>0)items.push({productId:null,article,name,qty,price,buyPrice:0,total:qty*price,profit:0,unit,source:'NewMatRos'})}
+  let width=nmNum(z['ШиринаРулона']||z['ШиринаМатериала']||z['МатериалШирина']||z['Ширина']);let matPrice=width>0&&width<=3.60?(p.materialNarrow||p.material):width>=3.80?(p.materialWide||p.material):p.material;let widthTag=width?(' · рулон '+width+' м'+(width<=3.60?' · узкая плёнка':width>=3.80?' · широкая плёнка':'')) : '';add('NM-MAT','Полотно: '+(z['МатериалКаталог']||z['МатериалМатериал']||'Материал')+widthTag,z['КоличествоПродукция'],matPrice,'м²');let wasteQty=z['ДеловойОтход']||z['КоличествоДеловойОтход']||z['КоличествоДеловогоОтхода']||z['ПлощадьДеловогоОтхода']||z['ДеловойОтходПлощадь'];add('NM-WASTE','Деловой отход',wasteQty,p.businessWaste,'м²');
+  add('NM-GARP','Гарпун: '+(z['МатериалГарпун']||'гарпун'),z['КоличествоГарпун'],p.harpoon,'м');
+  add('NM-CORNER','Углы',z['КоличествоУглов'],p.corner,'шт');
+  add('NM-CURVE','Криволинейные участки',z['ПериметрКривых'],p.curve,'м');
+  add('NM-CUT','Вырезы',z['ПериметрВырезов'],p.cutout,'м');
+  add('NM-SEAM','Швы',z['ДлинаШвов'],p.seam,'м');
+  if(nmNum(p.fixed)>0)items.push({productId:null,article:'NM-FIX',name:'Доплата на заказ',qty:1,price:nmNum(p.fixed),buyPrice:0,total:nmNum(p.fixed),profit:nmNum(p.fixed),unit:'заказ',source:'NewMatRos'});
+  return items;
+}
+function nmFindDealer(data){
+  let c=data['Контрагент']||{},z=data['Заказ']||{},phone=nmPhone(c['Телефон']),name=String(c['Наименование']||z['Контрагент']||'').trim();
+  let d=phone?state.dealers.find(x=>nmPhone(x.phone)===phone):null;
+  if(!d&&name)d=state.dealers.find(x=>String(x.name||'').trim().toLowerCase()===name.toLowerCase());
+  return {dealer:d,name,phone,rawPhone:c['Телефон']||''};
+}
+function nmOrderKey(data){let z=data['Заказ']||{};return String(z['НомерРасчета']||'').trim()+'|'+String(z['ИндексПотолка']||'').trim()}
+function nmAlreadyImported(key){return state.ops.some(o=>o.type==='sale'&&o.source==='NewMatRos'&&o.newmatrosKey===key)}
+function showNewMatRosPreview(data,origin){
+  if(origin!=='пересчёт'&&origin!=='проведённый заказ')markNewMatRosNotification(data);
+  nmCurrent=data;nmPreviewItems=nmBuildItems(data);let z=data['Заказ']||{},c=data['Контрагент']||{},f=nmFindDealer(data),key=nmOrderKey(data),dup=nmAlreadyImported(key);
+  let total=nmPreviewItems.reduce((s,i)=>s+i.total,0),rows=nmPreviewItems.map((i,n)=>'<tr><td>'+(n+1)+'</td><td>'+esc(i.name)+'</td><td>'+i.qty+' '+esc(i.unit||'')+'</td><td>'+money(i.price)+'</td><td>'+money(i.total)+'</td></tr>').join('');
+  nmPreview.innerHTML='<div class="card"><h3>Заказ '+esc(z['НомерРасчета']||'')+'</h3>'+
+  (dup?'<p class="danger"><b>Этот заказ уже был импортирован. Повторное проведение заблокировано.</b></p>':'')+
+  '<div class="grid" style="grid-template-columns:repeat(4,1fr)"><div class="card">Дилер<div class="big" style="font-size:18px">'+esc(f.name||'—')+'</div><span class="muted">'+esc(c['Телефон']||'')+'</span></div><div class="card">Площадь<div class="big">'+nmNum(z['КоличествоПродукция'])+' м²</div></div><div class="card">Периметр<div class="big">'+nmNum(z['ПериметрПомещения'])+' м</div></div><div class="card">Сумма<div class="big">'+money(total)+'</div></div></div><br>'+
+  '<p><b>Материал:</b> '+esc(z['МатериалКаталог']||z['МатериалМатериал']||'')+' · <b>цвет:</b> '+esc(z['МатериалЦвет']||'')+' · <b>углов:</b> '+nmNum(z['КоличествоУглов'])+' · <b>гарпун:</b> '+nmNum(z['КоличествоГарпун'])+' м</p>'+
+  '<table><thead><tr><th>№</th><th>Позиция</th><th>Количество</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+  (total<=0?'<p class="danger"><b>Сумма пока 0 ₽.</b> Заполни цены выше и нажми «Сохранить цены», затем импорт пересчитается.</p>':'')+
+  '<div class="actions" style="margin-top:12px"><button class="primary" '+(dup||total<=0?'disabled':'')+' onclick="postNewMatRosOrder()">Провести заказ и увеличить долг</button><button class="secondary" onclick="nmCurrent=null;nmPreviewItems=[];nmPreview.innerHTML=\'\'">Отменить</button></div></div>';
+  nmStatus.textContent='Получен '+(origin||'INI-файл')+': '+(z['НомерРасчета']||'без номера')+(dup?' · уже проведён':(total>0&&state.newmatros.autoPost?' · проводится автоматически':''));
+  if(state.newmatros.autoPost&&!dup&&total>0)postNewMatRosOrder(true);
+  else if(state.newmatros.autoPost&&!dup&&total<=0){go('newmatros');nmStatus.textContent='Получен '+(z['НомерРасчета']||'заказ')+', но сумма 0 ₽ — один раз заполни цены NewMatRos ниже.';}
+}
+function toggleNewMatRosPrices(force){let el=document.getElementById('nmPricePanel');if(!el)return;let show=force===undefined?el.classList.contains('hidden'):!!force;el.classList.toggle('hidden',!show);if(show)setTimeout(()=>{if(window.nmPriceBusinessWaste)nmPriceBusinessWaste.focus()},40)}
+function renderNewMatRosNotification(){let n=state.newmatros&&state.newmatros.notifications||{},count=+n.unread||0;if(window.nmNavBadge){nmNavBadge.textContent=count>99?'99+':String(count);nmNavBadge.classList.toggle('hidden',count<=0)}if(window.nmNotification){nmNotification.classList.toggle('hidden',!n.lastText);if(window.nmNotificationText)nmNotificationText.textContent=n.lastText+(n.lastTs?' · '+new Date(n.lastTs).toLocaleString('ru-RU'):'')}}
+function markNewMatRosNotification(data){let z=data&&data['Заказ']||{},key=nmOrderKey(data)||('nm-'+Date.now()),n=state.newmatros.notifications||(state.newmatros.notifications={unread:0,lastText:'',lastTs:0,lastKey:''});if(n.lastKey===key)return;let num=String(z['НомерРасчета']||'').trim(),idx=String(z['ИндексПотолка']||'').trim();n.unread=(+n.unread||0)+1;n.lastKey=key;n.lastTs=Date.now();n.lastText='Выгрузился потолок'+(num?' · заказ '+num:'')+(idx?' · потолок '+idx:'');localStorage.setItem(KEY,JSON.stringify(state));renderNewMatRosNotification()}
+function clearNewMatRosNotification(){let n=state.newmatros.notifications||(state.newmatros.notifications={});n.unread=0;localStorage.setItem(KEY,JSON.stringify(state));renderNewMatRosNotification()}
+function saveNewMatRosSettings(){
+  state.newmatros.prices={material:+(state.newmatros.prices&&state.newmatros.prices.material)||0,businessWaste:+nmPriceBusinessWaste.value||0,materialNarrow:+nmPriceMaterialNarrow.value||0,materialWide:+nmPriceMaterialWide.value||0,harpoon:+nmPriceHarpoon.value||0,corner:+nmPriceCorner.value||0,curve:+nmPriceCurve.value||0,cutout:+nmPriceCutout.value||0,seam:+nmPriceSeam.value||0,fixed:+nmPriceFixed.value||0};
+  state.newmatros.autoPost=!!nmAutoPost.checked;save();toggleNewMatRosPrices(false);if(nmCurrent)showNewMatRosPreview(nmCurrent,'пересчёт');alert('Цены NewMatRos сохранены');
+}
+async function chooseNewMatRosIni(){
+  if(window.newmatrosAPI&&window.newmatrosAPI.chooseIni){let r=await window.newmatrosAPI.chooseIni();if(r&&!r.canceled&&r.text)showNewMatRosPreview(parseIni(r.text),r.name||'INI-файл');return}
+  let inp=document.createElement('input');inp.type='file';inp.accept='.ini,text/plain';inp.onchange=async()=>{let f=inp.files&&inp.files[0];if(!f)return;let b=await f.arrayBuffer();showNewMatRosPreview(parseIni(decodeIniBytes(b)),f.name)};inp.click();
+}
+async function toggleNewMatRosWatch(){
+  if(!window.newmatrosAPI||!window.newmatrosAPI.setWatch)return alert('Наблюдение за папкой доступно только в установленном приложении Windows. INI-файл можно выбрать вручную.');
+  let want=!state.newmatros.watching,r=await window.newmatrosAPI.setWatch(want);if(!r.ok){state.newmatros.watching=false;save();return alert(r.error||'Не удалось включить наблюдение')};state.newmatros.watching=want;save();renderNewMatRosSettings();nmStatus.textContent=want?'Наблюдение включено: '+r.folder:'Наблюдение выключено';
+}
+function renderNewMatRosSettings(){let p=nmPrices();nmPriceBusinessWaste.value=p.businessWaste||0;nmPriceMaterialNarrow.value=p.materialNarrow||0;nmPriceMaterialWide.value=p.materialWide||0;nmPriceHarpoon.value=p.harpoon||0;nmPriceCorner.value=p.corner||0;nmPriceCurve.value=p.curve||0;nmPriceCutout.value=p.cutout||0;nmPriceSeam.value=p.seam||0;nmPriceFixed.value=p.fixed||0;nmAutoPost.checked=!!state.newmatros.autoPost;nmWatchBtn.textContent=state.newmatros.watching?'Выключить наблюдение за папкой':'Включить наблюдение за папкой'}
+function postNewMatRosOrder(auto){
+  if(!nmCurrent)return;let z=nmCurrent['Заказ']||{},c=nmCurrent['Контрагент']||{},f=nmFindDealer(nmCurrent),key=nmOrderKey(nmCurrent);if(nmAlreadyImported(key))return alert('Этот заказ уже импортирован. Повторно долг не добавлен.');
+  let total=nmPreviewItems.reduce((s,i)=>s+i.total,0);if(total<=0)return alert('Сумма заказа 0 ₽. Сначала укажи цены NewMatRos.');
+  let d=f.dealer;if(!d){d={id:Date.now(),name:f.name||'Дилер NewMatRos',phone:f.rawPhone||'',city:'',note:'Создан автоматически из NewMatRos'};state.dealers.push(d)}
+  let num=state.receiptSeq++,date=new Date().toLocaleString('ru-RU'),op={id:Date.now()+1,ts:Date.now(),type:'sale',date,dealerId:d.id,dealer:d.name,receiptNo:num,items:nmPreviewItems.map(x=>({...x})),total,profit:0,source:'NewMatRos',newmatrosKey:key,newmatros:{number:z['НомерРасчета']||'',ceilingIndex:z['ИндексПотолка']||'',material:z['МатериалКаталог']||z['МатериалМатериал']||'',color:z['МатериалЦвет']||'',area:nmNum(z['КоличествоПродукция']),perimeter:nmNum(z['ПериметрПомещения']),plannedDate:c['ПланируемаяДата']||'',drawing:z['ЧертежПокупатель']||''}};
+  state.ops.push(op);save();showNewMatRosPreview(nmCurrent,'проведённый заказ');nmStatus.textContent='Готово: '+(z['НомерРасчета']||'заказ')+' → '+d.name+' · чек № '+num+' · долг увеличен на '+money(total);if(!auto)alert('Заказ проведён. Долг '+d.name+' увеличен на '+money(total));
+}
+if(window.newmatrosAPI&&window.newmatrosAPI.onIni){window.newmatrosAPI.onIni(payload=>{if(payload&&payload.text)showNewMatRosPreview(parseIni(payload.text),payload.name||'NewMatRos')})}
+
+async function autoImportBundledStockOnce(){
+  const importVersion=3;
+  if((state.stockMigrationVersion||0)>=importVersion||!window.stockAPI||!window.stockAPI.loadBundledProducts)return;
+  try{
+    let r=await window.stockAPI.loadBundledProducts();
+    if(r&&!r.canceled&&r.text){
+      // Исправляем ранний импорт v8.6.1. Если импортированные товары ещё не использовались в продажах,
+      // безопасно заменяем только их, не трогая вручную созданные товары, дилеров, долги и историю.
+      const soldIds=new Set();
+      (state.ops||[]).filter(o=>o.type==='sale'&&Array.isArray(o.items)).forEach(o=>o.items.forEach(i=>{if(i&&i.productId!=null)soldIds.add(i.productId)}));
+      const imported=(state.products||[]).filter(p=>p.source==='Склад CSV');
+      const canRepair=imported.length>0 && imported.every(p=>!soldIds.has(p.id));
+      if(canRepair)state.products=state.products.filter(p=>p.source!=='Склад CSV');
+      let res=importStockProductRows(parseSemicolonCsv(r.text));
+      state.stockMigrationDone=true;state.stockMigrationVersion=importVersion;save();
+      if(window.stockImportStatus)stockImportStatus.textContent=(canRepair?'Исправленный импорт из «Склад»: ':'Автоматически перенесено из «Склад»: ')+'добавлено '+res.added+', обновлено '+res.updated+'. Всего обработано '+res.total+'.';
+    }
+  }catch(e){console.error('Stock auto import',e)}
+}
+
+function tableStorageKey(table){return 'uchet_columns_'+(table.dataset.tableKey||'')}
+function widthStorageKey(table){return 'uchet_widths_'+(table.dataset.tableKey||'')}
+function setColumnWidth(table,key,w){w=Math.max(24,Math.round(+w||24));let th=[...table.querySelectorAll('thead th')].find(x=>x.dataset.colKey===key);if(th){th.style.width=w+'px';th.style.minWidth=w+'px';th.style.maxWidth=w+'px'}table.querySelectorAll('tbody tr').forEach(row=>{assignOriginalCellKeys(table,row);let td=[...row.children].find(x=>x.dataset.colKey===key);if(td){td.style.width=w+'px';td.style.minWidth=w+'px';td.style.maxWidth=w+'px'}})}
+function syncTableWidth(table){if(!table.classList.contains('productTable'))return;let total=[...table.querySelectorAll('thead th')].reduce((sum,x)=>sum+Math.round(x.getBoundingClientRect().width),0);if(total>0)table.style.width=Math.max(total,420)+'px'}
+function loadColumnWidths(table){let w={};try{w=JSON.parse(localStorage.getItem(widthStorageKey(table))||'{}')||{}}catch(_){};[...table.querySelectorAll('thead th')].forEach(th=>{let v=+w[th.dataset.colKey];if(v>=24)setColumnWidth(table,th.dataset.colKey,v)});syncTableWidth(table)}
+function setupColumnResize(table,th){if(th.querySelector('.colResize'))return;let h=document.createElement('span');h.className='colResize';h.title='Потяни, чтобы изменить ширину';h.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();th.draggable=false;document.body.classList.add('resizingCol');let start=e.clientX,startW=th.getBoundingClientRect().width,key=th.dataset.colKey;let move=ev=>{let w=Math.max(24,Math.round(startW+ev.clientX-start));setColumnWidth(table,key,w);syncTableWidth(table)};let up=()=>{document.removeEventListener('pointermove',move,true);document.removeEventListener('pointerup',up,true);document.body.classList.remove('resizingCol');th.draggable=true;let all={};[...table.querySelectorAll('thead th')].forEach(x=>all[x.dataset.colKey]=Math.round(x.getBoundingClientRect().width));localStorage.setItem(widthStorageKey(table),JSON.stringify(all));syncTableWidth(table)};document.addEventListener('pointermove',move,true);document.addEventListener('pointerup',up,true)});th.appendChild(h)}
+function setupReorderableTables(){
+  document.querySelectorAll('main table').forEach((table,ti)=>{
+    if(table.dataset.reorderReady)return;
+    const section=table.closest('section');table.dataset.tableKey=(section?section.id:'table')+'_'+ti;table.dataset.reorderReady='1';
+    const ths=[...table.querySelectorAll('thead th')];
+    const keys=ths.map((th,i)=>{let key=(th.textContent.trim()||'col'+i).replace(/\s+/g,'_')+'_'+i;th.dataset.colKey=key;th.draggable=true;return key});
+    table.dataset.originalKeys=JSON.stringify(keys);
+    ths.forEach(th=>{setupColumnResize(table,th);
+      th.addEventListener('dragstart',e=>{th.classList.add('dragging');e.dataTransfer.setData('text/plain',th.dataset.colKey)});
+      th.addEventListener('dragend',()=>{th.classList.remove('dragging');table.querySelectorAll('th').forEach(x=>x.classList.remove('dragOver'))});
+      th.addEventListener('dragover',e=>{e.preventDefault();th.classList.add('dragOver')});
+      th.addEventListener('dragleave',()=>th.classList.remove('dragOver'));
+      th.addEventListener('drop',e=>{e.preventDefault();th.classList.remove('dragOver');let src=e.dataTransfer.getData('text/plain'),dst=th.dataset.colKey;if(!src||src===dst)return;let order=currentColumnOrder(table),a=order.indexOf(src),b=order.indexOf(dst);if(a<0||b<0)return;order.splice(a,1);order.splice(b,0,src);localStorage.setItem(tableStorageKey(table),JSON.stringify(order));applyColumnOrder(table,order)});
+    });
+    new MutationObserver(()=>applyStoredColumnOrder(table)).observe(table.querySelector('tbody'),{childList:true});
+    applyStoredColumnOrder(table);loadColumnWidths(table);
+  });
+}
+function currentColumnOrder(table){return [...table.querySelectorAll('thead th')].map(x=>x.dataset.colKey)}
+function assignOriginalCellKeys(table,row){let keys=JSON.parse(table.dataset.originalKeys||'[]');[...row.children].forEach((td,i)=>{if(!td.dataset.colKey)td.dataset.colKey=keys[i]||('col_'+i)})}
+function applyColumnOrder(table,order){
+  let head=table.querySelector('thead tr');if(!head)return;
+  let hmap=new Map([...head.children].map(x=>[x.dataset.colKey,x]));order.forEach(k=>{if(hmap.get(k))head.appendChild(hmap.get(k))});
+  table.querySelectorAll('tbody tr').forEach(row=>{assignOriginalCellKeys(table,row);let map=new Map([...row.children].map(x=>[x.dataset.colKey,x]));order.forEach(k=>{if(map.get(k))row.appendChild(map.get(k))})});
+}
+function applyStoredColumnOrder(table){let order;try{order=JSON.parse(localStorage.getItem(tableStorageKey(table))||'null')}catch(_){order=null}if(!Array.isArray(order))order=currentColumnOrder(table);applyColumnOrder(table,order)}
+function applyStoredColumnOrders(){document.querySelectorAll('main table[data-reorder-ready]').forEach(table=>{applyStoredColumnOrder(table);loadColumnWidths(table)})}
+function focusFirstRow(tbody){let row=tbody&&tbody.querySelector('tr');if(!row)return;document.querySelectorAll('.searchHit').forEach(x=>x.classList.remove('searchHit'));row.classList.add('searchHit');row.tabIndex=-1;row.focus({preventScroll:true});row.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>row.classList.remove('searchHit'),1800)}
+function activeSectionId(){let s=[...document.querySelectorAll('main>section')].find(x=>!x.classList.contains('hidden'));return s&&s.id}
+function setupQuickKeyboardSearch(){const map={dealers:'dealerSearch',debts:'debtSearch',products:'productListSearch',payments:'paymentDealerSearch'};document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.key.length!==1)return;let t=e.target;if(t&&(t.matches('input,textarea,select')||t.isContentEditable))return;if(document.querySelector('.modal:not(.hidden)'))return;let iid=map[activeSectionId()];if(!iid)return;let inp=document.getElementById(iid);if(!inp||inp.closest('.hidden'))return;e.preventDefault();inp.focus();inp.value+=e.key;inp.dispatchEvent(new Event('input',{bubbles:true}))},true)}
+function setupEnterSearch(){
+  [['dealerSearch',renderDealers,'dealerRows'],['debtSearch',renderDebts,'debtRows'],['productListSearch',renderProducts,'productRows']].forEach(([iid,fn,tid])=>{let inp=document.getElementById(iid);if(inp)inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();fn();focusFirstRow(document.getElementById(tid))}})});
+    if(window.paymentDealerSearch)paymentDealerSearch.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();renderPaymentDealers();let b=paymentDealerList.querySelector('button');if(b){b.focus();b.scrollIntoView({behavior:'smooth',block:'center'})}}});
+}
+
+let syncTimer=null,syncBusy=false;
+function mergeSyncState(remote,local){remote=norm(remote||{});local=norm(local||{});function mergeById(a,b){let m=new Map();(a||[]).forEach(x=>m.set(String(x.id),x));(b||[]).forEach(x=>m.set(String(x.id),x));return [...m.values()]};remote.dealers=mergeById(remote.dealers,local.dealers);remote.groups=mergeById(remote.groups,local.groups);remote.products=mergeById(remote.products,local.products);remote.ops=mergeById(remote.ops,local.ops).sort((a,b)=>opTime(a)-opTime(b));remote.receiptSeq=Math.max(+remote.receiptSeq||1,+local.receiptSeq||1);remote.update=local.update||remote.update;remote.newmatros=local.newmatros||remote.newmatros;remote.sync=local.sync||remote.sync;return norm(remote)}
+function syncCfg(){return state.sync||{}}
+function renderSyncSettings(){if(!window.syncServerUrl)return;let c=syncCfg();syncServerUrl.value=c.url||'';syncToken.value=c.token||'';syncEnabled.checked=!!c.enabled;syncInterval.value=Math.max(3,+c.interval||5);if(!c.url)syncStatus.textContent='Сервер не настроен.'}
+function restartSyncTimer(){clearInterval(syncTimer);syncTimer=null;let c=syncCfg();if(c.enabled&&c.url){syncTimer=setInterval(()=>syncPull(false),Math.max(3,+c.interval||5)*1000);setTimeout(()=>syncPull(false),300)}}
+function saveSyncSettings(){state.sync=state.sync||{};state.sync.url=syncServerUrl.value.trim().replace(/\/+$/,'');state.sync.token=syncToken.value;state.sync.enabled=syncEnabled.checked;state.sync.interval=Math.max(3,+syncInterval.value||5);localStorage.setItem(KEY,JSON.stringify(state));restartSyncTimer();renderSyncSettings();if(state.sync.enabled)syncPull(true);else syncStatus.textContent='Автосинхронизация выключена.'}
+async function syncRequest(method,body){let c=syncCfg();if(!c.url)throw new Error('Не указан адрес сервера');if(!window.syncAPI)throw new Error('Синхронизация доступна только в Windows-приложении');return await window.syncAPI.request(c.url,c.token,method,body||null)}
+async function syncPull(manual){if(syncBusy||!syncCfg().url)return;syncBusy=true;try{let r=await syncRequest('GET');if(!r||!r.ok)throw new Error(r&&r.message||'Ошибка сервера');let rev=+r.revision||0;if(rev>(+syncCfg().revision||0)){let local=state,merged=mergeSyncState(r.state,local);syncApplying=true;state=merged;state.sync.revision=rev;localStorage.setItem(KEY,JSON.stringify(state));render();syncApplying=false}if(window.syncStatus)syncStatus.innerHTML='<span class="serverOk">Подключено</span> · версия базы '+rev+' · '+new Date().toLocaleTimeString('ru-RU');}catch(e){if(window.syncStatus)syncStatus.innerHTML='<span class="serverBad">Нет связи:</span> '+esc(e.message)}finally{syncBusy=false}}
+async function syncPush(manual){if(syncBusy||!syncCfg().url||(!manual&&!syncCfg().enabled))return;syncBusy=true;try{let payload={state,baseRevision:+syncCfg().revision||0};let r=await syncRequest('PUT',payload);if(r&&r.conflict){let remote=norm(r.state||{}),merged=mergeSyncState(remote,state);state=merged;state.sync.revision=+r.revision||0;localStorage.setItem(KEY,JSON.stringify(state));syncBusy=false;return syncPush(manual)}if(!r||!r.ok)throw new Error(r&&r.message||'Ошибка сервера');state.sync.revision=+r.revision||(+state.sync.revision||0);localStorage.setItem(KEY,JSON.stringify(state));if(window.syncStatus)syncStatus.innerHTML='<span class="serverOk">Синхронизировано</span> · версия базы '+state.sync.revision+' · '+new Date().toLocaleTimeString('ru-RU');}catch(e){if(window.syncStatus)syncStatus.innerHTML='<span class="serverBad">Не отправлено:</span> '+esc(e.message)}finally{syncBusy=false}}
+async function checkForUpdate(){let url=updateManifestUrl.value.trim();state.update=state.update||{};state.update.manifestUrl=url;save();if(!url)return alert('Укажи адрес сервера обновлений');if(!window.updateAPI||!window.updateAPI.checkAndInstall)return alert('Обновление доступно только в приложении Windows');updateStatus.textContent='Сохраняю резервную копию и проверяю обновление…';try{if(window.updateAPI.saveBackup)await window.updateAPI.saveBackup(JSON.stringify(state));let r=await window.updateAPI.checkAndInstall(url);if(!r||!r.ok){updateStatus.textContent=r&&r.message||'Не удалось проверить обновление';return}updateStatus.textContent=r.message||'Готово'}catch(e){updateStatus.textContent='Ошибка: '+e.message}}
+
+async function installUpdateFromFile(){
+  if(!window.updateAPI||!window.updateAPI.installFromFile)return alert('Установка из файла доступна только в приложении Windows');
+  updateStatus.textContent='Сохраняю резервную копию…';
+  try{if(window.updateAPI.saveBackup)await window.updateAPI.saveBackup(JSON.stringify(state));updateStatus.textContent='Выбери установщик новой версии…';let r=await window.updateAPI.installFromFile();if(!r||!r.ok){updateStatus.textContent=r&&r.message||'Установка отменена';return}updateStatus.textContent=r.message||'Запускаю установление…'}catch(e){updateStatus.textContent='Ошибка: '+e.message}
+}
+function renderUpdateSettings(){if(window.updateManifestUrl)updateManifestUrl.value=(state.update&&state.update.manifestUrl)||''}
+function renderHistory(){if(!window.historyRows)return;let mode=(window.historySort&&historySort.value)||'date_desc';let arr=state.ops.slice();if(mode==='sale')arr=arr.filter(o=>o.type==='sale').sort((a,b)=>opTime(b)-opTime(a));else if(mode==='payment')arr=arr.filter(o=>o.type==='payment').sort((a,b)=>opTime(b)-opTime(a));else if(mode==='date_asc')arr.sort((a,b)=>opTime(a)-opTime(b));else if(mode==='amount_desc')arr.sort((a,b)=>(+b.total||0)-(+a.total||0));else if(mode==='dealer')arr.sort((a,b)=>String(a.dealer||'').localeCompare(String(b.dealer||''),'ru')||opTime(b)-opTime(a));else arr.sort((a,b)=>opTime(b)-opTime(a));historyRows.innerHTML=arr.map(o=>{let type=o.type==='sale'?'Продажа':o.type==='payment'?'Оплата':'Начальный долг';let desc='<b>'+esc(o.dealer||'')+'</b> · '+(o.type==='sale'?'Накладная № '+o.receiptNo+' · '+(o.items||[]).map(i=>esc(i.name)+' × '+i.qty+' '+esc(i.unit||'шт')).join(', '):o.type==='initial_debt'?esc(o.note||'Перенесено из прежнего учёта'):esc(o.method||'')+(o.note?' · '+esc(o.note):''));let act=o.type==='sale'?'<button class="secondary miniBtn" onclick="showReceiptFromHistory('+o.id+')">Открыть чек</button>':o.type==='payment'?'<button class="secondary miniBtn" onclick="showDebtReport('+o.dealerId+','+o.id+')">Отчёт по долгу</button>':'—';return '<tr><td>'+esc(o.date)+'</td><td>'+type+'</td><td>'+desc+'</td><td>'+money(o.total)+'</td><td>'+act+'</td></tr>'}).join('')}
+function render(){
+ dcount.textContent=state.dealers.length;pcount.textContent=state.products.filter(p=>!p.archived).length;saleCount.textContent=state.ops.filter(o=>o.type==='sale').length;debtTotal.textContent=money(state.dealers.reduce((s,d)=>s+debtOf(d.id),0));profitTotal.textContent=money(profitTotal());
+ homeDealerRows.innerHTML=state.dealers.slice().sort((a,b)=>lastDealerActivity(b.id)-lastDealerActivity(a.id)||String(a.name||'').localeCompare(String(b.name||''),'ru')).map(d=>'<tr class="clickable" onclick="openDealer('+d.id+')"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.phone||'')+'</td><td>'+esc(d.city||'')+'</td><td class="'+(debtOf(d.id)>0?'danger':'ok')+'"><b>'+money(debtOf(d.id))+'</b></td></tr>').join('');
+ pgroup.innerHTML='<option value="">Выберите группу</option>'+state.groups.map(g=>'<option value="'+g.id+'">'+esc(g.name)+'</option>').join('');
+ groupRows.innerHTML=state.groups.map(g=>'<tr><td><b>'+esc(g.name)+'</b></td><td>'+esc(g.note||'')+'</td><td>'+state.products.filter(p=>p.groupId==g.id&&!p.archived).length+'</td></tr>').join('');
+ let ds='<option value="">Выберите дилера</option>'+state.dealers.map(d=>'<option value="'+d.id+'">'+esc(d.name)+'</option>').join('');payDealer.innerHTML=ds;
+ renderDealers();renderDebts();renderProducts();renderSaleProductGroups();renderPaymentDealers();renderSaleDealers();renderSaleProducts();renderNewMatRosSettings();renderNewMatRosNotification();renderUpdateSettings();renderSyncSettings();
+ renderHistory();
+ renderCart();
+ applyStoredColumnOrders();
+}
+setupReorderableTables();
+setupEnterSearch();
+setupQuickKeyboardSearch();
+setupInputReliability();
+render();
+autoImportBundledStockOnce();
+autoImportBundledNewMatRosClientsOnce();
+restartSyncTimer();
+
+if(window.newmatrosAPI&&window.newmatrosAPI.appInfo){window.newmatrosAPI.appInfo().then(info=>{let pill=document.querySelector('.statusPill');if(pill&&info)pill.textContent='Windows '+(info.arch||'x64')+' · v'+(info.version||'8.9.10');let v=document.getElementById('updateCurrentVersion');if(v&&info)v.textContent=info.version||'8.9.10'}).catch(()=>{})}
+if(window.newmatrosAPI&&window.newmatrosAPI.setWatch){state.newmatros.watching=true;state.newmatros.autoPost=true;save();window.newmatrosAPI.setWatch(true).then(r=>{if(r&&r.ok){nmStatus.textContent='Автоприём NewMatRos включён: '+r.folder}else{state.newmatros.watching=false;save();if(r&&r.error)nmStatus.textContent=r.error}})}
+</script>
+</body>
+</html>
