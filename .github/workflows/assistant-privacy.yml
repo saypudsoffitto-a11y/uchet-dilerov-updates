@@ -1,0 +1,20 @@
+name: Assistant command and privacy checks
+on:
+  pull_request:
+    paths:
+      - 'app/voice-assistant.js'
+      - 'app/index.html'
+      - 'tests/assistant-privacy.test.cjs'
+      - '.github/workflows/assistant-privacy.yml'
+permissions:
+  contents: read
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check app/voice-assistant.js
+      - run: node --test tests/assistant-privacy.test.cjs
