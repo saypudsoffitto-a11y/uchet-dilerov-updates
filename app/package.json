@@ -1,6 +1,6 @@
 {
   "name": "uchet-dilerov",
-  "version": "8.9.15",
+  "version": "8.9.16",
   "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11",
   "main": "main.js",
   "scripts": {
