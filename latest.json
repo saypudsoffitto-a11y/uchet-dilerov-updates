@@ -1,6 +1,6 @@
 {
-  "version": "8.9.6",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/latest/download/Uchet-dilerov-Setup-8.9.6-x64.exe",
-  "sha256": "",
-  "notes": "Текущая стабильная версия Учёт дилеров 8.9.6."
+  "version": "8.9.10",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/latest/download/Uchet-dilerov-Setup-8.9.10-x64.exe",
+  "sha256": "8af836890c80d1eddee3fa877584e2bc4f48e0078881c664fb6e69475cce3791",
+  "notes": "Исправления таблиц и новой продажи, NewMatRos, редактирование накладной, детальная история покупок/оплат и отправка через WhatsApp Desktop."
 }
