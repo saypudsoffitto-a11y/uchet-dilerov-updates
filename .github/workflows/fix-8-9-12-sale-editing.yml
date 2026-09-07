@@ -1,0 +1,69 @@
+name: Apply 8.9.12 sale editing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/triggers/fix-8-9-12.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch sale editing and product context menu
+        shell: python
+        run: |
+          from pathlib import Path
+          import json, re
+
+          p = Path('app/index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old_cart = "function renderCart(){cartRows.innerHTML=cart.map((i,idx)=>'<tr class=\"clickable\"><td>'+esc(i.article)+'</td><td><b>'+esc(i.name)+'</b></td><td>'+i.qty+' '+esc(i.unit||'шт')+'</td><td>'+money(i.price)+'</td><td>'+money(i.total)+'</td><td><button class=\"dangerBtn\" onclick=\"cart.splice('+idx+',1);renderCart()\">Убрать</button></td></tr>').join('')}"
+          new_cart = "function updateCartItem(idx,field,value){let i=cart[idx];if(!i)return;let v=Number(String(value??'').replace(',','.'));if(!Number.isFinite(v)||v<0)return renderCart();if(field==='qty'){if(v<=0)return renderCart();i.qty=v;i.total=i.qty*i.price}else if(field==='price'){i.price=v;i.total=i.qty*i.price}else if(field==='total'){i.total=v;i.price=i.qty>0?v/i.qty:0}i.profit=((+i.price||0)-(+i.buyPrice||0))*(+i.qty||0);renderCart()}\nfunction renderCart(){cartRows.innerHTML=cart.map((i,idx)=>'<tr class=\"clickable\"><td>'+esc(i.article)+'</td><td><b>'+esc(i.name)+'</b></td><td><input class=\"receiptEditInput\" type=\"number\" min=\"0.01\" step=\"0.01\" value=\"'+(+i.qty||0)+'\" onchange=\"updateCartItem('+idx+',\\'qty\\',this.value)\"> '+esc(i.unit||'шт')+'</td><td><input class=\"receiptEditInput\" type=\"number\" min=\"0\" step=\"0.01\" value=\"'+(+i.price||0)+'\" onchange=\"updateCartItem('+idx+',\\'price\\',this.value)\"></td><td><input class=\"receiptEditInput\" type=\"number\" min=\"0\" step=\"0.01\" value=\"'+(+i.total||0)+'\" onchange=\"updateCartItem('+idx+',\\'total\\',this.value)\"></td><td><button class=\"dangerBtn\" onclick=\"cart.splice('+idx+',1);renderCart()\">Убрать</button></td></tr>').join('')}"
+          if old_cart not in s:
+              raise SystemExit('renderCart target not found')
+          s = s.replace(old_cart, new_cart, 1)
+
+          old_products = "function renderSaleProducts(){let q=(saleProductSearch?.value||'').trim().toLowerCase(),gid=(window.saleProductGroup&&saleProductGroup.value)||'';let arr=state.products.filter(p=>!p.archived&&(!gid||String(p.groupId)===String(gid))&&String(p.name||'').toLowerCase().includes(q)).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ru',{numeric:true,sensitivity:'base'})).slice(0,160);saleProductCursor=Math.min(saleProductCursor,Math.max(0,arr.length-1));saleProductList.innerHTML=arr.map((p,i)=>'<div class=\"choiceRow '+(i===saleProductCursor?'active':'')+'\" onclick=\"selectSaleProduct('+p.id+')\" ondblclick=\"selectSaleProduct('+p.id+');promptQtyAndAddSelected()\"><div><b>'+esc(p.name)+'</b></div><span>'+money(priceType.value==='wholesale'?p.wholesalePrice:p.retailPrice)+'</span></div>').join('')}"
+          new_products = "function hideSaleProductContextMenu(){let m=document.getElementById('saleProductContextMenu');if(m)m.remove()}\nfunction showSaleProductContextMenu(e,id){e.preventDefault();e.stopPropagation();hideSaleProductContextMenu();let m=document.createElement('div');m.id='saleProductContextMenu';m.className='saleContextMenu';m.style.left=Math.min(e.clientX,window.innerWidth-260)+'px';m.style.top=Math.min(e.clientY,window.innerHeight-80)+'px';m.innerHTML='<button type=\"button\" onclick=\"hideSaleProductContextMenu();editProduct('+id+')\">Изменить карточку товара</button>';document.body.appendChild(m)}\ndocument.addEventListener('click',hideSaleProductContextMenu);window.addEventListener('blur',hideSaleProductContextMenu);\nfunction renderSaleProducts(){let q=(saleProductSearch?.value||'').trim().toLowerCase(),gid=(window.saleProductGroup&&saleProductGroup.value)||'';let arr=state.products.filter(p=>!p.archived&&(!gid||String(p.groupId)===String(gid))&&String(p.name||'').toLowerCase().includes(q)).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ru',{numeric:true,sensitivity:'base'})).slice(0,160);saleProductCursor=Math.min(saleProductCursor,Math.max(0,arr.length-1));saleProductList.innerHTML=arr.map((p,i)=>'<div class=\"choiceRow '+(i===saleProductCursor?'active':'')+'\" onclick=\"selectSaleProduct('+p.id+')\" ondblclick=\"selectSaleProduct('+p.id+');promptQtyAndAddSelected()\" oncontextmenu=\"showSaleProductContextMenu(event,'+p.id+')\"><div><b>'+esc(p.name)+'</b></div><span>'+money(priceType.value==='wholesale'?p.wholesalePrice:p.retailPrice)+'</span></div>').join('')}"
+          if old_products not in s:
+              raise SystemExit('renderSaleProducts target not found')
+          s = s.replace(old_products, new_products, 1)
+
+          marker = '#sales .cart h3{margin-bottom:8px}'
+          css = marker + "\n.saleContextMenu{position:fixed;z-index:200;background:#fff;border:1px solid #cfd6e0;border-radius:10px;box-shadow:0 12px 36px #0003;padding:6px;min-width:230px}.saleContextMenu button{width:100%;text-align:left;background:#fff;color:#172033;padding:10px 12px;border-radius:7px}.saleContextMenu button:hover{background:#eaf3ff}"
+          if marker not in s:
+              raise SystemExit('CSS marker not found')
+          s = s.replace(marker, css, 1)
+
+          s = s.replace('Windows · версия 8.9.11','Windows · версия 8.9.12')
+          s = s.replace('Windows x64 · v8.9.11','Windows x64 · v8.9.12')
+          p.write_text(s,encoding='utf-8')
+
+          pkg_path = Path('app/package.json')
+          pkg = json.loads(pkg_path.read_text(encoding='utf-8'))
+          pkg['version']='8.9.12'
+          pkg_path.write_text(json.dumps(pkg,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+
+          Path('RELEASE_NOTES.md').write_text('''Версия 8.9.12\n\n- В разделе «Новая продажа» количество, цена и сумма каждой позиции теперь редактируются прямо в таблице «Товары в продаже».\n- Если вручную изменить сумму, цена за единицу автоматически пересчитывается из суммы и количества.\n- Правый клик по товару в списке «Новая продажа» открывает команду «Изменить карточку товара».\n- Сохраняются исправления NewMatRos: материал учитывается в сумме, первые 4 угла бесплатны, начиная с 5-го — по 50 ₽ за угол.\n''',encoding='utf-8')
+
+      - name: Validate syntax
+        shell: bash
+        run: |
+          node -e "const fs=require('fs'); const s=fs.readFileSync('app/index.html','utf8'); const m=s.match(/<script>([\\s\\S]*)<\\/script>/); if(!m) process.exit(2); fs.writeFileSync('/tmp/app-script.js',m[1]);"
+          node --check /tmp/app-script.js
+          node -e "JSON.parse(require('fs').readFileSync('app/package.json','utf8'))"
+
+      - name: Commit fixes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/index.html app/package.json RELEASE_NOTES.md
+          git commit -m "Add editable sale rows and product context menu for 8.9.12"
+          git push
