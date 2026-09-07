@@ -1,0 +1,1 @@
+Verify the Windows build pipeline using the recovered 8.9.10 application source.
