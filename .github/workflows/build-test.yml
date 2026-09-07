@@ -1,0 +1,42 @@
+name: Verify Windows build pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'BUILD_TEST_TRIGGER.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: Build Windows Setup and Portable
+        working-directory: app
+        run: npm run build:win
+
+      - name: Verify outputs
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
+          $portable = "app/dist/Uchet-dilerov-Portable-$version-x64.exe"
+          if (!(Test-Path $setup)) { throw "Setup missing: $setup" }
+          if (!(Test-Path $portable)) { throw "Portable missing: $portable" }
+          Write-Host "Verified $setup"
+          Write-Host "Verified $portable"
