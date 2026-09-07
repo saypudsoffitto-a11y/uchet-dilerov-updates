@@ -39,6 +39,14 @@ window.addEventListener('DOMContentLoaded',()=>{
     const s=document.createElement('script');
     s.src='./voice-assistant.js';
     s.defer=true;
+    s.addEventListener('load',()=>{
+      try{
+        const e=document.createElement('script');
+        e.src='./voice-ui-enhancement.js';
+        e.defer=true;
+        (document.head||document.documentElement).appendChild(e);
+      }catch(err){console.error('Voice enhancement loader error',err)}
+    });
     (document.head||document.documentElement).appendChild(s);
   }catch(e){console.error('Voice assistant loader error',e)}
 });
