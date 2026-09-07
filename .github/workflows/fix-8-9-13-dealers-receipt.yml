@@ -19,43 +19,30 @@ jobs:
         run: |
           from pathlib import Path
           import json
-
           p = Path('app/index.html')
           s = p.read_text(encoding='utf-8')
-
           old = "function renderDealers(){let q=(dealerSearch?.value||'').toLowerCase();let arr=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q));arr=sortDealers(arr,(window.dealerSort&&dealerSort.value)||'name');dealerRows.innerHTML=arr.map(d=>'<tr class=\"clickable\" onclick=\"openDealer('+d.id+')\"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.phone)+'</td><td>'+esc(d.city)+'</td><td class=\"'+(debtOf(d.id)>0?'danger':'ok')+'\"><b>'+money(debtOf(d.id))+'</b></td></tr>').join('')}"
           new = "function hideDealerContextMenu(){let m=document.getElementById('dealerContextMenu');if(m)m.remove()}\nfunction openDealerForEdit(id){hideDealerContextMenu();openDealer(id);setTimeout(()=>toggleDealerEdit(id,true),80)}\nfunction deleteDealerFromList(id){hideDealerContextMenu();let d=state.dealers.find(x=>x.id==id);if(!d)return;let related=state.ops.filter(o=>o.dealerId==id).length;if(!confirm('Удалить дилера «'+d.name+'»?'))return;let detail='Это удалит карточку дилера'+(related?' и '+related+' связанных операций/чеков/оплат.':' и все связанные данные.')+' Действие нельзя отменить. Подтвердить окончательное удаление?';if(!confirm(detail))return;state.dealers=state.dealers.filter(x=>x.id!=id);state.ops=state.ops.filter(o=>o.dealerId!=id);save();renderAll()}\nfunction showDealerContextMenu(e,id){e.preventDefault();e.stopPropagation();hideDealerContextMenu();let m=document.createElement('div');m.id='dealerContextMenu';m.className='dealerContextMenu';m.style.left=Math.min(e.clientX,window.innerWidth-260)+'px';m.style.top=Math.min(e.clientY,window.innerHeight-120)+'px';m.innerHTML='<button type=\"button\" onclick=\"openDealerForEdit('+id+')\">Изменить карточку дилера</button><button type=\"button\" class=\"dangerMenuItem\" onclick=\"deleteDealerFromList('+id+')\">Удалить дилера</button>';document.body.appendChild(m)}\ndocument.addEventListener('click',hideDealerContextMenu);window.addEventListener('blur',hideDealerContextMenu);\nfunction renderDealers(){let q=(dealerSearch?.value||'').toLowerCase();let arr=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q));arr=sortDealers(arr,(window.dealerSort&&dealerSort.value)||'name');dealerRows.innerHTML=arr.map(d=>'<tr class=\"clickable\" onclick=\"openDealer('+d.id+')\" oncontextmenu=\"showDealerContextMenu(event,'+d.id+')\"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.phone)+'</td><td>'+esc(d.city)+'</td><td class=\"'+(debtOf(d.id)>0?'danger':'ok')+'\"><b>'+money(debtOf(d.id))+'</b></td></tr>').join('')}"
           if old not in s:
               raise SystemExit('renderDealers target not found')
           s = s.replace(old,new,1)
-
-          css = """
-/* 8.9.13: контекстное меню дилеров и компактная накладная */
-.dealerContextMenu{position:fixed;z-index:210;background:#fff;border:1px solid #cfd6e0;border-radius:10px;box-shadow:0 12px 36px #0003;padding:6px;min-width:230px}.dealerContextMenu button{display:block;width:100%;text-align:left;background:#fff;color:#172033;padding:9px 11px;border-radius:7px}.dealerContextMenu button:hover{background:#eaf3ff}.dealerContextMenu .dangerMenuItem{color:#b42318}.dealerContextMenu .dangerMenuItem:hover{background:#fff0f0}
-.receipt{padding:16px;max-width:860px;margin:12px auto;font-size:13px}.receipt h2{font-size:20px;margin:0 0 9px}.receipt .meta{gap:4px 14px;margin-bottom:8px}.receipt th,.receipt td{padding:5px 7px;line-height:1.15;vertical-align:middle}.receipt .total{font-size:16px;margin-top:8px}.receipt .sign{margin-top:16px}.receipt .actions{margin-top:12px!important}.receipt .actions button{padding:8px 10px}.receiptEditInput{padding:3px 5px;font-size:12px;min-height:28px}.receiptEditHelp{font-size:11px;margin:0 0 5px}
-@media print{.receipt{font-size:12px;padding:8px}.receipt h2{font-size:18px;margin-bottom:6px}.receipt th,.receipt td{padding:4px 5px}.receipt .sign{margin-top:12px}}
-"""
-          if '</style>' not in s:
-              raise SystemExit('style end not found')
-          s = s.replace('</style>',css+'\n</style>',1)
+          css = "\n/* 8.9.13 compact receipts */\n.dealerContextMenu{position:fixed;z-index:210;background:#fff;border:1px solid #cfd6e0;border-radius:10px;box-shadow:0 12px 36px #0003;padding:6px;min-width:230px}.dealerContextMenu button{display:block;width:100%;text-align:left;background:#fff;color:#172033;padding:9px 11px;border-radius:7px}.dealerContextMenu button:hover{background:#eaf3ff}.dealerContextMenu .dangerMenuItem{color:#b42318}.dealerContextMenu .dangerMenuItem:hover{background:#fff0f0}\n.receipt{padding:16px;max-width:860px;margin:12px auto;font-size:13px}.receipt h2{font-size:20px;margin:0 0 9px}.receipt .meta{gap:4px 14px;margin-bottom:8px}.receipt th,.receipt td{padding:5px 7px;line-height:1.15;vertical-align:middle}.receipt .total{font-size:16px;margin-top:8px}.receipt .sign{margin-top:16px}.receipt .actions{margin-top:12px!important}.receipt .actions button{padding:8px 10px}.receiptEditInput{padding:3px 5px;font-size:12px;min-height:28px}.receiptEditHelp{font-size:11px;margin:0 0 5px}\n@media print{.receipt{font-size:12px;padding:8px}.receipt h2{font-size:18px;margin-bottom:6px}.receipt th,.receipt td{padding:4px 5px}.receipt .sign{margin-top:12px}}\n"
+          s = s.replace('</style>',css+'</style>',1)
           s = s.replace('Windows · версия 8.9.12','Windows · версия 8.9.13')
           s = s.replace('Windows x64 · v8.9.12','Windows x64 · v8.9.13')
           p.write_text(s,encoding='utf-8')
-
           pkgp=Path('app/package.json')
           pkg=json.loads(pkgp.read_text(encoding='utf-8'))
           pkg['version']='8.9.13'
           pkgp.write_text(json.dumps(pkg,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
-
-          Path('RELEASE_NOTES.md').write_text('''Версия 8.9.13\n\n- В разделе «Дилеры» правый клик по дилеру открывает команды «Изменить карточку дилера» и «Удалить дилера».\n- Удаление дилера требует двух подтверждений; при окончательном удалении удаляются и связанные с ним операции, чеки и оплаты.\n- Товарные накладные стали компактнее: уменьшены отступы, высота строк и размер полей, при этом редактирование количества и цены сохранено.\n- Сохраняются изменения 8.9.12: ручное редактирование количества, цены и суммы в «Товары в продаже», пересчёт цены по сумме и правый клик по товару для редактирования карточки.\n- Сохраняются исправления NewMatRos: материал учитывается в сумме, первые 4 угла бесплатны, начиная с 5-го — по 50 ₽ за угол.\n''',encoding='utf-8')
-
+          notes = 'Версия 8.9.13\n\n- Правый клик по дилеру: изменить карточку или удалить.\n- Удаление дилера требует двойного подтверждения и удаляет связанные операции после финального подтверждения.\n- Накладные сделаны компактнее без потери редактирования количества и цены.\n- Сохранены изменения 8.9.12 по редактированию количества, цены и суммы в продаже и правому клику по товару.\n- Сохранены правила NewMatRos: материал считается, первые 4 угла бесплатны, с 5-го каждый угол по 50 ₽.\n'
+          Path('RELEASE_NOTES.md').write_text(notes,encoding='utf-8')
       - name: Validate syntax
         shell: bash
         run: |
           node -e "const fs=require('fs'); const s=fs.readFileSync('app/index.html','utf8'); const m=s.match(/<script>([\\s\\S]*)<\\/script>/); if(!m) process.exit(2); fs.writeFileSync('/tmp/app-script.js',m[1]);"
           node --check /tmp/app-script.js
           node -e "JSON.parse(require('fs').readFileSync('app/package.json','utf8'))"
-
       - name: Commit fixes
         shell: bash
         run: |
