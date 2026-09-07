@@ -2,5 +2,62 @@
   "name": "uchet-dilerov",
   "version": "8.9.10",
   "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11",
-  "main": "main.js"
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test:electron": "electron --version",
+    "build:win": "electron-builder --win nsis portable --x64"
+  },
+  "devDependencies": {
+    "electron": "36.9.5",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.uchetdilerov.windows",
+    "productName": "Учёт дилеров",
+    "artifactName": "Uchet-dilerov-${version}-${arch}.${ext}",
+    "files": [
+      "index.html",
+      "main.js",
+      "preload.js",
+      "package.json",
+      "tovar.csv",
+      "newmatros_clients.json",
+      "icon.ico"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64"]
+        },
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ],
+      "signAndEditExecutable": false,
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Учёт дилеров",
+      "deleteAppDataOnUninstall": false,
+      "artifactName": "Uchet-dilerov-Setup-${version}-${arch}.${ext}",
+      "installerIcon": "icon.ico",
+      "uninstallerIcon": "icon.ico",
+      "installerHeaderIcon": "icon.ico"
+    },
+    "portable": {
+      "artifactName": "Uchet-dilerov-Portable-${version}-${arch}.${ext}"
+    }
+  }
 }
