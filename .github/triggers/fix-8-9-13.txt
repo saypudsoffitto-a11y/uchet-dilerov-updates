@@ -1,1 +1,1 @@
-apply 8.9.13 dealer context menu and compact receipt
+apply 8.9.13 dealer context menu and compact receipt retry
