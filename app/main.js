@@ -61,7 +61,7 @@ async function createWindow() {
       minWidth: 1100,
       minHeight: 700,
       show: false,
-      backgroundColor: '#f5f7fa',
+      backgroundColor: '#f3f6f4',
       title: 'Учёт дилеров',
       autoHideMenuBar: true,
       webPreferences: {
@@ -74,6 +74,13 @@ async function createWindow() {
     mainWindow = win;
     win.once('ready-to-show',()=>win.show());
     await win.loadFile(path.join(__dirname,'index.html'));
+    try {
+      const patchPath=path.join(__dirname,'renderer-patch.js');
+      if(fs.existsSync(patchPath)){
+        const patch=fs.readFileSync(patchPath,'utf8');
+        await win.webContents.executeJavaScript(patch,true);
+      }
+    } catch(e) { console.error('Renderer patch error:',e); }
     win.webContents.setWindowOpenHandler(({ url }) => {
       if (/^https?:\/\//i.test(url)) { shell.openExternal(url); return { action: 'deny' }; }
       return { action: 'deny' };
@@ -141,6 +148,57 @@ ipcMain.handle('whatsapp:send', async (_e, payload) => {
   }
 });
 
+function safePdfName(name){
+  let n=String(name||'Товарная_накладная.pdf').replace(/[<>:"/\\|?*\x00-\x1F]/g,'_').trim();
+  if(!/\.pdf$/i.test(n))n+='.pdf';
+  return n||'Товарная_накладная.pdf';
+}
+async function htmlToPdf(html){
+  const w=new BrowserWindow({show:false,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,javascript:false}});
+  try{
+    await w.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(String(html||'')));
+    return await w.webContents.printToPDF({printBackground:true,pageSize:'A4',margins:{top:0.35,bottom:0.35,left:0.35,right:0.35}});
+  } finally {
+    if(!w.isDestroyed())w.destroy();
+  }
+}
+function copyFileToClipboardWindows(filePath){
+  return new Promise(resolve=>{
+    if(process.platform!=='win32')return resolve(false);
+    const q=String(filePath).replace(/'/g,"''");
+    const script=`Add-Type -AssemblyName System.Windows.Forms; $f=New-Object System.Collections.Specialized.StringCollection; [void]$f.Add('${q}'); [System.Windows.Forms.Clipboard]::SetFileDropList($f)`;
+    try{
+      const p=spawn('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true});
+      let done=false;const finish=v=>{if(done)return;done=true;resolve(v)};
+      p.on('error',()=>finish(false));p.on('exit',code=>finish(code===0));setTimeout(()=>{try{p.kill()}catch(_){}finish(false)},5000);
+    }catch(_){resolve(false)}
+  });
+}
+
+ipcMain.handle('receipt:savePdf', async (_e,payload)=>{
+  try{
+    const pdf=await htmlToPdf(payload&&payload.html);
+    const name=safePdfName(payload&&payload.fileName);
+    const r=await dialog.showSaveDialog(mainWindow,{title:'Сохранить товарную накладную PDF',defaultPath:path.join(app.getPath('documents'),name),filters:[{name:'PDF',extensions:['pdf']}]});
+    if(r.canceled||!r.filePath)return {ok:false,canceled:true};
+    fs.writeFileSync(r.filePath,pdf);
+    return {ok:true,path:r.filePath};
+  }catch(e){return {ok:false,message:'Не удалось создать PDF: '+String(e&&e.message||e)}}
+});
+
+ipcMain.handle('receipt:sendPdfWhatsApp', async (_e,payload)=>{
+  try{
+    const pdf=await htmlToPdf(payload&&payload.html);
+    const dir=path.join(app.getPath('temp'),'uchet-dilerov-pdf');fs.mkdirSync(dir,{recursive:true});
+    const filePath=path.join(dir,safePdfName(payload&&payload.fileName));fs.writeFileSync(filePath,pdf);
+    const copied=await copyFileToClipboardWindows(filePath);
+    let phone=String(payload&&payload.phone||'').replace(/\D/g,'');if(phone.length===11&&phone[0]==='8')phone='7'+phone.slice(1);
+    await shell.openExternal('whatsapp://send?'+(phone?'phone='+encodeURIComponent(phone):''));
+    if(!copied){shell.showItemInFolder(filePath);return {ok:true,path:filePath,message:'PDF создан. WhatsApp открыт, а файл выделен в Проводнике — прикрепи его к сообщению.'}}
+    return {ok:true,path:filePath,message:'PDF создан и скопирован как файл. В открывшемся WhatsApp нажми Ctrl+V и отправь накладную.'};
+  }catch(e){return {ok:false,message:'Не удалось подготовить PDF для WhatsApp: '+String(e&&e.message||e)}}
+});
+
 function cmpVersion(a,b){
   const A=String(a||'0').split('.').map(n=>parseInt(n,10)||0),B=String(b||'0').split('.').map(n=>parseInt(n,10)||0);
   for(let i=0;i<Math.max(A.length,B.length);i++){let x=A[i]||0,y=B[i]||0;if(x!==y)return x>y?1:-1}return 0;
@@ -174,9 +232,6 @@ ipcMain.handle('update:checkAndInstall', async (_e, manifestUrl) => {
     return {ok:true,message:'Версия '+m.version+' скачана. Запускаю установку…'};
   }catch(e){return {ok:false,message:'Ошибка обновления: '+String(e&&e.message||e)}}
 });
-
-
-
 
 ipcMain.handle('sync:request', async (_e, req) => {
   try {
