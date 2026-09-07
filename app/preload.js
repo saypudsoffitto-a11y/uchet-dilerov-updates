@@ -31,3 +31,14 @@ contextBridge.exposeInMainWorld('receiptAPI', {
   sendPdf: (payload) => ipcRenderer.invoke('receipt:sendPdfWhatsApp', payload),
   savePdf: (payload) => ipcRenderer.invoke('receipt:savePdf', payload)
 });
+
+// 8.9.15: голосовой помощник загружается отдельным файлом. Он не слушает в фоне:
+// распознавание речи включается только после явного нажатия кнопки в интерфейсе.
+window.addEventListener('DOMContentLoaded',()=>{
+  try{
+    const s=document.createElement('script');
+    s.src='./voice-assistant.js';
+    s.defer=true;
+    (document.head||document.documentElement).appendChild(s);
+  }catch(e){console.error('Voice assistant loader error',e)}
+});
