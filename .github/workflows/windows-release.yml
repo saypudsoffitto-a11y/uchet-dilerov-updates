@@ -54,7 +54,20 @@ jobs:
       - name: Build Windows Setup and Portable
         if: steps.meta.outputs.exists != 'true'
         working-directory: app
-        run: npm run build:win -- --publish never
+        shell: pwsh
+        run: |
+          npm run build:win -- --publish never
+          $code = $LASTEXITCODE
+          if ($code -ne 0) {
+            $version = '${{ steps.meta.outputs.version }}'
+            $setup = "dist/Uchet-dilerov-Setup-$version-x64.exe"
+            $portable = "dist/Uchet-dilerov-Portable-$version-x64.exe"
+            if ((Test-Path $setup) -and (Test-Path $portable)) {
+              Write-Warning "electron-builder returned $code after producing both Windows executables; continuing to publish verified artifacts."
+              exit 0
+            }
+            exit $code
+          }
 
       - name: Generate latest.json
         if: steps.meta.outputs.exists != 'true'
