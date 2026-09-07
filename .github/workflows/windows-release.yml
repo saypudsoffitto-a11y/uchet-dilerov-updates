@@ -54,7 +54,7 @@ jobs:
       - name: Build Windows Setup and Portable
         if: steps.meta.outputs.exists != 'true'
         working-directory: app
-        run: npm run build:win
+        run: npm run build:win -- --publish never
 
       - name: Generate latest.json
         if: steps.meta.outputs.exists != 'true'
