@@ -1,0 +1,56 @@
+name: Bootstrap app source from 8.9.10 release asset
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'BOOTSTRAP_TRIGGER.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download source ZIP from release 8.9.10
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path '_bootstrap' -Force | Out-Null
+          gh release download '8.9.10' --repo "$env:GITHUB_REPOSITORY" --pattern 'Uchet_dilerov_Windows_8_9_10_Fixes_FINAL.zip' --dir '_bootstrap'
+          $zip = Get-ChildItem '_bootstrap' -Filter '*.zip' | Select-Object -First 1
+          if (!$zip) { throw 'Source ZIP was not found in release 8.9.10.' }
+          Expand-Archive -Path $zip.FullName -DestinationPath '_bootstrap/extracted' -Force
+
+      - name: Copy application source into app folder
+        shell: pwsh
+        run: |
+          $package = Get-ChildItem '_bootstrap/extracted' -Recurse -Filter 'package.json' | Select-Object -First 1
+          if (!$package) { throw 'package.json was not found inside source ZIP.' }
+          $source = Split-Path $package.FullName -Parent
+          New-Item -ItemType Directory -Path 'app' -Force | Out-Null
+          Get-ChildItem $source -Force | Where-Object { $_.Name -notin @('node_modules','dist') } | ForEach-Object {
+            Copy-Item $_.FullName -Destination 'app' -Recurse -Force
+          }
+          if (!(Test-Path 'app/package.json')) { throw 'app/package.json was not copied.' }
+
+      - name: Commit app source
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host 'No source changes to commit.'
+            exit 0
+          }
+          git commit -m 'Bootstrap application source for automatic releases'
+          git push
