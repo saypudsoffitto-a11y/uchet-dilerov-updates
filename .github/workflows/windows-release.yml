@@ -1,0 +1,96 @@
+name: Build and publish Windows release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'RELEASE_NOTES.md'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: uchet-dilerov-windows-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Read version
+        id: meta
+        shell: pwsh
+        run: |
+          if (!(Test-Path 'app/package.json')) { throw 'app/package.json not found' }
+          $version = node -p "require('./app/package.json').version"
+          "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          gh release view "$version" --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            "exists=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            Write-Host "Release $version already exists."
+          } else {
+            "exists=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          }
+
+      - name: Install dependencies
+        if: steps.meta.outputs.exists != 'true'
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: Build Windows Setup and Portable
+        if: steps.meta.outputs.exists != 'true'
+        working-directory: app
+        run: npm run build:win
+
+      - name: Generate latest.json
+        if: steps.meta.outputs.exists != 'true'
+        shell: pwsh
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
+          if (!(Test-Path $setup)) { throw "Setup not found: $setup" }
+          $sha = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          $notes = if (Test-Path 'RELEASE_NOTES.md') { (Get-Content 'RELEASE_NOTES.md' -Raw).Trim() } else { "Обновление версии $version" }
+          $manifest = [ordered]@{
+            version = $version
+            url = "https://github.com/$env:GITHUB_REPOSITORY/releases/latest/download/Uchet-dilerov-Setup-$version-x64.exe"
+            sha256 = $sha
+            notes = $notes
+          }
+          $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path 'latest.json' -Encoding utf8
+
+      - name: Publish GitHub Release
+        if: steps.meta.outputs.exists != 'true'
+        shell: pwsh
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
+          $portable = "app/dist/Uchet-dilerov-Portable-$version-x64.exe"
+          $files = @($setup, 'latest.json')
+          if (Test-Path $portable) { $files += $portable }
+          gh release create "$version" @files --repo "$env:GITHUB_REPOSITORY" --title "Учёт дилеров $version" --notes-file 'RELEASE_NOTES.md' --target "$env:GITHUB_SHA"
+
+      - name: Save latest.json to main
+        if: steps.meta.outputs.exists != 'true'
+        shell: pwsh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add latest.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { exit 0 }
+          git commit -m "Update latest.json for ${{ steps.meta.outputs.version }} [skip ci]"
+          git push
