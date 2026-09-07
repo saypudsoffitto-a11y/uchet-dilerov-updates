@@ -72,9 +72,42 @@
   modal.querySelector('#voiceClose').addEventListener('click',closeAssistant);
   modal.addEventListener('click',e=>{if(e.target===modal)closeAssistant()});
 
+  let softFemaleVoice=null;
+  function selectSoftFemaleVoice(){
+    if(!('speechSynthesis' in window))return null;
+    const voices=speechSynthesis.getVoices().filter(v=>/^ru(?:-|_)/i.test(String(v.lang||'')));
+    if(!voices.length)return null;
+    const score=v=>{
+      const n=String(v.name||'').toLowerCase();
+      let s=0;
+      if(/natural|натурал/.test(n))s+=100;
+      if(/светлана|svetlana/.test(n))s+=70;
+      if(/female|женск/.test(n))s+=55;
+      if(/ирина|irina|милена|milena|алёна|alena|alyona/.test(n))s+=45;
+      if(/online/.test(n))s+=25;
+      if(/microsoft/.test(n))s+=10;
+      if(v.localService)s+=3;
+      return s;
+    };
+    return voices.sort((a,b)=>score(b)-score(a))[0]||null;
+  }
+  function refreshAssistantVoice(){softFemaleVoice=selectSoftFemaleVoice()}
+  if('speechSynthesis' in window){
+    refreshAssistantVoice();
+    speechSynthesis.addEventListener?.('voiceschanged',refreshAssistantVoice);
+  }
   function speak(text){
     if(voiceSettings.speak===false||!('speechSynthesis' in window))return;
-    try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(String(text));u.lang='ru-RU';u.rate=1;speechSynthesis.speak(u)}catch(_){ }
+    try{
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(String(text));
+      u.lang='ru-RU';
+      u.voice=softFemaleVoice||selectSoftFemaleVoice();
+      u.rate=0.92;
+      u.pitch=1.03;
+      u.volume=1;
+      speechSynthesis.speak(u);
+    }catch(_){ }
   }
   function answer(text){transcript.textContent=String(text);setStatus('Готов. Микрофон выключен.');speak(text)}
 
