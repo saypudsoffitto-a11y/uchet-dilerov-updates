@@ -19,6 +19,19 @@
   `;
   document.head.appendChild(style);
 
+  // Правый клик по дилеру: исправляем удаление без обращения к несуществующему renderAll().
+  window.deleteDealerFromList=function(id){
+    if(typeof hideDealerContextMenu==='function')hideDealerContextMenu();
+    const d=(state.dealers||[]).find(x=>x.id==id);if(!d)return;
+    const related=(state.ops||[]).filter(o=>o.dealerId==id).length;
+    if(!confirm('Удалить дилера «'+d.name+'»?'))return;
+    const detail='Это удалит карточку дилера'+(related?' и '+related+' связанных операций/чеков/оплат.':' и все связанные данные.')+' Действие нельзя отменить. Подтвердить окончательное удаление?';
+    if(!confirm(detail))return;
+    state.dealers=state.dealers.filter(x=>x.id!=id);
+    state.ops=state.ops.filter(o=>o.dealerId!=id);
+    save();
+  };
+
   // Поля начального и текущего остатка в карточке товара.
   const addForm=document.getElementById('addProductForm');
   if(addForm&&!document.getElementById('pInitialStock')){
@@ -127,7 +140,7 @@
   const nmPreviewEl=document.getElementById('nmPreview');
   if(nmPreviewEl){
     const priceToggle=document.querySelector('#newmatros .nmPriceToggle');
-    if(priceToggle&&nmPreviewEl.compareDocumentPosition(priceToggle)&Node.DOCUMENT_POSITION_PRECEDING){
+    if(priceToggle&&(nmPreviewEl.compareDocumentPosition(priceToggle)&Node.DOCUMENT_POSITION_FOLLOWING)){
       priceToggle.parentNode.insertBefore(nmPreviewEl,priceToggle);
     }
   }
