@@ -31,8 +31,9 @@ jobs:
           node --check app/preload.js
           node --check app/renderer-patch.js
           node --check app/assistant-patch.js
+          node --check app/ui-fix-8915.js
 
-      - name: Static safety checks
+      - name: Static safety and UI checks
         shell: pwsh
         run: |
           $a = Get-Content app/assistant-patch.js -Raw
@@ -44,6 +45,13 @@ jobs:
           $m = Get-Content app/main.js -Raw
           if ($m -notmatch 'update:checkAndInstall') { throw 'Missing auto update IPC' }
           if ($m -notmatch 'sha256') { throw 'Missing update checksum verification' }
+          $u = Get-Content app/ui-fix-8915.js -Raw
+          if ($u -notmatch 'MutationObserver') { throw 'Dynamic dealer input reliability fix missing' }
+          if ($u -notmatch 'dealerModalCloseX') { throw 'Dealer modal X close button missing' }
+          if ($u -notmatch 'closeDealerModal') { throw 'Dealer card auto-close missing' }
+          if ($u -notmatch 'originalMakePayment') { throw 'Payment auto-close/reset hook missing' }
+          $p = Get-Content app/package.json -Raw
+          if ($p -notmatch 'ui-fix-8915.js') { throw 'UI fix not included in build package' }
 
       - name: Install dependencies
         working-directory: app
