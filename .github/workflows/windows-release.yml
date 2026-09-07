@@ -37,12 +37,13 @@ jobs:
           if (!(Test-Path 'app/package.json')) { throw 'app/package.json not found' }
           $version = node -p "require('./app/package.json').version"
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          gh release view "$version" --repo "$env:GITHUB_REPOSITORY" *> $null
-          if ($LASTEXITCODE -eq 0) {
+          $tags = @(gh release list --repo "$env:GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName')
+          if ($tags -contains $version) {
             "exists=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
             Write-Host "Release $version already exists."
           } else {
             "exists=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+            Write-Host "Release $version does not exist. Building it."
           }
 
       - name: Install dependencies
