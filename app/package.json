@@ -23,6 +23,7 @@
       "preload.js",
       "renderer-patch.js",
       "assistant-patch.js",
+      "ui-fix-8915.js",
       "package.json",
       "tovar.csv",
       "newmatros_clients.json",
