@@ -1,4 +1,4 @@
-name: Build and publish corrected Windows 8.9.23
+name: Build and publish corrected Windows 8.9.24
 
 on:
   push:
@@ -29,6 +29,16 @@ jobs:
         working-directory: app
         run: npm install --no-audit --no-fund
 
+      - name: Verify NewMatRos runtime syntax
+        shell: pwsh
+        run: |
+          node --check app/runtime-fixes-8923.js
+          node --check app/runtime-fixes-8924.js
+          $core = Get-Content app/runtime-fixes-8924.js -Raw
+          if ($core -notmatch 'window\.nmFindDealer') { throw 'nmFindDealer runtime fix missing' }
+          $preload = Get-Content app/preload.js -Raw
+          if ($preload -notmatch 'runtime-fixes-8924\.js') { throw '8.9.24 runtime not loaded by preload' }
+
       - name: Build Windows Setup and Portable
         working-directory: app
         run: npm run build:win
@@ -37,7 +47,7 @@ jobs:
         shell: pwsh
         run: |
           $version = node -p "require('./app/package.json').version"
-          if ($version -ne '8.9.23') { throw "Expected package version 8.9.23, got $version" }
+          if ($version -ne '8.9.24') { throw "Expected package version 8.9.24, got $version" }
           $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
           $portable = "app/dist/Uchet-dilerov-Portable-$version-x64.exe"
           if (!(Test-Path $setup)) { throw "Setup missing: $setup" }
@@ -48,13 +58,13 @@ jobs:
       - name: Create update manifest
         shell: pwsh
         run: |
-          $setup = "app/dist/Uchet-dilerov-Setup-8.9.23-x64.exe"
+          $setup = "app/dist/Uchet-dilerov-Setup-8.9.24-x64.exe"
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
           $manifest = [ordered]@{
-            version = '8.9.23'
-            url = 'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.23-corrected/Uchet-dilerov-Setup-8.9.23-x64.exe'
+            version = '8.9.24'
+            url = 'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.24-corrected/Uchet-dilerov-Setup-8.9.24-x64.exe'
             sha256 = $hash
-            notes = 'NewMatRos: выгрузка сохраняется до открытия, показывает дилера, материал, цвет, ширину, цену из карточки товара и позиции; продажа создаётся только после подтверждения.'
+            notes = 'Исправлена подтверждённая ошибка nmFindDealer is not defined. NewMatRos снова может найти дилера, открыть проверку выгрузки, распознать материал/ширину/цену и оформить продажу после подтверждения.'
           }
           $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path latest.json -Encoding utf8
           Get-Content latest.json
@@ -62,29 +72,29 @@ jobs:
       - name: Upload Windows installers
         uses: actions/upload-artifact@v4
         with:
-          name: Uchet-dilerov-8.9.23-Windows-x64
+          name: Uchet-dilerov-8.9.24-Windows-x64
           path: |
-            app/dist/Uchet-dilerov-Setup-8.9.23-x64.exe
-            app/dist/Uchet-dilerov-Portable-8.9.23-x64.exe
+            app/dist/Uchet-dilerov-Setup-8.9.24-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.24-x64.exe
             latest.json
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish corrected 8.9.23 as latest release
+      - name: Publish corrected 8.9.24 as latest release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = '8.9.23-corrected'
+          $tag = '8.9.24-corrected'
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release delete $tag --yes --cleanup-tag
           }
           gh release create $tag `
-            "app/dist/Uchet-dilerov-Setup-8.9.23-x64.exe" `
-            "app/dist/Uchet-dilerov-Portable-8.9.23-x64.exe" `
+            "app/dist/Uchet-dilerov-Setup-8.9.24-x64.exe" `
+            "app/dist/Uchet-dilerov-Portable-8.9.24-x64.exe" `
             "latest.json" `
             --target "${{ github.sha }}" `
-            --title "Учёт дилеров 8.9.23 — исправленная сборка" `
-            --notes "NewMatRos исправлен по подтверждённому сценарию: уведомление больше не теряет выгрузку. По кнопке «Открыть» появляется окно проверки с карточкой дилера, фактурой/материалом, цветом, шириной, распознанной ценой из карточки товара и составом заказа. Продажа и долг создаются только по кнопке подтверждения, после чего открывается чек." `
+            --title "Учёт дилеров 8.9.24 — исправленная сборка" `
+            --notes "Исправлена показанная пользователем ошибка 'nmFindDealer is not defined'. В предыдущем коде NewMatRos функция поиска дилера вызывалась, но отсутствовала. В 8.9.24 восстановлен поиск по телефону, имени, компании и ФИО; окно проверки выгрузки и последующее оформление продажи используют этот исправленный поиск." `
             --latest
