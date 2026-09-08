@@ -48,6 +48,14 @@ window.addEventListener('DOMContentLoaded',()=>{
             const hotfix=document.createElement('script');
             hotfix.src='./hotfix-8917.js';
             hotfix.defer=true;
+            hotfix.onload=()=>{
+              try{
+                const finalFix=document.createElement('script');
+                finalFix.src='./final-fixes-8917.js';
+                finalFix.defer=true;
+                (document.head||document.documentElement).appendChild(finalFix);
+              }catch(e){console.error('8.9.17 final fixes loader error',e)}
+            };
             (document.head||document.documentElement).appendChild(hotfix);
           }catch(e){console.error('8.9.17 hotfix loader error',e)}
         };

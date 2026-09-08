@@ -24,6 +24,7 @@
       "voice-assistant.js",
       "assistant-enhancements.js",
       "hotfix-8917.js",
+      "final-fixes-8917.js",
       "package.json",
       "tovar.csv",
       "newmatros_clients.json",
