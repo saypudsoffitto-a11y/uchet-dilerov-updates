@@ -20,7 +20,7 @@ contextBridge.exposeInMainWorld('stockAPI', {
 });
 
 contextBridge.exposeInMainWorld('clientsAPI', {
-  loadBundledNewMatRosClients: () => ipcRenderer.invoke('clients:loadBundledNewMatRos')
+  loadBundledNewMatRos: () => ipcRenderer.invoke('clients:loadBundledNewMatRos')
 });
 
 contextBridge.exposeInMainWorld('updateAPI', {
@@ -44,22 +44,22 @@ contextBridge.exposeInMainWorld('voiceAPI', {
   listenOnce: () => ipcRenderer.invoke('assistant:listenWindows')
 });
 
-// 8.9.23: load all corrections in the normal page world. The 8.9.23 runtime
-// keeps the last NewMatRos INI until the user opens, reviews and confirms it.
+// 8.9.24: load all corrections in the normal page world. The last runtime
+// restores the missing nmFindDealer() function used by NewMatRos preview/sale.
 window.addEventListener('DOMContentLoaded',()=>{
   const code=`(async()=>{
-    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8922.js','./runtime-fixes-8923.js'];
+    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8922.js','./runtime-fixes-8923.js','./runtime-fixes-8924.js'];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8923';
+        s.src=src+'?runtime=8924';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.23';
+    document.documentElement.dataset.uchetRuntime='8.9.24';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.23 runtime loader error',e))}
-  catch(e){console.error('8.9.23 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.24 runtime loader error',e))}
+  catch(e){console.error('8.9.24 preload loader error',e)}
 });
