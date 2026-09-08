@@ -44,23 +44,22 @@ contextBridge.exposeInMainWorld('voiceAPI', {
   listenOnce: () => ipcRenderer.invoke('assistant:listenWindows')
 });
 
-// 8.9.22: load all corrections in the normal page world. The NewMatRos
-// callback dispatcher above isolates callback errors so one broken listener
-// cannot prevent the next fix from opening the imported order.
+// 8.9.23: load all corrections in the normal page world. The 8.9.23 runtime
+// keeps the last NewMatRos INI until the user opens, reviews and confirms it.
 window.addEventListener('DOMContentLoaded',()=>{
   const code=`(async()=>{
-    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8922.js'];
+    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8922.js','./runtime-fixes-8923.js'];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8922';
+        s.src=src+'?runtime=8923';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.22';
+    document.documentElement.dataset.uchetRuntime='8.9.23';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.22 runtime loader error',e))}
-  catch(e){console.error('8.9.22 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.23 runtime loader error',e))}
+  catch(e){console.error('8.9.23 preload loader error',e)}
 });
