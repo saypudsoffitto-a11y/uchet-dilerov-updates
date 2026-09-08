@@ -48,23 +48,23 @@ contextBridge.exposeInMainWorld('voiceAPI', {
   listenOnce: () => ipcRenderer.invoke('assistant:listenWindows')
 });
 
-// 8.9.25: core NewMatRos fix loads before the review flow. The review runtime
-// then takes exclusive ownership of INI events so old listeners cannot process
-// the same export in parallel or clear it before the user confirms the sale.
+// 8.9.26: load core fixes first, then the open-sale NewMatRos runtime takes
+// exclusive ownership of INI events. Every ceiling from the same dealer is
+// accumulated until the user explicitly closes and posts the sale.
 window.addEventListener('DOMContentLoaded',()=>{
   const code=`(async()=>{
-    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8922.js','./runtime-fixes-8924.js','./runtime-fixes-8923.js'];
+    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8922.js','./runtime-fixes-8924.js','./runtime-fixes-8926.js'];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8925';
+        s.src=src+'?runtime=8926';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.25';
+    document.documentElement.dataset.uchetRuntime='8.9.26';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.25 runtime loader error',e))}
-  catch(e){console.error('8.9.25 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.26 runtime loader error',e))}
+  catch(e){console.error('8.9.26 preload loader error',e)}
 });
