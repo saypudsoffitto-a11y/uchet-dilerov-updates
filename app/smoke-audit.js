@@ -10,25 +10,34 @@ const pkg=JSON.parse(read('package.json'));
 const preload=read('preload.js');
 const index=read('index.html');
 const r22=read('runtime-fixes-8922.js');
-const r23=read('runtime-fixes-8923.js');
 const r24=read('runtime-fixes-8924.js');
+const r26=read('runtime-fixes-8926.js');
 const finalFix=read('final-fixes-8917.js');
 const productsCsv=fs.readFileSync(path.join(root,'tovar.csv'));
 
-must(pkg.version==='8.9.25','package version must be 8.9.25');
+must(pkg.version==='8.9.26','package version must be 8.9.26');
 must(preload.includes('setIniHandler'),'exclusive NewMatRos handler API missing');
 must(preload.includes('loadBundledNewMatRosClients'),'NewMatRos clients API alias missing');
 must(index.includes('loadBundledNewMatRosClients'),'index expects NewMatRos clients API alias');
 must(!r22.includes('newmatrosAPI?.onIni'),'obsolete NewMatRos listener still exists in speech runtime');
-must(r23.includes('newmatrosAPI?.setIniHandler'),'review flow is not authoritative INI handler');
-must(r23.includes("showNewMatRosPreview(data,'пересчёт')"),'confirmation must populate core preview without a duplicate notification');
-must(r23.includes('Оформить как продажу дилеру'),'review confirmation button missing');
-must(r23.includes('Фактура / материал')&&r23.includes('Ширина полотна'),'review fields missing');
+must(preload.includes("'./runtime-fixes-8926.js'"),'8.9.26 runtime not loaded');
+must(!preload.includes("'./runtime-fixes-8923.js'"),'old single-ceiling review runtime must not load in 8.9.26');
+must(r26.includes("DRAFT_KEY='uchetNewMatRosOpenSale8926'"),'persistent open-sale draft missing');
+must(r26.includes('newmatrosAPI?.setIniHandler')&&r26.includes('setIniHandler(addCeiling)'),'multi-ceiling runtime is not authoritative INI handler');
+must(r26.includes('d.ceilings.push(ceil)'),'new ceilings are not accumulated into open sale');
+must(r26.includes('sameDealer(d,ceil)'),'dealer guard missing: different clients could be mixed');
+must(r26.includes('alreadyImported(ceil.key)')&&r26.includes('some(x=>x.key===ceil.key)'),'duplicate ceiling protection missing');
+must(r26.includes('Закрыть и оформить продажу'),'explicit close-sale action missing');
+must(r26.includes('newmatrosKeys')&&r26.includes('newmatrosCeilings'),'final receipt does not retain all ceiling keys/details');
+must(r26.includes("name:'Потолок '+(idx+1)+' · '"),'receipt items are not labelled by ceiling');
+must(r26.includes('saveDraft(null)'),'open sale is not cleared after final posting');
+must(r26.includes('showReceiptFromHistory(op.id)'),'final combined receipt is not opened');
+must((r26.match(/state\.ops\.push\(/g)||[]).length===1,'sale must be posted only once, on close');
 must(r24.includes('window.nmFindDealer'),'dealer matcher missing');
 
 const corePos=preload.indexOf("'./runtime-fixes-8924.js'");
-const reviewPos=preload.indexOf("'./runtime-fixes-8923.js'");
-must(corePos>=0&&reviewPos>=0&&corePos<reviewPos,'dealer matcher must load before review runtime');
+const draftPos=preload.indexOf("'./runtime-fixes-8926.js'");
+must(corePos>=0&&draftPos>=0&&corePos<draftPos,'dealer matcher must load before multi-ceiling runtime');
 
 const dealerCtx={
   window:{},
@@ -73,12 +82,10 @@ p=filmPrice(380);must(p.price===140&&p.productId===6,'3.80 MAT-303 price match f
 p=filmPrice(500);must(p.price===140&&p.productId===6,'5.00 MAT-303 price match failed');
 p=filmPrice(580);must(p.price===190&&p.productId===11,'5.80 MAT-303 price match failed');
 
-// Product CSV can originate from Windows encodings, so verify the stable ASCII
-// article and final price columns rather than decoding Cyrillic in this test.
 const csvLatin=productsCsv.toString('latin1');
 const hasCard=(article,price)=>new RegExp('^"'+article+'";.*;'+price+'\\r?$','m').test(csvLatin);
 must(hasCard('00005',105),'MAT 303 narrow price card 00005/105 missing');
 must(hasCard('00006',140),'MAT 303 wide price card 00006/140 missing');
 must(hasCard('00011',190),'MAT 580 price card 00011/190 missing');
 
-console.log('AUDIT OK: single NewMatRos handler, dealer matching, review/confirm flow, client import API and live film-price matching verified.');
+console.log('AUDIT OK: NewMatRos multi-ceiling open sale, same-dealer guard, duplicate protection, one final receipt and live film-price matching verified.');
