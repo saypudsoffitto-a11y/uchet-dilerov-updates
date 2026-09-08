@@ -1,6 +1,6 @@
 {
   "name": "uchet-dilerov",
-  "version": "8.9.17",
+  "version": "8.9.18",
   "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11",
   "main": "main.js",
   "scripts": {
@@ -29,20 +29,12 @@
       "newmatros_clients.json",
       "icon.ico"
     ],
-    "directories": {
-      "output": "dist"
-    },
+    "directories": {"output": "dist"},
     "asar": true,
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
+        {"target": "nsis", "arch": ["x64"]},
+        {"target": "portable", "arch": ["x64"]}
       ],
       "signAndEditExecutable": false,
       "icon": "icon.ico"
@@ -60,8 +52,6 @@
       "uninstallerIcon": "icon.ico",
       "installerHeaderIcon": "icon.ico"
     },
-    "portable": {
-      "artifactName": "Uchet-dilerov-Portable-${version}-${arch}.${ext}"
-    }
+    "portable": {"artifactName": "Uchet-dilerov-Portable-${version}-${arch}.${ext}"}
   }
 }
