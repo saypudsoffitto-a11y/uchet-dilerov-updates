@@ -1,6 +1,6 @@
 {
-  "version": "8.9.25",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.25-audited/Uchet-dilerov-Setup-8.9.25-x64.exe",
-  "sha256": "870e2147154f99fb9f771cef1a90eb89094b5b56fcbe6cb6f8e4acbef7233aa7",
-  "notes": "Проверена цепочка NewMatRos: один обработчик выгрузки, исправлен поиск дилера, восстановлен импорт клиентов, проверены материал/цвет/ширина и цены 3.60 / 3.80–5.00 / 5.80. Продажа и долг создаются только после подтверждения."
+  "version": "8.9.26",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.26-audited/Uchet-dilerov-Setup-8.9.26-x64.exe",
+  "sha256": "ba6cd84554f82e146ff94de91d258d558254956a4b4e0ce8a74e183904b5a93a",
+  "notes": "NewMatRos: первый потолок открывает продажу, все следующие потолки этого же дилера автоматически добавляются в неё. Один общий чек и долг создаются только после кнопки «Закрыть и оформить продажу»."
 }
