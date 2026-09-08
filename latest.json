@@ -1,6 +1,6 @@
 {
-  "version": "8.9.21",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.21-corrected/Uchet-dilerov-Setup-8.9.21-x64.exe",
-  "sha256": "6141ebe89f58028f8cdafcd64b315011436a76dcca5a7dcce7ddb09ed1c690c7",
-  "notes": "Исправлена главная причина прошлых одинаковых версий: runtime-исправления теперь гарантированно запускаются. Включены группа товаров, NewMatRos, цены плёнки, компактные PDF и новый ИИ-помощник."
+  "version": "8.9.22",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.22-corrected/Uchet-dilerov-Setup-8.9.22-x64.exe",
+  "sha256": "c885e721096d2621b6f39d6dd753c286f124582fe6ac934406516c4d6380c83b",
+  "notes": "Исправлено два подтверждённых дефекта 8.9.21: NewMatRos после выгрузки принудительно открывает раздел и показывает заказ; голосовой ввод больше не использует Chromium Web Speech, который выдавал ошибку network, а переключён на распознавание Windows."
 }
