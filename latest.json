@@ -1,6 +1,6 @@
 {
-  "version": "8.9.19",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.19-corrected/Uchet-dilerov-Setup-8.9.19-x64.exe",
-  "sha256": "177855ce02ecc9e1afa55dbe8ff09c26fabb176aa9beeb8450a17ce1d83a50f6",
-  "notes": "Исправленная сборка на основе согласованных правок 8.9.17. Номер 8.9.19 используется, чтобы установленная 8.9.18 приняла обновление через кнопку. Данные учёта сохраняются."
+  "version": "8.9.20",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.20-corrected/Uchet-dilerov-Setup-8.9.20-x64.exe",
+  "sha256": "ae30e26b4f7ce0eec69a5e284d1d1722adf8cc62591c2c6f76a383464534fd6c",
+  "notes": "Исправленная сборка с согласованными изменениями. Версия 8.9.20 создана специально, чтобы установленная 8.9.19 гарантированно приняла обновление через кнопку. Данные учёта сохраняются."
 }
