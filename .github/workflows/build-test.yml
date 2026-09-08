@@ -1,10 +1,13 @@
-name: Verify Windows build pipeline
+name: Build Windows 8.9.17 installer
 
 on:
   push:
-    branches: [main]
+    branches:
+      - work-8.9.17-fixes
     paths:
       - 'BUILD_TEST_TRIGGER.txt'
+      - '.github/workflows/build-test.yml'
+      - 'app/**'
   workflow_dispatch:
 
 permissions:
@@ -40,3 +43,13 @@ jobs:
           if (!(Test-Path $portable)) { throw "Portable missing: $portable" }
           Write-Host "Verified $setup"
           Write-Host "Verified $portable"
+
+      - name: Upload Windows installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: Uchet-dilerov-8.9.17-Windows-x64
+          path: |
+            app/dist/Uchet-dilerov-Setup-8.9.17-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.17-x64.exe
+          if-no-files-found: error
+          retention-days: 14
