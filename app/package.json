@@ -1,8 +1,8 @@
 {
   "name": "uchet-dilerov",
-  "version": "8.9.21",
+  "version": "8.9.22",
   "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11",
-  "main": "main.js",
+  "main": "main-8922.js",
   "scripts": {
     "start": "electron .",
     "test:electron": "electron --version",
@@ -19,9 +19,11 @@
     "files": [
       "index.html",
       "main.js",
+      "main-8922.js",
       "preload.js",
       "renderer-patch.js",
       "assistant-8921.js",
+      "runtime-fixes-8922.js",
       "voice-assistant.js",
       "assistant-enhancements.js",
       "hotfix-8917.js",
