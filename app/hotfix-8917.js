@@ -9,10 +9,11 @@
     #nmLiveBanner b{color:#8a5a00}
     .debtPayBtn{margin-left:8px;padding:7px 9px!important;font-size:12px!important}
     .voiceSelectRow{margin-top:12px;padding-top:12px;border-top:1px solid #e2e8e5}
+    #productGroupFilterWrap{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin:0 0 12px}
+    #productGroupFilterWrap label{min-width:260px}
   `;
   document.head.appendChild(css);
 
-  // NewMatRos: включаем наблюдение автоматически при каждом запуске приложения.
   async function enableNewMatRosWatch(){
     try{
       if(!window.newmatrosAPI?.setWatch)return;
@@ -45,15 +46,14 @@
     });
   }
 
-  // Долги: явная кнопка «Внести оплату» у каждого дилера.
   function patchDebtRows(){
     const body=document.getElementById('debtRows');if(!body)return false;
     [...body.querySelectorAll('tr')].forEach(row=>{
       if(row.querySelector('.debtPayBtn'))return;
       const on=String(row.getAttribute('onclick')||'');const m=on.match(/openDealer\((\d+)\)/);if(!m)return;
       const id=+m[1];
-      let td=document.createElement('td');
-      let btn=document.createElement('button');btn.type='button';btn.className='primary debtPayBtn';btn.textContent='Внести оплату';
+      const td=document.createElement('td');
+      const btn=document.createElement('button');btn.type='button';btn.className='primary debtPayBtn';btn.textContent='Внести оплату';
       btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();try{if(typeof go==='function')go('payments');if(typeof selectPayDealer==='function')setTimeout(()=>selectPayDealer(id),30)}catch(err){console.error(err)}});
       td.appendChild(btn);row.appendChild(td);
     });
@@ -63,7 +63,34 @@
   const debtBody=document.getElementById('debtRows');
   if(debtBody){new MutationObserver(patchDebtRows).observe(debtBody,{childList:true,subtree:true});patchDebtRows()}
 
-  // Голос: выбираем наиболее естественный русский голос из доступных Windows/Electron.
+  function applyProductGroupFilter(){
+    const sel=document.getElementById('productGroupFilter');const body=document.getElementById('productRows');if(!sel||!body)return;
+    const wanted=sel.value;
+    [...body.querySelectorAll('tr')].forEach(row=>{
+      const group=String(row.children?.[0]?.textContent||'').trim();
+      row.style.display=!wanted||group===wanted?'':'none';
+    });
+  }
+  function addProductGroupFilter(){
+    const sec=document.getElementById('products');if(!sec||document.getElementById('productGroupFilter'))return false;
+    const search=document.getElementById('productListSearch');if(!search)return false;
+    const wrap=document.createElement('div');wrap.id='productGroupFilterWrap';
+    wrap.innerHTML='<label>Группа товаров<select id="productGroupFilter"><option value="">Все группы</option></select></label><button id="productGroupFilterClear" class="secondary" type="button">Сбросить группу</button>';
+    search.insertAdjacentElement('afterend',wrap);
+    const sel=wrap.querySelector('#productGroupFilter');
+    const fill=()=>{
+      const cur=sel.value;
+      const names=(typeof state!=='undefined'&&Array.isArray(state.groups)?state.groups:[]).map(g=>String(g.name||'').trim()).filter(Boolean).sort((a,b)=>a.localeCompare(b,'ru',{numeric:true,sensitivity:'base'}));
+      sel.innerHTML='<option value="">Все группы</option>'+names.map(n=>'<option value="'+n.replace(/&/g,'&amp;').replace(/"/g,'&quot;')+'">'+n.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</option>').join('');
+      if(names.includes(cur))sel.value=cur;
+    };
+    fill();
+    sel.addEventListener('change',applyProductGroupFilter);
+    wrap.querySelector('#productGroupFilterClear').addEventListener('click',()=>{sel.value='';applyProductGroupFilter()});
+    const body=document.getElementById('productRows');if(body)new MutationObserver(()=>{fill();applyProductGroupFilter()}).observe(body,{childList:true,subtree:true});
+    applyProductGroupFilter();return true;
+  }
+
   function preferredRussianVoice(){
     if(!('speechSynthesis' in window))return null;
     const voices=speechSynthesis.getVoices()||[];
@@ -116,5 +143,5 @@
   }
 
   enableNewMatRosWatch();
-  let tries=0;const timer=setInterval(()=>{tries++;patchDebtRows();addVoiceSelector();if(tries>60)clearInterval(timer)},250);
+  let tries=0;const timer=setInterval(()=>{tries++;patchDebtRows();addVoiceSelector();addProductGroupFilter();applyProductGroupFilter();if(tries>60)clearInterval(timer)},250);
 })();
