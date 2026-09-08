@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
+let nmExclusive=false;
 ipcRenderer.on('newmatros:ini',(_event,payload)=>{
   for(const cb of [...nmCallbacks]){
     try{cb(payload)}catch(e){console.error('NewMatRos renderer callback error',e)}
@@ -10,7 +11,9 @@ ipcRenderer.on('newmatros:ini',(_event,payload)=>{
 contextBridge.exposeInMainWorld('newmatrosAPI', {
   chooseIni: () => ipcRenderer.invoke('newmatros:chooseIni'),
   setWatch: (enabled) => ipcRenderer.invoke('newmatros:setWatch', !!enabled),
-  onIni: (callback) => { if(typeof callback==='function') nmCallbacks.push(callback); },
+  onIni: (callback) => { if(!nmExclusive&&typeof callback==='function') nmCallbacks.push(callback); },
+  setIniHandler: (callback) => { nmCallbacks.length=0; nmExclusive=true; if(typeof callback==='function') nmCallbacks.push(callback); },
+  clearIniHandlers: () => { nmCallbacks.length=0; nmExclusive=false; },
   appInfo: () => ipcRenderer.invoke('app:info')
 });
 
@@ -20,6 +23,7 @@ contextBridge.exposeInMainWorld('stockAPI', {
 });
 
 contextBridge.exposeInMainWorld('clientsAPI', {
+  loadBundledNewMatRosClients: () => ipcRenderer.invoke('clients:loadBundledNewMatRos'),
   loadBundledNewMatRos: () => ipcRenderer.invoke('clients:loadBundledNewMatRos')
 });
 
@@ -44,22 +48,23 @@ contextBridge.exposeInMainWorld('voiceAPI', {
   listenOnce: () => ipcRenderer.invoke('assistant:listenWindows')
 });
 
-// 8.9.24: load all corrections in the normal page world. The last runtime
-// restores the missing nmFindDealer() function used by NewMatRos preview/sale.
+// 8.9.25: core NewMatRos fix loads before the review flow. The review runtime
+// then takes exclusive ownership of INI events so old listeners cannot process
+// the same export in parallel or clear it before the user confirms the sale.
 window.addEventListener('DOMContentLoaded',()=>{
   const code=`(async()=>{
-    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8922.js','./runtime-fixes-8923.js','./runtime-fixes-8924.js'];
+    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8922.js','./runtime-fixes-8924.js','./runtime-fixes-8923.js'];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8924';
+        s.src=src+'?runtime=8925';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.24';
+    document.documentElement.dataset.uchetRuntime='8.9.25';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.24 runtime loader error',e))}
-  catch(e){console.error('8.9.24 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.25 runtime loader error',e))}
+  catch(e){console.error('8.9.25 preload loader error',e)}
 });
