@@ -1,4 +1,4 @@
-name: Build and publish corrected Windows 8.9.17
+name: Build and publish corrected Windows 8.9.19
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
         shell: pwsh
         run: |
           $version = node -p "require('./app/package.json').version"
-          if ($version -ne '8.9.17') { throw "Expected package version 8.9.17, got $version" }
+          if ($version -ne '8.9.19') { throw "Expected package version 8.9.19, got $version" }
           $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
           $portable = "app/dist/Uchet-dilerov-Portable-$version-x64.exe"
           if (!(Test-Path $setup)) { throw "Setup missing: $setup" }
@@ -45,16 +45,16 @@ jobs:
           Write-Host "Verified $setup"
           Write-Host "Verified $portable"
 
-      - name: Create temporary rollback manifest
+      - name: Create update manifest
         shell: pwsh
         run: |
-          $setup = "app/dist/Uchet-dilerov-Setup-8.9.17-x64.exe"
+          $setup = "app/dist/Uchet-dilerov-Setup-8.9.19-x64.exe"
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
           $manifest = [ordered]@{
-            version = '8.9.18.1'
-            url = 'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.17-final/Uchet-dilerov-Setup-8.9.17-x64.exe'
+            version = '8.9.19'
+            url = 'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.19-corrected/Uchet-dilerov-Setup-8.9.19-x64.exe'
             sha256 = $hash
-            notes = 'Временное восстановительное обновление: устанавливает исправленную версию 8.9.17 поверх ошибочно установленной 8.9.18. Данные учёта сохраняются.'
+            notes = 'Исправленное обновление поверх 8.9.18: содержит доработки NewMatRos, цен плёнки, чеков, оплат и ИИ-помощника.'
           }
           $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path latest.json -Encoding utf8
           Get-Content latest.json
@@ -62,28 +62,28 @@ jobs:
       - name: Upload Windows installers
         uses: actions/upload-artifact@v4
         with:
-          name: Uchet-dilerov-8.9.17-Windows-x64
+          name: Uchet-dilerov-8.9.19-Windows-x64
           path: |
-            app/dist/Uchet-dilerov-Setup-8.9.17-x64.exe
-            app/dist/Uchet-dilerov-Portable-8.9.17-x64.exe
+            app/dist/Uchet-dilerov-Setup-8.9.19-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.19-x64.exe
             latest.json
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish corrected 8.9.17 as latest rollback release
+      - name: Publish corrected 8.9.19 as latest release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = '8.9.17-final'
+          $tag = '8.9.19-corrected'
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release delete $tag --yes --cleanup-tag
           }
           gh release create $tag `
-            "app/dist/Uchet-dilerov-Setup-8.9.17-x64.exe" `
-            "app/dist/Uchet-dilerov-Portable-8.9.17-x64.exe" `
+            "app/dist/Uchet-dilerov-Setup-8.9.19-x64.exe" `
+            "app/dist/Uchet-dilerov-Portable-8.9.19-x64.exe" `
             "latest.json" `
-            --title "Учёт дилеров 8.9.17 — исправленная" `
-            --notes "Исправленная сборка 8.9.17. Этот выпуск временно назначен последним, чтобы кнопка обновления на ошибочной 8.9.18 установила именно 8.9.17." `
+            --title "Учёт дилеров 8.9.19 — исправленная сборка" `
+            --notes "Исправленная сборка на основе согласованных правок 8.9.17. Номер 8.9.19 нужен только потому, что установленная 8.9.18 не принимает более низкую версию через кнопку обновления." `
             --latest
