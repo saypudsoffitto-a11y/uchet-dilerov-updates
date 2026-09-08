@@ -13,12 +13,12 @@ const r22=read('runtime-fixes-8922.js');
 const r23=read('runtime-fixes-8923.js');
 const r24=read('runtime-fixes-8924.js');
 const finalFix=read('final-fixes-8917.js');
-const products=read('tovar.csv');
+const productsCsv=read('tovar.csv');
 
 must(pkg.version==='8.9.25','package version must be 8.9.25');
 must(preload.includes('setIniHandler'),'exclusive NewMatRos handler API missing');
 must(preload.includes('loadBundledNewMatRosClients'),'NewMatRos clients API alias missing');
-must(index.includes('loadBundledNewMatRosClients'),'index no longer asks for expected clients API');
+must(index.includes('loadBundledNewMatRosClients'),'index expects NewMatRos clients API alias');
 must(!r22.includes('newmatrosAPI?.onIni'),'obsolete NewMatRos listener still exists in speech runtime');
 must(r23.includes('newmatrosAPI?.setIniHandler'),'review flow is not authoritative INI handler');
 must(r23.includes("showNewMatRosPreview(data,'пересчёт')"),'confirmation must populate core preview without a duplicate notification');
@@ -26,14 +26,12 @@ must(r23.includes('Оформить как продажу дилеру'),'review
 must(r23.includes('Фактура / материал')&&r23.includes('Ширина полотна'),'review fields missing');
 must(r24.includes('window.nmFindDealer'),'dealer matcher missing');
 
-const order=[
-  preload.indexOf("'./runtime-fixes-8924.js'"),
-  preload.indexOf("'./runtime-fixes-8923.js'")
-];
-must(order[0]>=0&&order[1]>=0&&order[0]<order[1],'dealer matcher must load before review runtime');
+const corePos=preload.indexOf("'./runtime-fixes-8924.js'");
+const reviewPos=preload.indexOf("'./runtime-fixes-8923.js'");
+must(corePos>=0&&reviewPos>=0&&corePos<reviewPos,'dealer matcher must load before review runtime');
 
 // Execute the actual dealer matcher with representative records.
-const context={
+const dealerCtx={
   window:{},
   document:{getElementById:()=>null,documentElement:{dataset:{}}},
   state:{dealers:[
@@ -42,20 +40,47 @@ const context={
   ]},
   console
 };
-vm.createContext(context);
-vm.runInContext(r24,context);
-must(typeof context.window.nmFindDealer==='function','nmFindDealer did not initialize');
-let hit=context.window.nmFindDealer({'Контрагент':{'Телефон':'+7 988 424 81 81','Наименование':'Другое имя'},'Заказ':{}});
+vm.createContext(dealerCtx);
+vm.runInContext(r24,dealerCtx);
+must(typeof dealerCtx.window.nmFindDealer==='function','nmFindDealer did not initialize');
+let hit=dealerCtx.window.nmFindDealer({'Контрагент':{'Телефон':'+7 988 424 81 81','Наименование':'Другое имя'},'Заказ':{}});
 must(hit.dealer&&hit.dealer.id===1,'dealer matcher failed phone normalization');
-hit=context.window.nmFindDealer({'Контрагент':{'Наименование':'КАРЧИГА'},'Заказ':{}});
+hit=dealerCtx.window.nmFindDealer({'Контрагент':{'Наименование':'КАРЧИГА'},'Заказ':{}});
 must(hit.dealer&&hit.dealer.id===2,'dealer matcher failed name match');
 
-// Price-card rules required by NewMatRos.
-must(finalFix.includes('width<=3.60'),'narrow film rule missing');
-must(finalFix.includes('width>=3.80&&width<=5.05'),'wide 3.80–5.00 rule missing');
-must(finalFix.includes('width>=5.70&&width<=5.90'),'5.80 film rule missing');
-must(products.includes('МАТ-303 ДО 360 ПРЕМИУМ')&&products.includes(';105'),'MAT 303 narrow price card missing');
-must(products.includes('МАТ-303 ОТ 380-500м ПРЕМИУМ')&&products.includes(';140'),'MAT 303 wide price card missing');
-must(products.includes('МАТ 580 ПРЕМИУМ')&&products.includes(';190'),'MAT 580 price card missing');
+// Execute the actual final film-price patch, not just a text check.
+const filmProducts=[
+  {id:5,name:'МАТ-303 ДО 360 ПРЕМИУМ',groupId:1,retailPrice:105,wholesalePrice:105,archived:false},
+  {id:6,name:'МАТ-303 ОТ 380-500м ПРЕМИУМ',groupId:1,retailPrice:140,wholesalePrice:140,archived:false},
+  {id:11,name:'МАТ 580 ПРЕМИУМ',groupId:1,retailPrice:190,wholesalePrice:190,archived:false}
+];
+const filmCtx={
+  window:{nmBuildItems:()=>[{productId:null,article:'NM-MAT',name:'Полотно MAT-303',qty:10,price:0,total:0,unit:'м²'}]},
+  state:{groups:[{id:1,name:'ПОЛОТНО'}],products:filmProducts,ops:[]},
+  document:{
+    createElement:()=>({style:{},textContent:'',innerHTML:''}),
+    head:{appendChild:()=>{}},
+    getElementById:()=>null
+  },
+  MutationObserver:class{observe(){}},
+  nmFindRollWidth:data=>{let n=Number(data?.['Заказ']?.['ШиринаПолотна']||0);return n>10?n/100:n},
+  console
+};
+filmCtx.window.window=filmCtx.window;
+vm.createContext(filmCtx);
+vm.runInContext(finalFix,filmCtx);
+function filmPrice(width){
+  const data={'Заказ':{'МатериалКаталог':'БЕЛАЯ МАТ-303 PREMIUM','МатериалМатериал':'MAT-303 PREMIUM','МатериалЦвет':'303','ШиринаПолотна':width}};
+  const item=filmCtx.window.nmBuildItems(data).find(x=>x.article==='NM-MAT');
+  return {price:item?.price,productId:item?.productId,source:item?.priceSource};
+}
+let p=filmPrice(360);must(p.price===105&&p.productId===5&&p.source==='Карточка товара','3.60 MAT-303 price match failed');
+p=filmPrice(380);must(p.price===140&&p.productId===6,'3.80 MAT-303 price match failed');
+p=filmPrice(500);must(p.price===140&&p.productId===6,'5.00 MAT-303 price match failed');
+p=filmPrice(580);must(p.price===190&&p.productId===11,'5.80 MAT-303 price match failed');
 
-console.log('AUDIT OK: NewMatRos single handler, dealer match, review/confirm flow, client API and film price rules verified.');
+must(productsCsv.includes('МАТ-303 ДО 360 ПРЕМИУМ')&&productsCsv.includes(';105'),'MAT 303 narrow product card missing');
+must(productsCsv.includes('МАТ-303 ОТ 380-500м ПРЕМИУМ')&&productsCsv.includes(';140'),'MAT 303 wide product card missing');
+must(productsCsv.includes('МАТ 580 ПРЕМИУМ')&&productsCsv.includes(';190'),'MAT 580 product card missing');
+
+console.log('AUDIT OK: single NewMatRos handler, dealer matching, review/confirm flow, client import API and live film-price matching verified.');
