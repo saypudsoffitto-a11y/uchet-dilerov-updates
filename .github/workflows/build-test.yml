@@ -1,4 +1,4 @@
-name: Build and publish corrected Windows 8.9.20
+name: Build and publish corrected Windows 8.9.21
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
         shell: pwsh
         run: |
           $version = node -p "require('./app/package.json').version"
-          if ($version -ne '8.9.20') { throw "Expected package version 8.9.20, got $version" }
+          if ($version -ne '8.9.21') { throw "Expected package version 8.9.21, got $version" }
           $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
           $portable = "app/dist/Uchet-dilerov-Portable-$version-x64.exe"
           if (!(Test-Path $setup)) { throw "Setup missing: $setup" }
@@ -48,13 +48,13 @@ jobs:
       - name: Create update manifest
         shell: pwsh
         run: |
-          $setup = "app/dist/Uchet-dilerov-Setup-8.9.20-x64.exe"
+          $setup = "app/dist/Uchet-dilerov-Setup-8.9.21-x64.exe"
           $hash = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
           $manifest = [ordered]@{
-            version = '8.9.20'
-            url = 'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.20-corrected/Uchet-dilerov-Setup-8.9.20-x64.exe'
+            version = '8.9.21'
+            url = 'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.21-corrected/Uchet-dilerov-Setup-8.9.21-x64.exe'
             sha256 = $hash
-            notes = 'Исправленное обновление поверх 8.9.19. Содержит согласованные доработки NewMatRos, цен плёнки, чеков, оплат и ИИ-помощника.'
+            notes = 'Исправлена загрузка runtime-исправлений. Включены группа товаров, NewMatRos, цены плёнки, компактные PDF и новый ИИ-помощник.'
           }
           $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path latest.json -Encoding utf8
           Get-Content latest.json
@@ -62,28 +62,29 @@ jobs:
       - name: Upload Windows installers
         uses: actions/upload-artifact@v4
         with:
-          name: Uchet-dilerov-8.9.20-Windows-x64
+          name: Uchet-dilerov-8.9.21-Windows-x64
           path: |
-            app/dist/Uchet-dilerov-Setup-8.9.20-x64.exe
-            app/dist/Uchet-dilerov-Portable-8.9.20-x64.exe
+            app/dist/Uchet-dilerov-Setup-8.9.21-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.21-x64.exe
             latest.json
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish corrected 8.9.20 as latest release
+      - name: Publish corrected 8.9.21 as latest release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag = '8.9.20-corrected'
+          $tag = '8.9.21-corrected'
           gh release view $tag *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release delete $tag --yes --cleanup-tag
           }
           gh release create $tag `
-            "app/dist/Uchet-dilerov-Setup-8.9.20-x64.exe" `
-            "app/dist/Uchet-dilerov-Portable-8.9.20-x64.exe" `
+            "app/dist/Uchet-dilerov-Setup-8.9.21-x64.exe" `
+            "app/dist/Uchet-dilerov-Portable-8.9.21-x64.exe" `
             "latest.json" `
-            --title "Учёт дилеров 8.9.20 — исправленная сборка" `
-            --notes "Исправленная сборка с согласованными изменениями. Версия 8.9.20 нужна, чтобы установленная 8.9.19 гарантированно приняла обновление через кнопку." `
+            --target "${{ github.sha }}" `
+            --title "Учёт дилеров 8.9.21 — исправленная сборка" `
+            --notes "Исправлена главная причина прошлых одинаковых версий: runtime-файлы теперь гарантированно запускаются в основном окне. В сборку включены группа товаров, NewMatRos, цены плёнки, компактные PDF и новый ИИ-помощник." `
             --latest
