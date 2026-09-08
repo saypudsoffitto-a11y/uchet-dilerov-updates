@@ -1,6 +1,6 @@
 {
-  "version": "8.9.22",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.22-corrected/Uchet-dilerov-Setup-8.9.22-x64.exe",
-  "sha256": "c885e721096d2621b6f39d6dd753c286f124582fe6ac934406516c4d6380c83b",
-  "notes": "Исправлено два подтверждённых дефекта 8.9.21: NewMatRos после выгрузки принудительно открывает раздел и показывает заказ; голосовой ввод больше не использует Chromium Web Speech, который выдавал ошибку network, а переключён на распознавание Windows."
+  "version": "8.9.23",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.23-corrected/Uchet-dilerov-Setup-8.9.23-x64.exe",
+  "sha256": "c59e061333040ac6111e3ea71821f3d04c32933c72b44966bea353a14e2b2fb1",
+  "notes": "NewMatRos: выгрузка теперь сохраняется до открытия. По кнопке «Открыть» показывается проверка дилера, фактуры/материала, цвета, ширины, цены из карточки товара и состава заказа. Продажа и долг создаются только после подтверждения, затем открывается чек."
 }
