@@ -43,6 +43,14 @@ window.addEventListener('DOMContentLoaded',()=>{
         const extra=document.createElement('script');
         extra.src='./assistant-enhancements.js';
         extra.defer=true;
+        extra.onload=()=>{
+          try{
+            const hotfix=document.createElement('script');
+            hotfix.src='./hotfix-8917.js';
+            hotfix.defer=true;
+            (document.head||document.documentElement).appendChild(hotfix);
+          }catch(e){console.error('8.9.17 hotfix loader error',e)}
+        };
         (document.head||document.documentElement).appendChild(extra);
       }catch(e){console.error('8.9.16 enhancement loader error',e)}
     };
