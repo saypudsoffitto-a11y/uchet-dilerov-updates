@@ -24,6 +24,7 @@
       "voice-assistant.js",
       "assistant-enhancements.js",
       "hotfix-8917.js",
+      "final-fixes-8917.js",
       "package.json",
       "tovar.csv",
       "newmatros_clients.json",
@@ -35,14 +36,8 @@
     "asar": true,
     "win": {
       "target": [
-        {
-          "target": "nsis",
-          "arch": ["x64"]
-        },
-        {
-          "target": "portable",
-          "arch": ["x64"]
-        }
+        {"target": "nsis", "arch": ["x64"]},
+        {"target": "portable", "arch": ["x64"]}
       ],
       "signAndEditExecutable": false,
       "icon": "icon.ico"
@@ -60,8 +55,6 @@
       "uninstallerIcon": "icon.ico",
       "installerHeaderIcon": "icon.ico"
     },
-    "portable": {
-      "artifactName": "Uchet-dilerov-Portable-${version}-${arch}.${ext}"
-    }
+    "portable": {"artifactName": "Uchet-dilerov-Portable-${version}-${arch}.${ext}"}
   }
 }
