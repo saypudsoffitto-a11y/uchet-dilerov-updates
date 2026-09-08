@@ -13,7 +13,7 @@ const r22=read('runtime-fixes-8922.js');
 const r23=read('runtime-fixes-8923.js');
 const r24=read('runtime-fixes-8924.js');
 const finalFix=read('final-fixes-8917.js');
-const productsCsv=read('tovar.csv');
+const productsCsv=fs.readFileSync(path.join(root,'tovar.csv'));
 
 must(pkg.version==='8.9.25','package version must be 8.9.25');
 must(preload.includes('setIniHandler'),'exclusive NewMatRos handler API missing');
@@ -30,7 +30,6 @@ const corePos=preload.indexOf("'./runtime-fixes-8924.js'");
 const reviewPos=preload.indexOf("'./runtime-fixes-8923.js'");
 must(corePos>=0&&reviewPos>=0&&corePos<reviewPos,'dealer matcher must load before review runtime');
 
-// Execute the actual dealer matcher with representative records.
 const dealerCtx={
   window:{},
   document:{getElementById:()=>null,documentElement:{dataset:{}}},
@@ -48,7 +47,6 @@ must(hit.dealer&&hit.dealer.id===1,'dealer matcher failed phone normalization');
 hit=dealerCtx.window.nmFindDealer({'Контрагент':{'Наименование':'КАРЧИГА'},'Заказ':{}});
 must(hit.dealer&&hit.dealer.id===2,'dealer matcher failed name match');
 
-// Execute the actual final film-price patch, not just a text check.
 const filmProducts=[
   {id:5,name:'МАТ-303 ДО 360 ПРЕМИУМ',groupId:1,retailPrice:105,wholesalePrice:105,archived:false},
   {id:6,name:'МАТ-303 ОТ 380-500м ПРЕМИУМ',groupId:1,retailPrice:140,wholesalePrice:140,archived:false},
@@ -57,11 +55,7 @@ const filmProducts=[
 const filmCtx={
   window:{nmBuildItems:()=>[{productId:null,article:'NM-MAT',name:'Полотно MAT-303',qty:10,price:0,total:0,unit:'м²'}]},
   state:{groups:[{id:1,name:'ПОЛОТНО'}],products:filmProducts,ops:[]},
-  document:{
-    createElement:()=>({style:{},textContent:'',innerHTML:''}),
-    head:{appendChild:()=>{}},
-    getElementById:()=>null
-  },
+  document:{createElement:()=>({style:{},textContent:'',innerHTML:''}),head:{appendChild:()=>{}},getElementById:()=>null},
   MutationObserver:class{observe(){}},
   nmFindRollWidth:data=>{let n=Number(data?.['Заказ']?.['ШиринаПолотна']||0);return n>10?n/100:n},
   console
@@ -79,8 +73,12 @@ p=filmPrice(380);must(p.price===140&&p.productId===6,'3.80 MAT-303 price match f
 p=filmPrice(500);must(p.price===140&&p.productId===6,'5.00 MAT-303 price match failed');
 p=filmPrice(580);must(p.price===190&&p.productId===11,'5.80 MAT-303 price match failed');
 
-must(productsCsv.includes('МАТ-303 ДО 360 ПРЕМИУМ')&&productsCsv.includes(';105'),'MAT 303 narrow product card missing');
-must(productsCsv.includes('МАТ-303 ОТ 380-500м ПРЕМИУМ')&&productsCsv.includes(';140'),'MAT 303 wide product card missing');
-must(productsCsv.includes('МАТ 580 ПРЕМИУМ')&&productsCsv.includes(';190'),'MAT 580 product card missing');
+// Product CSV can originate from Windows encodings, so verify the stable ASCII
+// article and final price columns rather than decoding Cyrillic in this test.
+const csvLatin=productsCsv.toString('latin1');
+const hasCard=(article,price)=>new RegExp('^"'+article+'";.*;'+price+'\\r?$','m').test(csvLatin);
+must(hasCard('00005',105),'MAT 303 narrow price card 00005/105 missing');
+must(hasCard('00006',140),'MAT 303 wide price card 00006/140 missing');
+must(hasCard('00011',190),'MAT 580 price card 00011/190 missing');
 
 console.log('AUDIT OK: single NewMatRos handler, dealer matching, review/confirm flow, client import API and live film-price matching verified.');
