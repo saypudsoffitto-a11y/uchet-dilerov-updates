@@ -32,13 +32,20 @@ contextBridge.exposeInMainWorld('receiptAPI', {
   savePdf: (payload) => ipcRenderer.invoke('receipt:savePdf', payload)
 });
 
-// 8.9.15: голосовой помощник загружается отдельным файлом. Он не слушает в фоне:
-// распознавание речи включается только после явного нажатия кнопки в интерфейсе.
+// Голосовой помощник запускается только по отдельной кнопке и не слушает в фоне.
 window.addEventListener('DOMContentLoaded',()=>{
   try{
-    const s=document.createElement('script');
-    s.src='./voice-assistant.js';
-    s.defer=true;
-    (document.head||document.documentElement).appendChild(s);
+    const voice=document.createElement('script');
+    voice.src='./voice-assistant.js';
+    voice.defer=true;
+    voice.onload=()=>{
+      try{
+        const extra=document.createElement('script');
+        extra.src='./assistant-enhancements.js';
+        extra.defer=true;
+        (document.head||document.documentElement).appendChild(extra);
+      }catch(e){console.error('8.9.16 enhancement loader error',e)}
+    };
+    (document.head||document.documentElement).appendChild(voice);
   }catch(e){console.error('Voice assistant loader error',e)}
 });
