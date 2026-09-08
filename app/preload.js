@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, webFrame } = require('electron');
 contextBridge.exposeInMainWorld('newmatrosAPI', {
   chooseIni: () => ipcRenderer.invoke('newmatros:chooseIni'),
   setWatch: (enabled) => ipcRenderer.invoke('newmatros:setWatch', !!enabled),
@@ -32,36 +32,23 @@ contextBridge.exposeInMainWorld('receiptAPI', {
   savePdf: (payload) => ipcRenderer.invoke('receipt:savePdf', payload)
 });
 
-// Голосовой помощник запускается только по отдельной кнопке и не слушает в фоне.
+// 8.9.21: previous releases contained the fix files, but their preload-side
+// script injection could fail under contextIsolation. Execute a tiny loader in
+// the normal page world instead, so every correction is actually activated.
 window.addEventListener('DOMContentLoaded',()=>{
-  try{
-    const voice=document.createElement('script');
-    voice.src='./voice-assistant.js';
-    voice.defer=true;
-    voice.onload=()=>{
-      try{
-        const extra=document.createElement('script');
-        extra.src='./assistant-enhancements.js';
-        extra.defer=true;
-        extra.onload=()=>{
-          try{
-            const hotfix=document.createElement('script');
-            hotfix.src='./hotfix-8917.js';
-            hotfix.defer=true;
-            hotfix.onload=()=>{
-              try{
-                const finalFix=document.createElement('script');
-                finalFix.src='./final-fixes-8917.js';
-                finalFix.defer=true;
-                (document.head||document.documentElement).appendChild(finalFix);
-              }catch(e){console.error('8.9.17 final fixes loader error',e)}
-            };
-            (document.head||document.documentElement).appendChild(hotfix);
-          }catch(e){console.error('8.9.17 hotfix loader error',e)}
-        };
-        (document.head||document.documentElement).appendChild(extra);
-      }catch(e){console.error('8.9.16 enhancement loader error',e)}
-    };
-    (document.head||document.documentElement).appendChild(voice);
-  }catch(e){console.error('Voice assistant loader error',e)}
+  const code=`(async()=>{
+    const files=['./assistant-8921.js','./hotfix-8917.js','./final-fixes-8917.js'];
+    for(const src of files){
+      await new Promise((resolve,reject)=>{
+        const s=document.createElement('script');
+        s.src=src+'?runtime=8921';
+        s.onload=resolve;
+        s.onerror=()=>reject(new Error('Не загрузился '+src));
+        (document.head||document.documentElement).appendChild(s);
+      });
+    }
+    document.documentElement.dataset.uchetRuntime='8.9.21';
+  })()`;
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.21 runtime loader error',e))}
+  catch(e){console.error('8.9.21 preload loader error',e)}
 });
