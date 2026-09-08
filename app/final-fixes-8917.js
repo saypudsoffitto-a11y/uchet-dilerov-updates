@@ -45,25 +45,29 @@
     const g=productGroupName(p),n=normText(p?.name);
     return /ПОЛОТН/.test(g)||/МАТ|ЛАК|САТИН|ПЛЕН|ПЛЁН|ПОЛОТН/.test(n);
   }
+  function tokens(s){return normText(s).match(/[A-ZА-Я0-9]+/g)||[]}
   function scoreFilmProduct(p,desc,width){
     const n=normText(p?.name);let s=0;
     if(!isFilmProduct(p))return -9999;
-    if(/МАТ/.test(desc)&&/МАТ/.test(n))s+=35;
-    if(/ЛАК/.test(desc)&&/ЛАК/.test(n))s+=35;
-    if(/САТИН/.test(desc)&&/САТИН/.test(n))s+=35;
-    if(/303/.test(desc)&&/303/.test(n))s+=30;
-    if(/ЦВЕТ/.test(desc)&&/ЦВЕТ/.test(n))s+=20;
-    if(/PREMIUM|ПРЕМИУМ/.test(desc)&&/PREMIUM|ПРЕМИУМ/.test(n))s+=8;
+    if(/МАТ/.test(desc)&&/МАТ/.test(n))s+=45;
+    if(/ЛАК/.test(desc)&&/ЛАК/.test(n))s+=45;
+    if(/САТИН/.test(desc)&&/САТИН/.test(n))s+=45;
+    if(/303/.test(desc)&&/303/.test(n))s+=35;
+    if(/BAUF|БАУФ/.test(desc)&&/BAUF|БАУФ/.test(n))s+=35;
+    if(/PREMIUM|ПРЕМИУМ/.test(desc)&&/PREMIUM|ПРЕМИУМ/.test(n))s+=16;
+    const descNums=tokens(desc).filter(x=>/^\d{3,4}$/.test(x));
+    const nameNums=new Set(tokens(n).filter(x=>/^\d{3,4}$/.test(x)));
+    descNums.forEach(x=>{if(nameNums.has(x))s+=12});
 
     if(width>0&&width<=3.60){
-      if(/ДО\s*-?\s*360|ДО\s*3[,.]?60|360/.test(n))s+=70;
-      if(/380|400|500|580/.test(n))s-=35;
+      if(/ДО\s*-?\s*360|ДО\s*3[,.]?60|\b360\b/.test(n))s+=90;
+      if(/380|400|500|580/.test(n))s-=55;
     }else if(width>=3.80&&width<=5.05){
-      if(/380\s*-?\s*500|400\s*-?\s*500|ОТ\s*380|ОТ\s*400/.test(n))s+=75;
-      if(/ДО\s*-?\s*360|580/.test(n))s-=40;
+      if(/380\s*-?\s*500|400\s*-?\s*500|ОТ\s*380|ОТ\s*400|380.*500|400.*500/.test(n))s+=95;
+      if(/ДО\s*-?\s*360|\b580\b/.test(n))s-=60;
     }else if(width>=5.70&&width<=5.90){
-      if(/580|5[,.]?80/.test(n))s+=95;
-      if(/ДО\s*-?\s*360|380\s*-?\s*500|400\s*-?\s*500/.test(n))s-=45;
+      if(/\b580\b|5[,.]?80/.test(n))s+=120;
+      if(/ДО\s*-?\s*360|380\s*-?\s*500|400\s*-?\s*500/.test(n))s-=70;
     }
     return s;
   }
@@ -71,7 +75,7 @@
     const width=widthFromData(data),desc=filmDescriptor(data);
     const candidates=(state.products||[]).filter(p=>!p.archived&&isFilmProduct(p)).map(p=>({p,s:scoreFilmProduct(p,desc,width)})).sort((a,b)=>b.s-a.s);
     const best=candidates[0];
-    if(!best||best.s<45)return null;
+    if(!best||best.s<55)return null;
     const price=(+best.p.retailPrice||+best.p.wholesalePrice||0);
     if(price<=0)return null;
     return {price,product:best.p,width,score:best.s};
@@ -89,6 +93,7 @@
           mat.total=(+mat.qty||0)*found.price;
           mat.productId=found.product.id;
           mat.priceSource='Карточка товара';
+          mat.priceProductName=found.product.name;
           const label=' · цена из карточки «'+found.product.name+'»';
           if(!String(mat.name||'').includes('цена из карточки'))mat.name=String(mat.name||'')+label;
         }
@@ -118,14 +123,39 @@
     };
   }
 
+  function currentNm(){try{return typeof nmCurrent!=='undefined'?nmCurrent:null}catch(_){return null}}
+  function currentNmItems(){try{return typeof nmPreviewItems!=='undefined'?nmPreviewItems:null}catch(_){return null}}
   function showFilmPriceSource(){
     try{
-      if(!window.nmCurrent||!Array.isArray(window.nmPreviewItems))return;
-      const found=priceFromProductCard(window.nmCurrent);if(!found)return;
+      const cur=currentNm(),items=currentNmItems();if(!cur||!Array.isArray(items))return;
+      const mat=items.find(i=>i.article==='NM-MAT');
+      const found=priceFromProductCard(cur);if(!found||!mat)return;
       let el=document.getElementById('nmFilmPriceSource8917');
       if(!el){el=document.createElement('div');el.id='nmFilmPriceSource8917';el.className='card';el.style.margin='10px 0';document.getElementById('nmPreview')?.prepend(el)}
       el.innerHTML='<b>Цена плёнки определена автоматически:</b> '+esc(found.product.name)+' — '+money(found.price)+' / м²'+(found.width?' · ширина '+found.width+' м':'');
     }catch(_){ }
   }
   const preview=document.getElementById('nmPreview');if(preview)new MutationObserver(()=>setTimeout(showFilmPriceSource,0)).observe(preview,{childList:true,subtree:true});
+
+  // После сохранения карточка дилера должна закрываться, а основной экран оставаться на месте.
+  const originalSaveDealerEdit=window.saveDealerEdit;
+  if(typeof originalSaveDealerEdit==='function'){
+    window.saveDealerEdit=function(id){
+      originalSaveDealerEdit(id);
+      try{if(typeof closeDealerModal==='function')closeDealerModal()}catch(_){ }
+    };
+  }
+
+  // После успешной оплаты закрываем форму выбора/ввода оплаты. Отчёт по долгу, если он открыт,
+  // остаётся отдельным окном и может быть закрыт пользователем самостоятельно.
+  const originalMakePayment=window.makePayment;
+  if(typeof originalMakePayment==='function'){
+    window.makePayment=function(){
+      const before=(state.ops||[]).length;
+      originalMakePayment();
+      if((state.ops||[]).length>before){
+        try{if(typeof clearPayDealer==='function')clearPayDealer()}catch(_){ }
+      }
+    };
+  }
 })();
