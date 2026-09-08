@@ -1,6 +1,6 @@
 {
-  "version": "8.9.20",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.20-corrected/Uchet-dilerov-Setup-8.9.20-x64.exe",
-  "sha256": "ae30e26b4f7ce0eec69a5e284d1d1722adf8cc62591c2c6f76a383464534fd6c",
-  "notes": "Исправленная сборка с согласованными изменениями. Версия 8.9.20 создана специально, чтобы установленная 8.9.19 гарантированно приняла обновление через кнопку. Данные учёта сохраняются."
+  "version": "8.9.21",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.21-corrected/Uchet-dilerov-Setup-8.9.21-x64.exe",
+  "sha256": "6141ebe89f58028f8cdafcd64b315011436a76dcca5a7dcce7ddb09ed1c690c7",
+  "notes": "Исправлена главная причина прошлых одинаковых версий: runtime-исправления теперь гарантированно запускаются. Включены группа товаров, NewMatRos, цены плёнки, компактные PDF и новый ИИ-помощник."
 }
