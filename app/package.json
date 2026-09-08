@@ -1,6 +1,6 @@
 {
   "name": "uchet-dilerov",
-  "version": "8.9.25",
+  "version": "8.9.26",
   "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11",
   "main": "main-8922.js",
   "scripts": {
@@ -26,6 +26,7 @@
       "runtime-fixes-8922.js",
       "runtime-fixes-8923.js",
       "runtime-fixes-8924.js",
+      "runtime-fixes-8926.js",
       "voice-assistant.js",
       "assistant-enhancements.js",
       "hotfix-8917.js",
