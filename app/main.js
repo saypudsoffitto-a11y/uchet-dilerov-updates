@@ -4,6 +4,7 @@ const fs = require('fs');
 const os = require('os');
 const crypto = require('crypto');
 const { spawn } = require('child_process');
+const windowSafety = require('./window-safety.js');
 
 // Windows-only build. Disabling GPU acceleration avoids a common class of
 // startup crashes on older/integrated Windows graphics drivers.
@@ -72,6 +73,7 @@ async function createWindow() {
       }
     });
     mainWindow = win;
+    windowSafety.install(win);
     win.once('ready-to-show',()=>win.show());
     await win.loadFile(path.join(__dirname,'index.html'));
     try {
@@ -228,7 +230,8 @@ ipcMain.handle('update:checkAndInstall', async (_e, manifestUrl) => {
     const fileUrl=new URL(m.url,u).toString();const buf=await fetchBuffer(fileUrl);
     if(m.sha256){const got=crypto.createHash('sha256').update(buf).digest('hex');if(got.toLowerCase()!==String(m.sha256).toLowerCase())return {ok:false,message:'Контрольная сумма обновления не совпала'};}
     const target=path.join(os.tmpdir(),'Uchet-dilerov-Setup-'+m.version+'.exe');fs.writeFileSync(target,buf);
-    const child=spawn(target,['/S'],{detached:true,stdio:'ignore'});child.unref();setTimeout(()=>app.quit(),700);
+    if(!(await windowSafety.confirmExit(mainWindow)))return {ok:false,message:'Обновление отменено.'};
+    const child=spawn(target,['/S'],{detached:true,stdio:'ignore'});child.unref();windowSafety.allowClose(mainWindow);setTimeout(()=>app.quit(),700);
     return {ok:true,message:'Версия '+m.version+' скачана. Запускаю установку…'};
   }catch(e){return {ok:false,message:'Ошибка обновления: '+String(e&&e.message||e)}}
 });
@@ -265,7 +268,8 @@ ipcMain.handle('update:installFromFile', async () => {
       const c=await dialog.showMessageBox(mainWindow,{type:'warning',buttons:['Продолжить','Отмена'],defaultId:1,cancelId:1,message:'Имя файла не похоже на установщик «Учёт дилеров».',detail:path.basename(target)});
       if(c.response!==0)return {ok:false,message:'Установка отменена'};
     }
-    const child=spawn(target,[],{detached:true,stdio:'ignore'});child.unref();setTimeout(()=>app.quit(),700);
+    if(!(await windowSafety.confirmExit(mainWindow)))return {ok:false,message:'Обновление отменено.'};
+    const child=spawn(target,[],{detached:true,stdio:'ignore'});child.unref();windowSafety.allowClose(mainWindow);setTimeout(()=>app.quit(),700);
     return {ok:true,message:'Запускаю установщик обновления…'};
   } catch(e) { return {ok:false,message:'Ошибка запуска установщика: '+String(e&&e.message||e)}; }
 });
