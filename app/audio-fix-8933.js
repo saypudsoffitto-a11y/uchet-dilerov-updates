@@ -1,11 +1,10 @@
 (()=>{
   'use strict';
-  if(window.__uchetAudio8933)return;
   const install=()=>{
-    if(window.__uchetAudio8933)return true;
     if(!window.assistantAudio||!window.audioAPI)return false;
     window.__uchetAudio8933=true;
-    const originalSpeak=window.assistantAudio.speak.bind(window.assistantAudio);
+    if(!window.__uchetAudio8933BaseSpeak)window.__uchetAudio8933BaseSpeak=window.assistantAudio.speak.bind(window.assistantAudio);
+    const originalSpeak=window.__uchetAudio8933BaseSpeak;
     const status=()=>document.getElementById('aiStatus');
     const setStatus=t=>{const s=status();if(s)s.textContent=t};
 
@@ -48,9 +47,7 @@
       text=String(text||'').trim();if(!text)return;
       try{
         const cfg=await window.audioAPI.config();
-        if(cfg?.mode==='cloud'&&cfg?.hasKey){
-          return await originalSpeak(text);
-        }
+        if(cfg?.mode==='cloud'&&cfg?.hasKey)return await originalSpeak(text);
         setStatus('Озвучиваю ответ…');
         const browserOk=await browserSpeak(text);
         if(browserOk)return {ok:true,mode:'browser'};
