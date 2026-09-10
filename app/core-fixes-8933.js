@@ -1,9 +1,7 @@
 (()=>{
   'use strict';
-  if(window.__uchetCore8933)return;
 
   const install=()=>{
-    if(window.__uchetCore8933)return true;
     if(typeof state==='undefined'||typeof save!=='function'||typeof render!=='function'||typeof norm!=='function')return false;
     window.__uchetCore8933=true;
 
@@ -135,8 +133,11 @@
       if(receiptViewBody?.querySelector?.('[data-receipt-op-id="'+opId+'"]'))receiptViewBody.innerHTML=html;
     };
 
-    document.addEventListener('click',()=>document.getElementById('dealerContextMenu8933')?.remove());
-    window.addEventListener('blur',()=>document.getElementById('dealerContextMenu8933')?.remove());
+    if(!window.__uchetCore8933Events){
+      window.__uchetCore8933Events=true;
+      document.addEventListener('click',()=>document.getElementById('dealerContextMenu8933')?.remove());
+      window.addEventListener('blur',()=>document.getElementById('dealerContextMenu8933')?.remove());
+    }
     document.documentElement.dataset.dealerFix='8.9.33';
     window.uchet8933={deleteDealer:window.deleteDealerPermanent8933,mergeSync:window.mergeSyncState8933,oldMerge};
     return true;
