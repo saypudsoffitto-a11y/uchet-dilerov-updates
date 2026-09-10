@@ -26,6 +26,8 @@
       "assistant-enhancements.js",
       "main-8922.js",
       "main-8927.js",
+      "release-8930-main.js",
+      "runtime-fixes-8930.js",
       "preload.js",
       "main.js",
       "renderer-patch.js",
@@ -80,7 +82,7 @@
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
     "test:electron": "electron --version",
-    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs"
+    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs ../tests/release-8930/*.test.cjs"
   },
-  "version": "8.9.29"
+  "version": "8.9.30"
 }
