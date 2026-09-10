@@ -11,6 +11,7 @@
       "newmatros_clients.json",
       "package.json",
       "icon.ico",
+      "assistant-settings-8933.js",
       "assistant-8921.js",
       "runtime-fixes-8922.js",
       "receipt-add-core.js",
@@ -18,6 +19,8 @@
       "index.html",
       "audio-service.js",
       "audio-ui.js",
+      "audio-fix-8933.js",
+      "speech-fallback-8933.js",
       "voice-assistant.js",
       "hotfix-8917.js",
       "input-focus.js",
@@ -26,8 +29,11 @@
       "assistant-enhancements.js",
       "main-8922.js",
       "main-8927.js",
+      "main-8933.js",
       "release-8930-main.js",
+      "release-8933-main.js",
       "runtime-fixes-8930.js",
+      "core-fixes-8933.js",
       "updater-8931.js",
       "preload.js",
       "main.js",
@@ -73,13 +79,13 @@
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
   },
-  "main": "main-8927.js",
+  "main": "main-8933.js",
   "name": "uchet-dilerov",
   "scripts": {
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
     "test:electron": "electron --version",
-    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs"
+    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8933/*.test.cjs"
   },
-  "version": "8.9.32"
+  "version": "8.9.33"
 }
