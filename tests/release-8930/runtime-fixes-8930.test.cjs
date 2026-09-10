@@ -1,3 +1,4 @@
+process.chdir(require('node:path').resolve(__dirname,'../..'));
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
