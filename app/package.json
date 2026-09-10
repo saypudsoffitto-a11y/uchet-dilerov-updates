@@ -28,6 +28,7 @@
       "main-8927.js",
       "release-8930-main.js",
       "runtime-fixes-8930.js",
+      "updater-8931.js",
       "preload.js",
       "main.js",
       "renderer-patch.js",
@@ -82,7 +83,7 @@
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
     "test:electron": "electron --version",
-    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs"
+    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs"
   },
-  "version": "8.9.30"
+  "version": "8.9.31"
 }
