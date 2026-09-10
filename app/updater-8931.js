@@ -23,13 +23,15 @@ function launchInstallerAfterAppExit(target,args){
   const helper=spawn('powershell.exe',['-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-Command',script],{detached:true,stdio:'ignore',windowsHide:true,env});
   helper.unref();
 }
-async function closeForUpdateAndLaunch(target,args){
+function closeForUpdateAndLaunch(target,args){
   const win=mainWindow();
-  if(win&&!(await windowSafety.confirmExit(win)))return false;
+  // ВАЖНО: при обновлении НЕ показываем обычное подтверждение закрытия.
+  // Нажатие «Проверить и установить» или выбор установщика уже является явным действием пользователя.
   if(win)windowSafety.allowClose(win);
   launchInstallerAfterAppExit(target,args);
   setImmediate(()=>app.quit());
-  setTimeout(()=>{try{app.exit(0)}catch(_){}},1800).unref?.();
+  const timer=setTimeout(()=>{try{app.exit(0)}catch(_){}},1800);
+  if(timer&&typeof timer.unref==='function')timer.unref();
   return true;
 }
 
@@ -43,8 +45,8 @@ ipcMain.handle('update:checkAndInstall',async(_e,manifestUrl)=>{
     const fileUrl=new URL(m.url,u).toString(),buf=await fetchBuffer(fileUrl);
     if(m.sha256){const got=crypto.createHash('sha256').update(buf).digest('hex');if(got.toLowerCase()!==String(m.sha256).toLowerCase())return {ok:false,message:'Контрольная сумма обновления не совпала'}}
     const target=path.join(os.tmpdir(),'Uchet-dilerov-Setup-'+m.version+'.exe');fs.writeFileSync(target,buf);
-    if(!(await closeForUpdateAndLaunch(target,['/S'])))return {ok:false,message:'Обновление отменено.'};
-    return {ok:true,message:'Версия '+m.version+' скачана. Программа закроется, затем установка продолжится автоматически.'};
+    closeForUpdateAndLaunch(target,['/S']);
+    return {ok:true,message:'Версия '+m.version+' скачана. Программа закроется автоматически, затем установка продолжится.'};
   }catch(e){return {ok:false,message:'Ошибка обновления: '+String(e&&e.message||e)}}
 });
 
@@ -59,9 +61,9 @@ ipcMain.handle('update:installFromFile',async()=>{
       const c=await dialog.showMessageBox(win,{type:'warning',buttons:['Продолжить','Отмена'],defaultId:1,cancelId:1,message:'Имя файла не похоже на установщик «Учёт дилеров».',detail:path.basename(target)});
       if(c.response!==0)return {ok:false,message:'Установка отменена'};
     }
-    if(!(await closeForUpdateAndLaunch(target,[])))return {ok:false,message:'Обновление отменено.'};
-    return {ok:true,message:'Программа закроется, затем установщик запустится автоматически.'};
+    closeForUpdateAndLaunch(target,[]);
+    return {ok:true,message:'Программа закроется автоматически, затем установщик запустится.'};
   }catch(e){return {ok:false,message:'Ошибка запуска установщика: '+String(e&&e.message||e)}}
 });
 
-module.exports={cmpVersion,launchInstallerAfterAppExit};
+module.exports={cmpVersion,launchInstallerAfterAppExit,closeForUpdateAndLaunch};
