@@ -41,7 +41,8 @@ async function main(){
   console.log('Renderer debugger available');
   const socket=new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject});
-  const evaluate=expression=>new Promise((resolve,reject)=>{const id=Date.now();socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
+  let requestId=0;
+  const evaluate=expression=>new Promise((resolve,reject)=>{const id=++requestId;socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
   await sleep(1800);
   const result=await evaluate(`(async()=>({ready:document.readyState,text:document.body.innerText,deleteHandler:typeof window.deleteDealerPermanent8935}))()`);
   assert.equal(result.ready,'complete');assert.match(result.text,/Дилеры|дилер/);assert.equal(result.deleteHandler,'function');
