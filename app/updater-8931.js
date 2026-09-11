@@ -21,7 +21,7 @@ function cmdValue(v){return String(v==null?'':v).replace(/%/g,'%%').replace(/[\r
 async function waitForMarker(logPath,marker,timeoutMs){
   const until=Date.now()+(timeoutMs||1800);
   while(Date.now()<until){
-    try{if(fs.existsSync(logPath)&&fs.readFileSync(logPath,'utf8').includes(marker))return true}catch(_){}
+    try{if(fs.existsSync(logPath)&&fs.readFileSync(logPath,'utf8').replace(/\x00/g,'').includes(marker))return true}catch(_){}
     await sleep(75);
   }
   return false;
@@ -61,7 +61,7 @@ function helperFiles(target,args){
 }
 function spawnCmdHelper(info){
   const comspec=process.env.ComSpec||process.env.COMSPEC||'cmd.exe';
-  const helper=spawn(comspec,['/d','/s','/c','call "'+info.helperPath+'"'],{detached:true,stdio:'ignore',windowsHide:true,env:{...process.env}});
+  const helper=spawn(comspec,['/d','/s','/c','""'+info.helperPath+'""'],{detached:true,stdio:'ignore',windowsHide:true,windowsVerbatimArguments:true,env:{...process.env}});
   helper.on('error',()=>{});
   helper.unref();
   return helper;
