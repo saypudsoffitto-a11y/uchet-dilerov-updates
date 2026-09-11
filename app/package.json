@@ -31,6 +31,7 @@
       "dealer-fix-8935.js",
       "dealer-delete-8937.js",
       "stable-fix-8938.js",
+      "pdf-compact-8938.js",
       "updater-8931.js",
       "preload.js",
       "main.js",
