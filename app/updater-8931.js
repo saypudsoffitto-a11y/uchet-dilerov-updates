@@ -76,11 +76,34 @@ function spawnPowerShellFallback(info,target,args){
   helper.unref();
   return helper;
 }
+function spawnNodeHelper(info,target,args){
+  const helperPath=info.helperPath+'.cjs';
+  const config={parentPid:process.pid,target,args:args||[],logPath:info.logPath,lockPath:info.lockPath};
+  const code=`'use strict';
+const fs=require('fs'),{spawn}=require('child_process');
+const config=${JSON.stringify(config)};
+fs.writeFileSync(config.logPath,'NODE_READY\\n');
+const timer=setInterval(()=>{
+  try{process.kill(config.parentPid,0);return}catch(e){if(e.code!=='ESRCH')return}
+  clearInterval(timer);
+  try{fs.mkdirSync(config.lockPath)}catch(e){process.exit(0)}
+  const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+  const child=spawn(config.target,config.args,{detached:true,stdio:'ignore',windowsHide:false,env});
+  child.on('error',e=>{fs.appendFileSync(config.logPath,'ERROR '+e.message);process.exit(1)});
+  child.on('spawn',()=>{fs.appendFileSync(config.logPath,'INSTALLER_STARTED');child.unref();try{fs.unlinkSync(__filename)}catch{}});
+},200);
+`;
+  fs.writeFileSync(helperPath,code,'utf8');
+  const helper=spawn(process.execPath,[helperPath],{detached:true,stdio:'ignore',windowsHide:true,env:{...process.env,ELECTRON_RUN_AS_NODE:'1'}});
+  helper.on('error',()=>{});helper.unref();return helper;
+}
 async function launchInstallerAfterAppExit(target,args){
   if(process.platform!=='win32')throw new Error('Обновление поддерживается только в Windows');
   if(!fs.existsSync(target))throw new Error('Скачанный установщик не найден');
   const st=fs.statSync(target);if(!st.isFile()||st.size<1024*1024)throw new Error('Скачанный установщик повреждён или слишком мал');
   const info=helperFiles(target,args);
+  const nodeHelper=spawnNodeHelper(info,target,args);
+  if(nodeHelper.pid&&await waitForMarker(info.logPath,'NODE_READY',5000))return {ok:true,mode:'node',logPath:info.logPath};
   let ps=null;try{ps=spawnPowerShellFallback(info,target,args)}catch(_){}
   if(ps&&ps.pid&&await waitForMarker(info.logPath,'PS_READY',5000))return {ok:true,mode:'powershell',logPath:info.logPath};
   let cmd=null;try{cmd=spawnCmdHelper(info)}catch(_){}
