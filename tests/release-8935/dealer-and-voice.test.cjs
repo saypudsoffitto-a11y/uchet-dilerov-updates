@@ -89,7 +89,9 @@ test('8.9.35 не упаковывает голосового помощника
   const files = pkg.build.files.map(String);
   const forbidden = ['assistant-8921.js','assistant-enhancements.js','assistant-settings-8933.js','audio-fix-8933.js','audio-service.js','audio-ui.js','speech-fallback-8933.js'];
   for (const name of forbidden) assert.equal(files.includes(name), false, `${name} не должен попадать в сборку`);
-  assert.equal(pkg.main, 'main-8935.js');
+  assert.ok(files.includes(pkg.main), `текущая точка входа ${pkg.main} должна попадать в сборку`);
+  const currentMain = fs.readFileSync(path.join(appDir, pkg.main), 'utf8');
+  assert.doesNotMatch(currentMain, /assistant|audio|speech/i, 'текущая точка входа не должна возвращать голосовые модули');
 });
 
 test('8.9.35 main entry не подключает голосовые модули', () => {
