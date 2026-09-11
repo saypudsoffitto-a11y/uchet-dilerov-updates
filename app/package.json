@@ -76,6 +76,10 @@
   },
   "main": "main-8935.js",
   "name": "uchet-dilerov",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates.git"
+  },
   "scripts": {
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
