@@ -15,6 +15,9 @@
     };
 
     state.deletedDealers=state.deletedDealers&&typeof state.deletedDealers==='object'?state.deletedDealers:{};
+    // 8.9.35 also tombstoned by phone/name. That is unsafe for duplicate cards:
+    // deleting one duplicate could hide the other. 8.9.37 uses exact dealer IDs.
+    state.deletedDealerKeys={};
 
     const snapshotDealer=(op,d)=>{
       if(!op||!d)return;
@@ -83,9 +86,12 @@
     const fixedMerge=function(remote,local){
       remote=norm(remote||{});local=norm(local||{});
       const deletedDealers=mergeMarks(remote.deletedDealers,local.deletedDealers);
+      // Legacy identity tombstones must not erase a duplicate dealer that the user kept.
+      remote.deletedDealerKeys={};local.deletedDealerKeys={};
       let merged=previousMerge?previousMerge(remote,local):remote;
       merged=norm(merged||{});
       merged.deletedDealers=deletedDealers;
+      merged.deletedDealerKeys={};
       // A manual deletion is final for this exact dealer ID. Never resurrect it
       // merely because an old imported record carries a later-looking timestamp.
       merged.dealers=(merged.dealers||[]).filter(d=>!isDeletedId(d,deletedDealers));
@@ -125,10 +131,11 @@
     };
     try{showDealerContextMenu=window.showDealerContextMenu}catch(_){}
 
-    // Apply existing tombstones immediately when this final handler is installed.
+    // Apply existing exact-ID tombstones immediately when this final handler is installed.
     const before=(state.dealers||[]).length;
     state.dealers=(state.dealers||[]).filter(d=>!isDeletedId(d));
-    if(state.dealers.length!==before){localStorage.setItem(KEY,JSON.stringify(state));save()}
+    localStorage.setItem(KEY,JSON.stringify(state));
+    if(state.dealers.length!==before)save();
 
     document.documentElement.dataset.dealerFix='8.9.37';
     window.__dealerDelete8937={removeDealerNow,mergeSyncState:fixedMerge};
