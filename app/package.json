@@ -23,13 +23,16 @@
       "main-8935.js",
       "main-8937.js",
       "main-8938.js",
+      "main-8939.js",
       "release-8930-main.js",
       "release-8937-main.js",
       "release-8938-main.js",
+      "release-8939-main.js",
       "runtime-fixes-8930.js",
       "core-fixes-8933.js",
       "dealer-fix-8935.js",
       "dealer-delete-8937.js",
+      "dealer-delete-8939.js",
       "stable-fix-8938.js",
       "pdf-compact-8938.js",
       "updater-8931.js",
@@ -62,15 +65,11 @@
       "signAndEditExecutable": false,
       "target": [
         {
-          "arch": [
-            "x64"
-          ],
+          "arch": ["x64"],
           "target": "nsis"
         },
         {
-          "arch": [
-            "x64"
-          ],
+          "arch": ["x64"],
           "target": "portable"
         }
       ]
@@ -81,7 +80,7 @@
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
   },
-  "main": "main-8938.js",
+  "main": "main-8939.js",
   "name": "uchet-dilerov",
   "repository": {
     "type": "git",
@@ -91,7 +90,7 @@
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
     "test:electron": "electron --version",
-    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs"
+    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs && node --test ../tests/release-8939/*.test.cjs"
   },
-  "version": "8.9.38"
+  "version": "8.9.39"
 }
