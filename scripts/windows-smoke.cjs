@@ -46,7 +46,9 @@ async function main(){
   let result;
   for(let i=0;i<100;i++){
    if(child.exitCode!==null)throw Error('Installed application exited while renderer was loading: '+output);
-   result=await evaluate(`(async()=>({ready:document.readyState,text:document.body?.innerText||'',dealerFix:document.documentElement.dataset.dealerFix,deleteHandler:typeof window.deleteDealerPermanent8937,contextMenu:typeof window.showDealerContextMenu}))()`);
+   try{
+    result=await evaluate(`(async()=>({ready:document.readyState,text:document.body?.innerText||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',deleteHandler:typeof window.deleteDealerPermanent8937,contextMenu:typeof window.showDealerContextMenu}))()`);
+   }catch(_){result=null}
    if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.dealerFix==='8.9.37'&&result.deleteHandler==='function'&&result.contextMenu==='function')break;
    await sleep(200);
   }
