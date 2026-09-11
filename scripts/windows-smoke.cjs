@@ -43,8 +43,14 @@ async function main(){
   await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject});
   let requestId=0;
   const evaluate=expression=>new Promise((resolve,reject)=>{const id=++requestId;socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
-  await sleep(1800);
-  const result=await evaluate(`(async()=>({ready:document.readyState,text:document.body.innerText,deleteHandler:typeof window.deleteDealerPermanent8935}))()`);
+  let result;
+  for(let i=0;i<75;i++){
+   if(child.exitCode!==null)throw Error('Installed application exited while renderer was loading: '+output);
+   result=await evaluate(`(async()=>({ready:document.readyState,text:document.body?.innerText||'',deleteHandler:typeof window.deleteDealerPermanent8935}))()`);
+   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.deleteHandler==='function')break;
+   await sleep(200);
+  }
+  assert.ok(result,'Renderer readiness check returned no result');
   assert.equal(result.ready,'complete');assert.match(result.text,/Дилеры|дилер/);assert.equal(result.deleteHandler,'function');
   assert.doesNotMatch(output,/Attempted to register a second handler|Uncaught Exception/);
   console.log('Renderer loaded; testing deletion');
