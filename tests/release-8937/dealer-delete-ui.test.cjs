@@ -110,13 +110,15 @@ test('8.9.37 exact-ID tombstone blocks sync resurrection even with a newer remot
   assert.equal(Object.keys(merged.deletedDealerKeys||{}).length,0,'legacy identity tombstones must not remove the kept duplicate');
 });
 
-test('8.9.37 package uses final dealer handler entrypoint and includes it in installer',()=>{
+test('8.9.37 dealer deletion fix remains packaged and reachable in later releases',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(appDir,'package.json'),'utf8'));
-  assert.equal(pkg.version,'8.9.37');
-  assert.equal(pkg.main,'main-8937.js');
+  const version=String(pkg.version||'0.0.0').split('.').map(Number);
+  assert.ok(version[0]>8 || (version[0]===8 && (version[1]>9 || (version[1]===9 && version[2]>=37))),'package must be 8.9.37 or newer');
   for(const file of ['main-8937.js','release-8937-main.js','dealer-delete-8937.js'])assert.ok(pkg.build.files.includes(file),file+' must be packaged');
-  const main=fs.readFileSync(path.join(appDir,'main-8937.js'),'utf8');
-  assert.match(main,/release-8937-main\.js/);
+  const main8937=fs.readFileSync(path.join(appDir,'main-8937.js'),'utf8');
+  assert.match(main8937,/release-8937-main\.js/);
   const loader=fs.readFileSync(path.join(appDir,'release-8937-main.js'),'utf8');
   assert.match(loader,/dealer-delete-8937\.js/);
+  const currentMain=fs.readFileSync(path.join(appDir,pkg.main),'utf8');
+  assert.ok(pkg.main==='main-8937.js'||/main-8937\.js/.test(currentMain),'newer entrypoint must retain 8.9.37 chain');
 });
