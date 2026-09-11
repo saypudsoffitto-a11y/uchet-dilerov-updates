@@ -28,6 +28,7 @@ function boot(){
   const storage=new Map();
   const confirms=[];
   let lastMenu=null;
+  let intervalFn=null;
   const localStorage={
     setItem:(k,v)=>storage.set(k,String(v)),
     getItem:k=>storage.has(k)?storage.get(k):null
@@ -53,7 +54,7 @@ function boot(){
     renderDealers:()=>{},renderDebts:()=>{},closeDealerModal:()=>{},
     save:()=>localStorage.setItem('uchet_dilerov_v8',JSON.stringify(state)),
     setTimeout:fn=>{fn();return 1},
-    setInterval:fn=>{fn();return 1},
+    setInterval:fn=>{intervalFn=fn;return 1},
     clearInterval:()=>{},
     mergeSyncState:(remote,local)=>({
       ...remote,
@@ -64,6 +65,8 @@ function boot(){
   };
   vm.createContext(ctx);
   vm.runInContext(source,ctx,{filename:'dealer-delete-8937.js'});
+  assert.equal(typeof intervalFn,'function');
+  intervalFn();
   return {ctx,state,keepId,deleteId,name,phone,confirms,storage,getMenu:()=>lastMenu};
 }
 
