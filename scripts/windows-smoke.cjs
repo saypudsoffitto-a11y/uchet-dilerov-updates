@@ -10,7 +10,8 @@ async function main(){
  if(process.argv[2]==='handoff'){
   const Module=require('node:module'),original=Module._load;
   Module._load=function(name,...rest){if(name==='electron')return {app:{},BrowserWindow:{},dialog:{},ipcMain:{on(){},handle(){},removeHandler(){}}};return original.call(this,name,...rest)};
-  await require('../app/updater-8931.js').launchInstallerAfterAppExit(process.execPath,[process.argv[3]]);
+  const info=await require('../app/updater-8931.js').launchInstallerAfterAppExit(process.execPath,[process.argv[3]]);
+  console.log(JSON.stringify(info));
   return;
  }
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'uchet smoke '));
@@ -19,7 +20,7 @@ async function main(){
  const probe=spawnSync(process.execPath,[__filename,'handoff',writer],{encoding:'utf8',timeout:20000});
  assert.equal(probe.status,0,probe.stderr);
  for(let i=0;i<150&&!fs.existsSync(marker);i++)await sleep(100);
- assert.ok(fs.existsSync(marker),'Updater helper did not launch its target after parent exit');
+ assert.ok(fs.existsSync(marker),'Updater helper did not launch its target after parent exit: '+probe.stdout+' '+probe.stderr);
  console.log('PASS: Windows updater handoff with spaces in target arguments');
  const exe=process.argv[2];assert.ok(fs.existsSync(exe),'Installed executable missing');
  const child=spawn(exe,['--remote-debugging-port=19336'],{env:{...process.env,APPDATA:path.join(tmp,'roaming'),LOCALAPPDATA:path.join(tmp,'local')},stdio:'pipe'});
