@@ -24,6 +24,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Verify Windows updater handoff
+        run: node scripts/windows-smoke.cjs --handoff-only
+
       - name: Install dependencies
         working-directory: app
         run: npm install --no-audit --no-fund
