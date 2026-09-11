@@ -18,8 +18,6 @@ concurrency:
 jobs:
   release:
     runs-on: windows-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
 
     steps:
       - name: Checkout
@@ -33,6 +31,8 @@ jobs:
       - name: Read version
         id: meta
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           if (!(Test-Path 'app/package.json')) { throw 'app/package.json not found' }
           $version = node -p "require('./app/package.json').version"
@@ -55,6 +55,9 @@ jobs:
         if: steps.meta.outputs.exists != 'true'
         working-directory: app
         shell: pwsh
+        env:
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
         run: |
           npm run build:win -- --publish never
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -95,6 +98,8 @@ jobs:
       - name: Publish GitHub Release
         if: steps.meta.outputs.exists != 'true'
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $version = '${{ steps.meta.outputs.version }}'
           $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
