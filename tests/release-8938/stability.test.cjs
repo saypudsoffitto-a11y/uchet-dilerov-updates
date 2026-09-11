@@ -14,12 +14,13 @@ test('8.9.38 is wired as the application entrypoint',()=>{
   for(const f of ['main-8938.js','release-8938-main.js','stable-fix-8938.js','pdf-compact-8938.js']) assert.ok(pkg.build.files.includes(f),f+' missing from build.files');
 });
 
-test('product table has a real horizontal/vertical scrolling viewport',()=>{
+test('product table has a real compact horizontal/vertical scrolling viewport',()=>{
   const src=read('app/stable-fix-8938.js');
   assert.match(src,/productTableScroll8938/);
   assert.match(src,/overflow:auto!important/);
   assert.match(src,/width:max-content!important/);
-  assert.match(src,/min-width:1280px!important/);
+  assert.match(src,/min-width:1040px!important/);
+  assert.match(src,/padding:5px 7px!important/);
   assert.match(src,/max-height:calc\(100vh - 300px\)/);
   assert.match(src,/position:sticky/);
 });
@@ -53,10 +54,19 @@ test('debt report WhatsApp and download actions produce PDF, not plain text',()=
   assert.doesNotMatch(src,/text\/plain/);
 });
 
-test('receipt and dealer history tables are compact enough for normal screens',()=>{
+test('receipt, dealer history and debt-report tables are compact enough for normal screens',()=>{
   const src=read('app/pdf-compact-8938.js');
   assert.match(src,/\.receipt\{max-width:860px!important;padding:14px!important/);
   assert.match(src,/\.receipt th,\.receipt td\{padding:4px 6px!important/);
   assert.match(src,/\.dealerHistoryDetail\{font-size:11\.5px!important/);
   assert.match(src,/max-width:300px!important/);
+  assert.match(src,/#debtReportPrint\{max-width:760px!important\}/);
+});
+
+test('main process exposes PDF save and WhatsApp handlers used by both invoice and debt report',()=>{
+  const src=read('app/main.js');
+  assert.match(src,/ipcMain\.handle\('receipt:savePdf'/);
+  assert.match(src,/ipcMain\.handle\('receipt:sendPdfWhatsApp'/);
+  assert.match(src,/htmlToPdf/);
+  assert.match(src,/copyFileToClipboardWindows/);
 });
