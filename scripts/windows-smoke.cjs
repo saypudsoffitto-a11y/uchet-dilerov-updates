@@ -20,8 +20,11 @@ async function main(){
  const probe=spawnSync(process.execPath,[__filename,'handoff',writer],{encoding:'utf8',timeout:20000});
  assert.equal(probe.status,0,probe.stderr);
  for(let i=0;i<150&&!fs.existsSync(marker);i++)await sleep(100);
- assert.ok(fs.existsSync(marker),'Updater helper did not launch its target after parent exit: '+probe.stdout+' '+probe.stderr);
+ const info=JSON.parse(probe.stdout.trim());
+ const diagnostics=[info.logPath,info.logPath+'.stderr'].map(p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'missing').join('\n');
+ assert.ok(fs.existsSync(marker),'Updater helper did not launch its target after parent exit: '+probe.stdout+' '+probe.stderr+' '+diagnostics);
  console.log('PASS: Windows updater handoff with spaces in target arguments');
+ if(process.argv[2]==='--handoff-only')return;
  const exe=process.argv[2];assert.ok(fs.existsSync(exe),'Installed executable missing');
  const child=spawn(exe,['--remote-debugging-port=19336'],{env:{...process.env,APPDATA:path.join(tmp,'roaming'),LOCALAPPDATA:path.join(tmp,'local')},stdio:'pipe'});
  let output='';child.stderr.on('data',x=>output+=x);child.stdout.on('data',x=>output+=x);
