@@ -39,7 +39,20 @@ async function main(){
   const result=await evaluate(`(async()=>({ready:document.readyState,text:document.body.innerText,deleteHandler:typeof window.deleteDealerPermanent8935}))()`);
   assert.equal(result.ready,'complete');assert.match(result.text,/Дилеры|дилер/);assert.equal(result.deleteHandler,'function');
   assert.doesNotMatch(output,/Attempted to register a second handler|Uncaught Exception/);
-  socket.close();console.log('PASS: installed Windows application opens and dealer deletion handler is available');
+  const deletion=await evaluate(`(()=>{
+    const id=Date.now()-10000;
+    state.dealers.push({id,name:'Windows smoke dealer',phone:'+79990000001'});
+    state.ops.push({id:id+1,dealerId:id,type:'sale',amount:100});
+    const original=window.confirm;let confirmations=0;
+    window.confirm=()=>{confirmations++;return true};
+    try {
+      const ok=window.deleteDealerPermanent8935(id);
+      const saved=JSON.parse(localStorage.getItem(KEY));
+      return {ok,confirmations,absent:!state.dealers.some(d=>d.id===id),persisted:!saved.dealers.some(d=>d.id===id),history:saved.ops.some(o=>o.dealerId===id&&o.dealer==='Windows smoke dealer')};
+    } finally {window.confirm=original}
+  })()`);
+  assert.deepEqual(deletion,{ok:true,confirmations:2,absent:true,persisted:true,history:true});
+  socket.close();console.log('PASS: installed application opens, deletes dealer, persists deletion and preserves history');
  }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F']);}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
