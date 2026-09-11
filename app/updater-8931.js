@@ -21,7 +21,7 @@ function cmdValue(v){return String(v==null?'':v).replace(/%/g,'%%').replace(/[\r
 async function waitForMarker(logPath,marker,timeoutMs){
   const until=Date.now()+(timeoutMs||1800);
   while(Date.now()<until){
-    try{if(fs.existsSync(logPath)&&fs.readFileSync(logPath,'utf8').includes(marker))return true}catch(_){}
+    try{if(fs.existsSync(logPath)&&fs.readFileSync(logPath,'utf8').replace(/\x00/g,'').includes(marker))return true}catch(_){}
     await sleep(75);
   }
   return false;
@@ -61,28 +61,53 @@ function helperFiles(target,args){
 }
 function spawnCmdHelper(info){
   const comspec=process.env.ComSpec||process.env.COMSPEC||'cmd.exe';
-  const helper=spawn(comspec,['/d','/s','/c','call "'+info.helperPath+'"'],{detached:true,stdio:'ignore',windowsHide:true,env:{...process.env}});
+  const helper=spawn(comspec,['/d','/s','/c','""'+info.helperPath+'""'],{detached:true,stdio:'ignore',windowsHide:true,windowsVerbatimArguments:true,env:{...process.env}});
   helper.on('error',()=>{});
   helper.unref();
   return helper;
 }
 function spawnPowerShellFallback(info,target,args){
-  const env={...process.env,UCHET_UPDATE_EXE:String(target),UCHET_UPDATE_PID:String(process.pid),UCHET_UPDATE_ARGS:(args||[]).join(' '),UCHET_UPDATE_LOG:info.logPath,UCHET_UPDATE_LOCK:info.lockPath};
+  const env={...process.env,UCHET_UPDATE_EXE:String(target),UCHET_UPDATE_PID:String(process.pid),UCHET_UPDATE_ARGS:(args||[]).map(a=>'"'+String(a).replace(/"/g,'\\"')+'"').join(' '),UCHET_UPDATE_LOG:info.logPath,UCHET_UPDATE_LOCK:info.lockPath};
   const script=`$ErrorActionPreference='SilentlyContinue'; Add-Content -Path $env:UCHET_UPDATE_LOG -Value 'PS_READY'; $p=[int]$env:UCHET_UPDATE_PID; Wait-Process -Id $p -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 300; try { New-Item -ItemType Directory -Path $env:UCHET_UPDATE_LOCK -ErrorAction Stop | Out-Null } catch { exit 0 }; if($env:UCHET_UPDATE_ARGS){ Start-Process -FilePath $env:UCHET_UPDATE_EXE -ArgumentList $env:UCHET_UPDATE_ARGS } else { Start-Process -FilePath $env:UCHET_UPDATE_EXE }`;
-  const helper=spawn('powershell.exe',['-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-Command',script],{detached:true,stdio:'ignore',windowsHide:true,env});
+  const errorFd=fs.openSync(info.logPath+'.stderr','a');
+  const helper=spawn('powershell.exe',['-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-Command',script],{detached:true,stdio:['ignore','ignore',errorFd],windowsHide:true,env});
+  fs.closeSync(errorFd);
   helper.on('error',()=>{});
   helper.unref();
   return helper;
+}
+function spawnNodeHelper(info,target,args){
+  const helperPath=info.helperPath+'.cjs';
+  const config={parentPid:process.pid,target,args:args||[],logPath:info.logPath,lockPath:info.lockPath};
+  const code=`'use strict';
+const fs=require('fs'),{spawn}=require('child_process');
+const config=${JSON.stringify(config)};
+fs.writeFileSync(config.logPath,'NODE_READY\\n');
+const timer=setInterval(()=>{
+  try{process.kill(config.parentPid,0);return}catch(e){if(e.code!=='ESRCH')return}
+  clearInterval(timer);
+  try{fs.mkdirSync(config.lockPath)}catch(e){process.exit(0)}
+  const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
+  const child=spawn(config.target,config.args,{detached:true,stdio:'ignore',windowsHide:false,env});
+  child.on('error',e=>{fs.appendFileSync(config.logPath,'ERROR '+e.message);process.exit(1)});
+  child.on('spawn',()=>{fs.appendFileSync(config.logPath,'INSTALLER_STARTED');child.unref();try{fs.unlinkSync(__filename)}catch{}});
+},200);
+`;
+  fs.writeFileSync(helperPath,code,'utf8');
+  const helper=spawn(process.execPath,[helperPath],{detached:true,stdio:'ignore',windowsHide:true,env:{...process.env,ELECTRON_RUN_AS_NODE:'1'}});
+  helper.on('error',()=>{});helper.unref();return helper;
 }
 async function launchInstallerAfterAppExit(target,args){
   if(process.platform!=='win32')throw new Error('Обновление поддерживается только в Windows');
   if(!fs.existsSync(target))throw new Error('Скачанный установщик не найден');
   const st=fs.statSync(target);if(!st.isFile()||st.size<1024*1024)throw new Error('Скачанный установщик повреждён или слишком мал');
   const info=helperFiles(target,args);
-  let cmd=null;try{cmd=spawnCmdHelper(info)}catch(_){}
-  if(cmd&&cmd.pid&&await waitForMarker(info.logPath,'CMD_READY',1800))return {ok:true,mode:'cmd',logPath:info.logPath};
+  const nodeHelper=spawnNodeHelper(info,target,args);
+  if(nodeHelper.pid&&await waitForMarker(info.logPath,'NODE_READY',5000))return {ok:true,mode:'node',logPath:info.logPath};
   let ps=null;try{ps=spawnPowerShellFallback(info,target,args)}catch(_){}
-  if(ps&&ps.pid&&await waitForMarker(info.logPath,'PS_READY',1800))return {ok:true,mode:'powershell',logPath:info.logPath};
+  if(ps&&ps.pid&&await waitForMarker(info.logPath,'PS_READY',5000))return {ok:true,mode:'powershell',logPath:info.logPath};
+  let cmd=null;try{cmd=spawnCmdHelper(info)}catch(_){}
+  if(cmd&&cmd.pid&&await waitForMarker(info.logPath,'CMD_READY',5000))return {ok:true,mode:'cmd',logPath:info.logPath};
   throw new Error('Не удалось запустить службу обновления. Программа останется открытой.');
 }
 async function closeForUpdateAndLaunch(target,args){

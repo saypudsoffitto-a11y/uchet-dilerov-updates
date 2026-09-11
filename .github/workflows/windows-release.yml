@@ -57,17 +57,23 @@ jobs:
         shell: pwsh
         run: |
           npm run build:win -- --publish never
-          $code = $LASTEXITCODE
-          if ($code -ne 0) {
-            $version = '${{ steps.meta.outputs.version }}'
-            $setup = "dist/Uchet-dilerov-Setup-$version-x64.exe"
-            $portable = "dist/Uchet-dilerov-Portable-$version-x64.exe"
-            if ((Test-Path $setup) -and (Test-Path $portable)) {
-              Write-Warning "electron-builder returned $code after producing both Windows executables; continuing to publish verified artifacts."
-              exit 0
-            }
-            exit $code
-          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Install and launch Windows application before publication
+        if: steps.meta.outputs.exists != 'true'
+        shell: pwsh
+        run: |
+          $version = '${{ steps.meta.outputs.version }}'
+          $setup = (Resolve-Path "app/dist/Uchet-dilerov-Setup-$version-x64.exe").Path
+          $destination = Join-Path $env:RUNNER_TEMP 'uchet-smoke-install'
+          Write-Host 'Starting silent installation'
+          $installer = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$destination") -PassThru
+          if (!$installer.WaitForExit(60000)) { throw 'Installer did not finish in 60 seconds' }
+          Write-Host 'Silent installation finished'
+          if ($installer.ExitCode -ne 0) { throw "Installer failed: $($installer.ExitCode)" }
+          $exe = Join-Path $destination 'Учёт дилеров.exe'
+          node scripts/windows-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Generate latest.json
         if: steps.meta.outputs.exists != 'true'

@@ -55,11 +55,15 @@
       "signAndEditExecutable": false,
       "target": [
         {
-          "arch": ["x64"],
+          "arch": [
+            "x64"
+          ],
           "target": "nsis"
         },
         {
-          "arch": ["x64"],
+          "arch": [
+            "x64"
+          ],
           "target": "portable"
         }
       ]
@@ -76,7 +80,7 @@
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
     "test:electron": "electron --version",
-    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs"
+    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs"
   },
-  "version": "8.9.35"
+  "version": "8.9.36"
 }

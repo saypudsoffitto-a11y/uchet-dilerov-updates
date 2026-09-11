@@ -1,11 +1,17 @@
 name: Verify Windows build pipeline
 
 on:
+  pull_request:
+    paths: ['app/**', 'tests/**', 'scripts/**', '.github/workflows/**']
   push:
     branches: [main]
     paths:
       - 'BUILD_TEST_TRIGGER.txt'
   workflow_dispatch:
+
+concurrency:
+  group: windows-test-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -22,13 +28,16 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Verify Windows updater handoff
+        run: node scripts/windows-smoke.cjs --handoff-only
+
       - name: Install dependencies
         working-directory: app
         run: npm install --no-audit --no-fund
 
       - name: Build Windows Setup and Portable
         working-directory: app
-        run: npm run build:win
+        run: npm run build:win -- --publish never
 
       - name: Verify outputs
         shell: pwsh
@@ -40,3 +49,26 @@ jobs:
           if (!(Test-Path $portable)) { throw "Portable missing: $portable" }
           Write-Host "Verified $setup"
           Write-Host "Verified $portable"
+
+      - name: Install and launch Windows application before publication
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          $setup = (Resolve-Path "app/dist/Uchet-dilerov-Setup-$version-x64.exe").Path
+          $destination = Join-Path $env:RUNNER_TEMP 'uchet-smoke-install'
+          Write-Host 'Starting silent installation'
+          $installer = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$destination") -PassThru
+          if (!$installer.WaitForExit(60000)) { throw 'Installer did not finish in 60 seconds' }
+          Write-Host 'Silent installation finished'
+          if ($installer.ExitCode -ne 0) { throw "Installer failed: $($installer.ExitCode)" }
+          $exe = Join-Path $destination 'Учёт дилеров.exe'
+          node scripts/windows-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+
+      - name: Upload checked Windows installers
+        uses: actions/upload-artifact@v4
+        with:
+          name: uchet-dilerov-windows-checked
+          path: app/dist/*Setup*.exe
+          retention-days: 7
