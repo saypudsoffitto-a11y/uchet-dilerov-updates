@@ -5,6 +5,7 @@ const path=require('node:path');
 const {spawn,spawnSync}=require('node:child_process');
 const assert=require('node:assert/strict');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const watchdog=setTimeout(()=>{console.error('Windows smoke timeout');process.exit(1)},90000);watchdog.unref();
 async function main(){
  if(process.platform!=='win32')throw Error('This check must run on Windows');
  if(process.argv[2]==='handoff'){
@@ -26,6 +27,7 @@ async function main(){
  console.log('PASS: Windows updater handoff with spaces in target arguments');
  if(process.argv[2]==='--handoff-only')return;
  const exe=process.argv[2];assert.ok(fs.existsSync(exe),'Installed executable missing');
+ console.log('Starting installed executable:',exe);
  const child=spawn(exe,['--remote-debugging-port=19336'],{env:{...process.env,APPDATA:path.join(tmp,'roaming'),LOCALAPPDATA:path.join(tmp,'local')},stdio:'pipe'});
  let output='';child.stderr.on('data',x=>output+=x);child.stdout.on('data',x=>output+=x);
  try{
@@ -36,6 +38,7 @@ async function main(){
    await sleep(200);
   }
   assert.ok(page,'Installed application did not open a renderer: '+output);
+  console.log('Renderer debugger available');
   const socket=new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject});
   const evaluate=expression=>new Promise((resolve,reject)=>{const id=Date.now();socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
@@ -43,6 +46,7 @@ async function main(){
   const result=await evaluate(`(async()=>({ready:document.readyState,text:document.body.innerText,deleteHandler:typeof window.deleteDealerPermanent8935}))()`);
   assert.equal(result.ready,'complete');assert.match(result.text,/Дилеры|дилер/);assert.equal(result.deleteHandler,'function');
   assert.doesNotMatch(output,/Attempted to register a second handler|Uncaught Exception/);
+  console.log('Renderer loaded; testing deletion');
   const deletion=await evaluate(`(()=>{
     const id=Date.now()-10000;
     state.dealers.push({id,name:'Windows smoke dealer',phone:'+79990000001'});
