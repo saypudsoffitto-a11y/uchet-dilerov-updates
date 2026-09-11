@@ -67,7 +67,7 @@ function spawnCmdHelper(info){
   return helper;
 }
 function spawnPowerShellFallback(info,target,args){
-  const env={...process.env,UCHET_UPDATE_EXE:String(target),UCHET_UPDATE_PID:String(process.pid),UCHET_UPDATE_ARGS:(args||[]).join(' '),UCHET_UPDATE_LOG:info.logPath,UCHET_UPDATE_LOCK:info.lockPath};
+  const env={...process.env,UCHET_UPDATE_EXE:String(target),UCHET_UPDATE_PID:String(process.pid),UCHET_UPDATE_ARGS:(args||[]).map(a=>'"'+String(a).replace(/"/g,'\\"')+'"').join(' '),UCHET_UPDATE_LOG:info.logPath,UCHET_UPDATE_LOCK:info.lockPath};
   const script=`$ErrorActionPreference='SilentlyContinue'; Add-Content -Path $env:UCHET_UPDATE_LOG -Value 'PS_READY'; $p=[int]$env:UCHET_UPDATE_PID; Wait-Process -Id $p -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 300; try { New-Item -ItemType Directory -Path $env:UCHET_UPDATE_LOCK -ErrorAction Stop | Out-Null } catch { exit 0 }; if($env:UCHET_UPDATE_ARGS){ Start-Process -FilePath $env:UCHET_UPDATE_EXE -ArgumentList $env:UCHET_UPDATE_ARGS } else { Start-Process -FilePath $env:UCHET_UPDATE_EXE }`;
   const helper=spawn('powershell.exe',['-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-Command',script],{detached:true,stdio:'ignore',windowsHide:true,env});
   helper.on('error',()=>{});
@@ -79,10 +79,10 @@ async function launchInstallerAfterAppExit(target,args){
   if(!fs.existsSync(target))throw new Error('Скачанный установщик не найден');
   const st=fs.statSync(target);if(!st.isFile()||st.size<1024*1024)throw new Error('Скачанный установщик повреждён или слишком мал');
   const info=helperFiles(target,args);
-  let cmd=null;try{cmd=spawnCmdHelper(info)}catch(_){}
-  if(cmd&&cmd.pid&&await waitForMarker(info.logPath,'CMD_READY',1800))return {ok:true,mode:'cmd',logPath:info.logPath};
   let ps=null;try{ps=spawnPowerShellFallback(info,target,args)}catch(_){}
-  if(ps&&ps.pid&&await waitForMarker(info.logPath,'PS_READY',1800))return {ok:true,mode:'powershell',logPath:info.logPath};
+  if(ps&&ps.pid&&await waitForMarker(info.logPath,'PS_READY',5000))return {ok:true,mode:'powershell',logPath:info.logPath};
+  let cmd=null;try{cmd=spawnCmdHelper(info)}catch(_){}
+  if(cmd&&cmd.pid&&await waitForMarker(info.logPath,'CMD_READY',5000))return {ok:true,mode:'cmd',logPath:info.logPath};
   throw new Error('Не удалось запустить службу обновления. Программа останется открытой.');
 }
 async function closeForUpdateAndLaunch(target,args){
