@@ -74,7 +74,7 @@ test('8.9.37 context menu deletes only selected duplicate and preserves its hist
   const {ctx,state,keepId,deleteId,name,confirms,getMenu}=boot();
   assert.equal(ctx.window.__dealerDelete8937Installed,true);
   assert.equal(ctx.document.documentElement.dataset.dealerFix,'8.9.37');
-  assert.deepEqual(state.deletedDealerKeys,{},'legacy phone/name tombstones must be disabled for duplicates');
+  assert.equal(Object.keys(state.deletedDealerKeys||{}).length,0,'legacy phone/name tombstones must be disabled for duplicates');
 
   ctx.window.showDealerContextMenu({preventDefault(){},stopPropagation(){},clientX:50,clientY:50},deleteId);
   const menu=getMenu();
@@ -107,7 +107,7 @@ test('8.9.37 exact-ID tombstone blocks sync resurrection even with a newer remot
   const merged=ctx.window.mergeSyncState(remote,local);
   assert.equal(merged.dealers.some(d=>d.id===deleteId),false,'deleted exact ID must never return');
   assert.equal(merged.dealers.some(d=>d.id===keepId),true,'duplicate that user kept must survive');
-  assert.deepEqual(merged.deletedDealerKeys,{},'legacy identity tombstones must not remove the kept duplicate');
+  assert.equal(Object.keys(merged.deletedDealerKeys||{}).length,0,'legacy identity tombstones must not remove the kept duplicate');
 });
 
 test('8.9.37 package uses final dealer handler entrypoint and includes it in installer',()=>{
