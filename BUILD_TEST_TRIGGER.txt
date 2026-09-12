@@ -1,2 +1,2 @@
 Verify Windows build pipeline for Учёт дилеров 8.9.41 guarded recovery.
-Triggered on 2026-09-12 after UTF-8/Windows-1251 CSV decoding fix, group-link backup, locked dealer selection, shifted group recovery, duplicate-group remap, and all legacy wrapper tests updated.
+Verification pass 2 on 2026-09-12 after UTF-8/Windows-1251 CSV decoding fix. Code under test is unchanged; repeat full tests, Windows build, installer, and three UI smoke launches before release approval.
