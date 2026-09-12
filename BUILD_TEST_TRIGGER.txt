@@ -1,2 +1,2 @@
-Verify Windows build pipeline for Учёт дилеров 8.9.41 guarded recovery.
-Verification pass 3 on 2026-09-12 after UTF-8/Windows-1251 CSV decoding fix. Code under test is unchanged; repeat full tests, Windows build, installer, and three UI smoke launches before final release approval.
+Verify Windows build pipeline for Учёт дилеров group-filter recovery.
+Pass 1 on 2026-09-12 after adding deterministic runtime loading and a real installed-app UI regression test for products whose card group name matches the selected sale group while stored group IDs differ. Package version remains 8.9.41 during verification; do not publish a new release yet.
