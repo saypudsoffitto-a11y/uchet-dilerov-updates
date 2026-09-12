@@ -83,6 +83,8 @@ jobs:
             Write-Host "Installed application UI smoke pass $pass of 3"
             node scripts/windows-smoke.cjs "$installedExe"
             if ($LASTEXITCODE -ne 0) { throw "Windows UI smoke pass $pass failed" }
+            node scripts/windows-group-filter-smoke.cjs "$installedExe"
+            if ($LASTEXITCODE -ne 0) { throw "Windows product group filter smoke pass $pass failed" }
           }
 
       - name: Upload checked Windows installers
