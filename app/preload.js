@@ -46,20 +46,36 @@ contextBridge.exposeInMainWorld('receiptAPI', {
 
 window.addEventListener('DOMContentLoaded',()=>{
   const code=`(async()=>{
-    const files=['./hotfix-8917.js','./final-fixes-8917.js','./runtime-fixes-8924.js','./runtime-fixes-8926.js','./input-focus.js','./receipt-add-core.js','./receipt-add-ui.js','./core-fixes-8933.js','./dealer-fix-8935.js'];
+    const files=[
+      './hotfix-8917.js',
+      './final-fixes-8917.js',
+      './runtime-fixes-8924.js',
+      './runtime-fixes-8926.js',
+      './input-focus.js',
+      './receipt-add-core.js',
+      './receipt-add-ui.js',
+      './core-fixes-8933.js',
+      './dealer-fix-8935.js',
+      './stable-fix-8938.js',
+      './pdf-compact-8938.js',
+      './sync-fix-8939.js',
+      './dealer-delete-8941.js',
+      './group-backup-8941.js',
+      './runtime-fixes-8942.js'
+    ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8935';
+        s.src=src+'?runtime=8942';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.35';
+    document.documentElement.dataset.uchetRuntime='8.9.42';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.35 runtime loader error',e))}
-  catch(e){console.error('8.9.35 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.42 runtime loader error',e))}
+  catch(e){console.error('8.9.42 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
