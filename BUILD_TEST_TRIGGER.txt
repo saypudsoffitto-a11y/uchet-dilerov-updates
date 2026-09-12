@@ -1,2 +1,2 @@
-Verify Windows build pipeline for Учёт дилеров 8.9.39.
-Triggered on 2026-09-12 for a fresh Windows build, install, and three UI smoke passes.
+Verify Windows build pipeline for Учёт дилеров 8.9.41 runtime fixes.
+Triggered on 2026-09-12 after server tombstone protection, final dealer deletion handler, and updated Windows smoke checks.
