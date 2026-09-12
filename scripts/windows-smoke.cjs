@@ -41,15 +41,18 @@ async function main(){
   let requestId=0;
   const evaluate=expression=>new Promise((resolve,reject)=>{const id=++requestId;socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
   let result;
-  for(let i=0;i<160;i++){
-   try{result=await evaluate(`(()=>({ready:document.readyState,text:document.body?.innerText||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',groupFix:document.documentElement?.dataset?.groupFix||'',deleteHandler:typeof window.deleteDealerPermanent8941,finalInstalled:!!window.__dealerDelete8941Installed,dataInstalled:!!window.__dataFix8941Installed}))()`)}catch(_){result=null}
-   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.dealerFix==='8.9.41'&&result.groupFix==='8.9.41'&&result.deleteHandler==='function'&&result.finalInstalled&&result.dataInstalled)break;
+  for(let i=0;i<180;i++){
+   try{result=await evaluate(`(()=>({ready:document.readyState,text:document.body?.innerText||'',runtime:document.documentElement?.dataset?.uchetRuntime||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',groupFix:document.documentElement?.dataset?.groupFix||'',finalMergeFix:document.documentElement?.dataset?.finalMergeFix||'',deleteHandler:typeof window.deleteDealerPermanent8941,finalInstalled:!!window.__dealerDelete8941Installed,dataInstalled:!!window.__dataFix8941Installed,mergeInstalled:!!window.__finalMerge8942&&!!mergeSyncState.__finalMerge8942}))()`)}catch(_){result=null}
+   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.runtime==='8.9.42'&&result.dealerFix==='8.9.41'&&result.groupFix==='8.9.41'&&result.finalMergeFix==='8.9.42'&&result.deleteHandler==='function'&&result.finalInstalled&&result.dataInstalled&&result.mergeInstalled)break;
    await sleep(200);
   }
+  assert.equal(result?.runtime,'8.9.42');
   assert.equal(result?.dealerFix,'8.9.41');
   assert.equal(result?.groupFix,'8.9.41');
+  assert.equal(result?.finalMergeFix,'8.9.42');
   assert.equal(result?.finalInstalled,true);
   assert.equal(result?.dataInstalled,true);
+  assert.equal(result?.mergeInstalled,true);
   assert.doesNotMatch(output,/Attempted to register a second handler|Uncaught Exception/);
 
   const groupRepair=await evaluate(`(()=>{
@@ -108,7 +111,7 @@ async function main(){
   assert.deepEqual(deletion,{confirmations:2,lockedBefore:String(deletion.lockedBefore),lockedAfter:String(deletion.lockedAfter),deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true});
   assert.equal(deletion.lockedBefore,deletion.lockedAfter,'dealer ID changed after table re-render');
   socket.close();
-  console.log('PASS: 8.9.41 keeps right-click dealer ID locked through table re-render and deletes exact dealer');
+  console.log('PASS: 8.9.42 keeps right-click dealer ID locked and blocks sync resurrection through final merge guard');
  }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F']);}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
