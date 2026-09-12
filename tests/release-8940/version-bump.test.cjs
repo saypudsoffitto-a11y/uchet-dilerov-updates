@@ -9,7 +9,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
 test('later package preserves the complete 8.9.40 and verified 8.9.39 runtime chain',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.match(pkg.version,/^8\.9\.(40|41)$/);
+  assert.match(pkg.version,/^8\.9\.(40|41|42)$/);
   assert.match(pkg.main,/^main-894(0|1)\.js$/);
   for(const f of [
     'main-8940.js','main-8939.js','release-8939-main.js',
