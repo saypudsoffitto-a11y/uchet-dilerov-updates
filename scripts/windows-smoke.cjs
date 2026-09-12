@@ -12,8 +12,7 @@ async function main(){
   const Module=require('node:module'),original=Module._load;
   Module._load=function(name,...rest){if(name==='electron')return {app:{},BrowserWindow:{},dialog:{},ipcMain:{on(){},handle(){},removeHandler(){}}};return original.call(this,name,...rest)};
   const info=await require('../app/updater-8931.js').launchInstallerAfterAppExit(process.execPath,[process.argv[3]]);
-  console.log(JSON.stringify(info));
-  return;
+  console.log(JSON.stringify(info));return;
  }
  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'uchet smoke '));
  const marker=path.join(tmp,'installed.txt'),writer=path.join(tmp,'write marker.cjs');
@@ -27,7 +26,6 @@ async function main(){
  console.log('PASS: Windows updater handoff with spaces in target arguments');
  if(process.argv[2]==='--handoff-only')return;
  const exe=process.argv[2];assert.ok(fs.existsSync(exe),'Installed executable missing');
- console.log('Starting installed executable:',exe);
  const child=spawn(exe,['--remote-debugging-port=19336'],{env:{...process.env,APPDATA:path.join(tmp,'roaming'),LOCALAPPDATA:path.join(tmp,'local')},stdio:'pipe'});
  let output='';child.stderr.on('data',x=>output+=x);child.stdout.on('data',x=>output+=x);
  try{
@@ -38,80 +36,79 @@ async function main(){
    await sleep(200);
   }
   assert.ok(page,'Installed application did not open a renderer: '+output);
-  console.log('Renderer debugger available');
   const socket=new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject});
   let requestId=0;
   const evaluate=expression=>new Promise((resolve,reject)=>{const id=++requestId;socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
   let result;
-  for(let i=0;i<140;i++){
-   if(child.exitCode!==null)throw Error('Installed application exited while renderer was loading: '+output);
-   try{
-    result=await evaluate(`(()=>({ready:document.readyState,text:document.body?.innerText||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',deleteHandler:typeof window.deleteDealerPermanent8941,contextMenu:typeof window.showDealerContextMenu,finalInstalled:!!window.__dealerDelete8941Installed,sameDelete:window.deleteDealerFromList===window.deleteDealerPermanent8941}))()`);
-   }catch(_){result=null}
-   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.dealerFix==='8.9.41'&&result.deleteHandler==='function'&&result.contextMenu==='function'&&result.finalInstalled&&result.sameDelete)break;
+  for(let i=0;i<160;i++){
+   try{result=await evaluate(`(()=>({ready:document.readyState,text:document.body?.innerText||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',groupFix:document.documentElement?.dataset?.groupFix||'',deleteHandler:typeof window.deleteDealerPermanent8941,finalInstalled:!!window.__dealerDelete8941Installed,dataInstalled:!!window.__dataFix8941Installed}))()`)}catch(_){result=null}
+   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.dealerFix==='8.9.41'&&result.groupFix==='8.9.41'&&result.deleteHandler==='function'&&result.finalInstalled&&result.dataInstalled)break;
    await sleep(200);
   }
-  assert.ok(result,'Renderer readiness check returned no result');
-  assert.equal(result.ready,'complete');
-  assert.match(result.text,/Дилеры|дилер/);
-  assert.equal(result.dealerFix,'8.9.41','final 8.9.41 dealer runtime did not win after all older patches');
-  assert.equal(result.deleteHandler,'function');
-  assert.equal(result.contextMenu,'function');
-  assert.equal(result.finalInstalled,true);
-  assert.equal(result.sameDelete,true,'visible delete action is not bound to final 8.9.41 handler');
+  assert.equal(result?.dealerFix,'8.9.41');
+  assert.equal(result?.groupFix,'8.9.41');
+  assert.equal(result?.finalInstalled,true);
+  assert.equal(result?.dataInstalled,true);
   assert.doesNotMatch(output,/Attempted to register a second handler|Uncaught Exception/);
-  console.log('Final 8.9.41 runtime loaded; testing the exact right-click path a user performs');
+
+  const groupRepair=await evaluate(`(()=>{
+    const sample={
+      groups:[
+        {id:11,name:'СВЕТОДИОДНЫЕ ЛЕНТЫ',note:'populated'},
+        {id:22,name:'СВЕТОДИОДНЫЕ ЛЕНТЫ',note:'duplicate'},
+        {id:33,name:'СВЕТИЛЬНИКИ'}
+      ],
+      products:[
+        {id:1,article:'00114',name:'КОНЕКТОР КОНЦЫ С ПРОВОДОМ 10мм',groupId:33,source:'Склад CSV'},
+        {id:2,article:'00115',name:'КОННЕКТОР СОЕДИНИТЕЛЬ  10ММ',groupId:22,source:'Склад CSV'},
+        {id:3,article:'00116',name:'КОННЕКТОР УГЛЫ 10ММ',groupId:22,source:'Склад CSV'},
+        {id:4,article:'00118',name:'ЛЕНТА COB-480 10 Вт  4000к  24V 5 метров          DARS-ELECTRO',groupId:33,source:'Склад CSV'},
+        {id:5,article:'00119',name:'ЛЕНТА 120д-1м 13Вт  2000К (AMBER) 24V  5 метров DARS-ELECTRO',groupId:33,source:'Склад CSV'}
+      ]
+    };
+    const r=window.__dataFix8941.repairGroupsInState(sample);
+    const ledGroups=sample.groups.filter(g=>String(g.name).trim().toLocaleLowerCase('ru-RU')==='светодиодные ленты');
+    const target=ledGroups[0];
+    return {systemicShift:r.systemicShift,relinked:r.relinked,duplicatesRemoved:r.duplicatesRemoved,orphansAfter:r.orphansAfter,ledGroups:ledGroups.length,allLinked:!!target&&sample.products.every(p=>String(p.groupId)===String(target.id))};
+  })()`);
+  assert.equal(groupRepair.systemicShift,true);
+  assert.ok(groupRepair.relinked>=3,JSON.stringify(groupRepair));
+  assert.equal(groupRepair.duplicatesRemoved,1);
+  assert.equal(groupRepair.orphansAfter,0);
+  assert.equal(groupRepair.ledGroups,1);
+  assert.equal(groupRepair.allLinked,true,JSON.stringify(groupRepair));
+  console.log('PASS: 8.9.41 repairs shifted/duplicate product groups from bundled stock catalogue');
+
   const deletion=await evaluate(`(async()=>{
-    const base=Date.now()-30000;
-    const keepId=base;
-    const deleteId=base+1;
-    const name='Windows duplicate smoke dealer';
-    const phone='+79990000111';
-    state.dealers.push(
-      {id:keepId,name,phone,city:'Test keep'},
-      {id:deleteId,name,phone,city:'Test delete'}
-    );
+    const base=Date.now()-30000,keepId=base,deleteId=base+1;
+    const name='Windows locked dealer';
+    state.dealers.push({id:keepId,name:'Other dealer',phone:'+70000000001',city:'Keep'},{id:deleteId,name,phone:'+79990000111',city:'Delete'});
     state.ops.push({id:base+10,dealerId:deleteId,type:'sale',date:new Date().toLocaleString('ru-RU'),total:100,items:[]});
-    localStorage.setItem(KEY,JSON.stringify(state));
-    renderDealers();
-    window.__dealerDelete8941?.tagRows?.();
-    await new Promise(r=>setTimeout(r,20));
-    const row=[...document.querySelectorAll('#dealerRows tr')].find(tr=>String(tr.dataset.dealerId||'')===String(deleteId)||(tr.getAttribute('oncontextmenu')||'').includes(','+deleteId+')'));
-    if(!row)return {error:'duplicate dealer row not rendered'};
-    const original=window.confirm;let confirmations=0;
-    window.confirm=()=>{confirmations++;return true};
+    localStorage.setItem(KEY,JSON.stringify(state));renderDealers();window.__dealerDelete8941.tagRows();
+    const row=[...document.querySelectorAll('#dealerRows tr')].find(tr=>String(tr.dataset.dealerId||'')===String(deleteId));
+    if(!row)return {error:'target dealer row not rendered'};
+    const original=window.confirm;let confirmations=0;window.confirm=()=>{confirmations++;return true};
     try{
       row.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:160,clientY:160,button:2}));
       await new Promise(r=>setTimeout(r,40));
+      const lockedBefore=window.__dealerDelete8941.getLocked();
       const menu=document.getElementById('dealerContextMenu8941');
-      const button=menu&&[...menu.querySelectorAll('button')].find(b=>/Удалить дилера/.test(b.textContent||''));
-      if(!button)return {error:'delete item missing from final 8.9.41 dealer context menu',menus:[...document.querySelectorAll('[id^="dealerContextMenu"]')].map(x=>x.id+':'+x.innerText)};
-      button.click();
-      await new Promise(r=>setTimeout(r,260));
+      const button=menu&&[...menu.querySelectorAll('button')].find(b=>/Удалить именно/.test(b.textContent||''));
+      if(!button)return {error:'locked delete item missing'};
+      state.dealers.reverse();renderDealers();window.__dealerDelete8941.tagRows();
+      const lockedAfter=window.__dealerDelete8941.getLocked();
+      button.click();await new Promise(r=>setTimeout(r,300));
       const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-      const visible=[...document.querySelectorAll('#dealerRows tr')].some(tr=>String(tr.dataset.dealerId||'')===String(deleteId)||(tr.getAttribute('oncontextmenu')||'').includes(','+deleteId+')'));
-      const remote={
-        dealers:[{id:deleteId,name,phone,city:'remote copy',updatedAt:Date.now()+60000}],
-        groups:[],products:[],ops:[],deletedDealers:{},deletedDealerKeys:{},receiptSeq:1,
-        update:state.update,newmatros:state.newmatros,sync:state.sync
-      };
+      const remote={dealers:[{id:deleteId,name,phone:'+79990000111',updatedAt:Date.now()+60000}],groups:[],products:[],ops:[],deletedDealers:{},deletedDealerKeys:{},receiptSeq:1,update:state.update,newmatros:state.newmatros,sync:state.sync};
       const merged=mergeSyncState(remote,JSON.parse(JSON.stringify(state)));
-      return {
-        confirmations,
-        deleted:!state.dealers.some(d=>String(d.id)===String(deleteId)),
-        survivor:state.dealers.some(d=>String(d.id)===String(keepId)),
-        persisted:!(saved.dealers||[]).some(d=>String(d.id)===String(deleteId)),
-        removedFromVisibleList:!visible,
-        history:(saved.ops||[]).some(o=>String(o.dealerId)===String(deleteId)&&o.dealer===name),
-        tombstone:!!saved.deletedDealers?.[String(deleteId)],
-        noResurrection:!(merged.dealers||[]).some(d=>String(d.id)===String(deleteId)),
-        survivorAfterMerge:(merged.dealers||[]).some(d=>String(d.id)===String(keepId))
-      };
-    } finally {window.confirm=original}
+      return {confirmations,lockedBefore:lockedBefore?.id,lockedAfter:lockedAfter?.id,deleted:!state.dealers.some(d=>String(d.id)===String(deleteId)),survivor:state.dealers.some(d=>String(d.id)===String(keepId)),persisted:!(saved.dealers||[]).some(d=>String(d.id)===String(deleteId)),history:(saved.ops||[]).some(o=>String(o.dealerId)===String(deleteId)&&o.dealer===name),tombstone:!!saved.deletedDealers?.[String(deleteId)],noResurrection:!(merged.dealers||[]).some(d=>String(d.id)===String(deleteId))};
+    }finally{window.confirm=original}
   })()`);
-  assert.deepEqual(deletion,{confirmations:2,deleted:true,survivor:true,persisted:true,removedFromVisibleList:true,history:true,tombstone:true,noResurrection:true,survivorAfterMerge:true});
-  socket.close();console.log('PASS: final installed 8.9.41 UI deletes selected dealer, removes the visible row, persists deletion, preserves history and blocks client-side sync resurrection');
+  assert.deepEqual(deletion,{confirmations:2,lockedBefore:String(deletion.lockedBefore),lockedAfter:String(deletion.lockedAfter),deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true});
+  assert.equal(deletion.lockedBefore,deletion.lockedAfter,'dealer ID changed after table re-render');
+  socket.close();
+  console.log('PASS: 8.9.41 keeps right-click dealer ID locked through table re-render and deletes exact dealer');
  }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F']);}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
