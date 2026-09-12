@@ -27,6 +27,16 @@ test('older dealer patches cannot overwrite the newer handler',()=>{
   }
 });
 
+test('8.9.42 reasserts a final sync merge guard after legacy delayed patches',()=>{
+  const src=read('app/runtime-fixes-8942.js');
+  assert.match(src,/const installFinalMergeGuard=/);
+  assert.match(src,/finalMerge8942\.__finalMerge8942=true/);
+  assert.match(src,/merged\.dealers=\(merged\.dealers\|\|\[\]\)\.filter/);
+  assert.match(src,/Object\.prototype\.hasOwnProperty\.call\(deletedDealers,String\(d\?\.id\)\)/);
+  assert.match(src,/setTimeout\(installFinalMergeGuard,4200\)/);
+  assert.match(src,/setTimeout\(installFinalMergeGuard,6500\)/);
+});
+
 test('sale group filter matches normalized group names when IDs differ',()=>{
   const src=read('app/runtime-fixes-8942.js');
   assert.match(src,/String\(productGroupId\)===String\(selectedGroupId\)/);
