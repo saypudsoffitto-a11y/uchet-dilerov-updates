@@ -1,2 +1,2 @@
-Verify Windows build pipeline for Учёт дилеров 8.9.41 recovery fixes.
-Triggered on 2026-09-12 after locked right-click dealer selection, shifted group-link recovery from tovar.csv, duplicate-group remap, and server tombstone protection.
+Verify Windows build pipeline for Учёт дилеров 8.9.41 guarded recovery.
+Triggered on 2026-09-12 after group-link backup, locked dealer selection, shifted group recovery, duplicate-group remap, and legacy test updates.
