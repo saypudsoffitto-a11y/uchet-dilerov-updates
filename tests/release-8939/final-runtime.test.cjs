@@ -8,11 +8,13 @@ const vm=require('node:vm');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('8.9.39 is packaged as the final entrypoint after 8.9.38',()=>{
+test('8.9.40 packages the verified 8.9.39 final runtime after 8.9.38',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.equal(pkg.version,'8.9.39');
-  assert.equal(pkg.main,'main-8939.js');
-  for(const f of ['main-8939.js','release-8939-main.js','dealer-delete-8939.js'])assert.ok(pkg.build.files.includes(f),f+' missing from build');
+  assert.equal(pkg.version,'8.9.40');
+  assert.equal(pkg.main,'main-8940.js');
+  for(const f of ['main-8940.js','main-8939.js','release-8939-main.js','dealer-delete-8939.js'])assert.ok(pkg.build.files.includes(f),f+' missing from build');
+  const wrapper=read('app/main-8940.js');
+  assert.match(wrapper,/main-8939\.js/);
   const main=read('app/main-8939.js');
   assert.match(main,/release-8939-main\.js/);
   assert.match(main,/main-8938\.js/);
@@ -58,7 +60,7 @@ test('final runtime explicitly restores verified 8.9.37 remover after a later ov
   assert.equal(listeners.contextmenu?.capture,true);
 });
 
-test('Windows smoke waits for 8.9.39 final handler and verifies visible row disappears',()=>{
+test('Windows smoke waits for verified 8.9.39 final handler inside 8.9.40 and verifies visible row disappears',()=>{
   const smoke=read('scripts/windows-smoke.cjs');
   assert.match(smoke,/dealerFix==='8\.9\.39'/);
   assert.match(smoke,/deleteDealerPermanent8939/);
