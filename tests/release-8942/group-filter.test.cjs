@@ -19,10 +19,12 @@ test('8.9.42 runtime is packaged and loaded deterministically from preload',()=>
   assert.match(preload,/uchetRuntime='8\.9\.42'/);
 });
 
-test('older 8.9.39 dealer patch cannot overwrite the newer handler',()=>{
-  const src=read('app/dealer-delete-8939.js');
-  assert.match(src,/if\(window\.__dealerDelete8941Installed\|\|window\.__runtimeFix8942Installed\)return;/);
-  assert.match(src,/if\(window\.__dealerDelete8941Installed\|\|window\.__runtimeFix8942Installed\)return true;/);
+test('older dealer patches cannot overwrite the newer handler',()=>{
+  for(const file of ['app/dealer-delete-8937.js','app/dealer-delete-8939.js']){
+    const src=read(file);
+    assert.match(src,/if\(window\.__dealerDelete8941Installed\|\|window\.__runtimeFix8942Installed\)return;/,file);
+    assert.match(src,/if\(window\.__dealerDelete8941Installed\|\|window\.__runtimeFix8942Installed\)return true;/,file);
+  }
 });
 
 test('sale group filter matches normalized group names when IDs differ',()=>{
