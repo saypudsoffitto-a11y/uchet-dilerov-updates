@@ -62,11 +62,38 @@
       document.body.appendChild(m);
     };
 
+    const idFromDealerRow=row=>{
+      if(!row)return null;
+      const attr=row.getAttribute('oncontextmenu')||'';
+      const match=attr.match(/showDealerContextMenu\(event,\s*([^\)]+)\)/);
+      if(!match)return null;
+      let id=match[1].trim();
+      if(/^['"].*['"]$/.test(id))id=id.slice(1,-1);
+      else if(/^-?\d+(?:\.\d+)?$/.test(id))id=Number(id);
+      return id;
+    };
+
+    // 8.9.38 registered an anonymous capture listener on document. It runs before
+    // the inline row handler and creates dealerContextMenu8938. A capture listener
+    // on window is earlier in the event path than document, so it is the only safe
+    // way to stop that stale handler without keeping a reference to it.
+    const finalContextMenuCapture=e=>{
+      const row=e.target?.closest?.('#dealerRows tr[oncontextmenu]');
+      if(!row)return;
+      const id=idFromDealerRow(row);
+      if(id===null||id===undefined||id==='')return;
+      e.preventDefault();
+      e.stopPropagation();
+      try{e.stopImmediatePropagation()}catch(_){}
+      showMenu(e,id);
+    };
+    window.addEventListener('contextmenu',finalContextMenuCapture,true);
+
     window.showDealerContextMenu=showMenu;
     try{showDealerContextMenu=showMenu}catch(_){}
 
     window.__dealerDelete8939Installed=true;
-    window.__dealerDelete8939={removeDealerNow,showMenu};
+    window.__dealerDelete8939={removeDealerNow,showMenu,finalContextMenuCapture};
     document.documentElement.dataset.dealerFix='8.9.39';
     return true;
   };
