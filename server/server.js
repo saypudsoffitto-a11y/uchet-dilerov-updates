@@ -8,15 +8,40 @@ const TOKEN = String(process.env.SYNC_TOKEN || '').trim();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
+const SERVER_VERSION = '8.9.41-sync1';
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+
+function mergeMarks(a, b) {
+  const out = {};
+  for (const src of [a || {}, b || {}]) {
+    for (const [key, value] of Object.entries(src)) {
+      out[String(key)] = Math.max(Number(out[String(key)] || 0), Number(value || 0));
+    }
+  }
+  return out;
+}
+
+function sanitizeState(incoming, previous) {
+  const state = incoming && typeof incoming === 'object' ? { ...incoming } : {};
+  const prev = previous && typeof previous === 'object' ? previous : {};
+  const deletedDealers = mergeMarks(prev.deletedDealers, state.deletedDealers);
+  const dealers = Array.isArray(state.dealers) ? state.dealers : [];
+
+  state.deletedDealers = deletedDealers;
+  // Legacy phone/name tombstones were unsafe for duplicate cards. Exact dealer IDs are authoritative.
+  state.deletedDealerKeys = {};
+  state.dealers = dealers.filter(d => d && !Object.prototype.hasOwnProperty.call(deletedDealers, String(d.id)));
+  return state;
+}
 
 function readStore() {
   try {
     const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
+    const rawState = parsed.state && typeof parsed.state === 'object' ? parsed.state : {};
     return {
       revision: Number(parsed.revision || 0),
-      state: parsed.state && typeof parsed.state === 'object' ? parsed.state : {}
+      state: sanitizeState(rawState, rawState)
     };
   } catch (_) {
     return { revision: 0, state: {} };
@@ -78,7 +103,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.url === '/health' && req.method === 'GET') {
       const store = readStore();
-      return send(res, 200, { ok: true, revision: store.revision });
+      return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION });
     }
 
     if (req.url !== '/api/state') {
@@ -91,7 +116,7 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET') {
       const store = readStore();
-      return send(res, 200, { ok: true, revision: store.revision, state: store.state });
+      return send(res, 200, { ok: true, revision: store.revision, state: store.state, serverVersion: SERVER_VERSION });
     }
 
     if (req.method === 'PUT') {
@@ -105,6 +130,7 @@ const server = http.createServer(async (req, res) => {
           conflict: true,
           revision: current.revision,
           state: current.state,
+          serverVersion: SERVER_VERSION,
           message: 'База уже изменилась на другом компьютере'
         });
       }
@@ -113,22 +139,26 @@ const server = http.createServer(async (req, res) => {
         return send(res, 400, { ok: false, message: 'Не передано состояние базы' });
       }
 
+      // Server-side deletion protection: once an exact dealer ID is tombstoned,
+      // an older PC cannot resurrect that card by uploading stale state later.
+      const nextState = sanitizeState(body.state, current.state);
       const next = {
         revision: current.revision + 1,
-        state: body.state,
+        state: nextState,
+        serverVersion: SERVER_VERSION,
         updatedAt: new Date().toISOString()
       };
       writeStore(next);
-      return send(res, 200, { ok: true, revision: next.revision });
+      return send(res, 200, { ok: true, revision: next.revision, serverVersion: SERVER_VERSION });
     }
 
     return send(res, 405, { ok: false, message: 'Метод не поддерживается' });
   } catch (e) {
-    return send(res, 500, { ok: false, message: String(e && e.message || e) });
+    return send(res, 500, { ok: false, message: String(e && e.message || e), serverVersion: SERVER_VERSION });
   }
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Учёт дилеров sync server: http://${HOST}:${PORT}`);
+  console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT}`);
   console.log(TOKEN ? 'Авторизация по SYNC_TOKEN включена' : 'ВНИМАНИЕ: SYNC_TOKEN не задан');
 });
