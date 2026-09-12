@@ -19,6 +19,15 @@ test('8.9.42 runtime is packaged and loaded deterministically from preload',()=>
   assert.match(preload,/uchetRuntime='8\.9\.42'/);
 });
 
+test('8.9.41+ keeps native copy paste menu but never injects obsolete 8.9.30 renderer',()=>{
+  const src=read('app/release-8930-main.js');
+  assert.match(src,/function versionAtLeast\(current,target\)/);
+  assert.match(src,/versionAtLeast\(app\.getVersion\(\),'8\.9\.41'\)/);
+  assert.match(src,/function installRenderer8930\(win\)\{\s*if\(usesModernRenderer\(\)\)return;/);
+  assert.match(src,/installEditContextMenu\(win\);/);
+  assert.match(src,/installRenderer8930\(win\);/);
+});
+
 test('older dealer patches cannot overwrite the newer handler',()=>{
   for(const file of ['app/dealer-delete-8937.js','app/dealer-delete-8939.js']){
     const src=read(file);
