@@ -39,6 +39,7 @@
       "dealer-delete-8941.js",
       "group-backup-8941.js",
       "data-fix-8941.js",
+      "runtime-fixes-8942.js",
       "sync-fix-8939.js",
       "stable-fix-8938.js",
       "pdf-compact-8938.js",
@@ -97,7 +98,7 @@
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
     "test:electron": "electron --version",
-    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs && node --test ../tests/release-8939/*.test.cjs && node --test ../tests/release-8940/*.test.cjs && node --test ../tests/release-8941/*.test.cjs"
+    "prebuild:win": "node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs && node --test ../tests/release-8939/*.test.cjs && node --test ../tests/release-8940/*.test.cjs && node --test ../tests/release-8941/*.test.cjs && node --test ../tests/release-8942/*.test.cjs"
   },
   "version": "8.9.41"
 }
