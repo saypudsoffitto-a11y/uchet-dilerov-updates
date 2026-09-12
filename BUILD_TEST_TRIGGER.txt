@@ -1,1 +1,2 @@
-Verify the Windows build pipeline using the recovered 8.9.10 application source.
+Verify Windows build pipeline for Учёт дилеров 8.9.39.
+Triggered on 2026-09-12 for a fresh Windows build, install, and three UI smoke passes.
