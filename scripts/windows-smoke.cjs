@@ -44,18 +44,24 @@ async function main(){
   let requestId=0;
   const evaluate=expression=>new Promise((resolve,reject)=>{const id=++requestId;socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
   let result;
-  for(let i=0;i<100;i++){
+  for(let i=0;i<120;i++){
    if(child.exitCode!==null)throw Error('Installed application exited while renderer was loading: '+output);
    try{
-    result=await evaluate(`(async()=>({ready:document.readyState,text:document.body?.innerText||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',deleteHandler:typeof window.deleteDealerPermanent8937,contextMenu:typeof window.showDealerContextMenu}))()`);
+    result=await evaluate(`(()=>({ready:document.readyState,text:document.body?.innerText||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',deleteHandler:typeof window.deleteDealerPermanent8939,contextMenu:typeof window.showDealerContextMenu,finalInstalled:!!window.__dealerDelete8939Installed,sameDelete:window.deleteDealerFromList===window.deleteDealerPermanent8939}))()`);
    }catch(_){result=null}
-   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.dealerFix==='8.9.37'&&result.deleteHandler==='function'&&result.contextMenu==='function')break;
+   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.dealerFix==='8.9.39'&&result.deleteHandler==='function'&&result.contextMenu==='function'&&result.finalInstalled&&result.sameDelete)break;
    await sleep(200);
   }
   assert.ok(result,'Renderer readiness check returned no result');
-  assert.equal(result.ready,'complete');assert.match(result.text,/Дилеры|дилер/);assert.equal(result.dealerFix,'8.9.37');assert.equal(result.deleteHandler,'function');assert.equal(result.contextMenu,'function');
+  assert.equal(result.ready,'complete');
+  assert.match(result.text,/Дилеры|дилер/);
+  assert.equal(result.dealerFix,'8.9.39','final 8.9.39 dealer runtime did not win after all older patches');
+  assert.equal(result.deleteHandler,'function');
+  assert.equal(result.contextMenu,'function');
+  assert.equal(result.finalInstalled,true);
+  assert.equal(result.sameDelete,true,'visible delete action is not bound to final verified handler');
   assert.doesNotMatch(output,/Attempted to register a second handler|Uncaught Exception/);
-  console.log('Renderer loaded; testing real duplicate-card context menu deletion');
+  console.log('Final 8.9.39 runtime loaded; testing the exact right-click path a user performs');
   const deletion=await evaluate(`(async()=>{
     const base=Date.now()-30000;
     const keepId=base;
@@ -75,13 +81,14 @@ async function main(){
     window.confirm=()=>{confirmations++;return true};
     try{
       row.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:160,clientY:160,button:2}));
-      await new Promise(r=>setTimeout(r,20));
+      await new Promise(r=>setTimeout(r,40));
       const menu=document.getElementById('dealerContextMenu');
       const button=menu&&[...menu.querySelectorAll('button')].find(b=>/Удалить дилера/.test(b.textContent||''));
-      if(!button)return {error:'delete item missing from dealer context menu',menu:menu?.innerText||''};
+      if(!button)return {error:'delete item missing from final dealer context menu',menus:[...document.querySelectorAll('[id^="dealerContextMenu"]')].map(x=>x.id+':'+x.innerText)};
       button.click();
-      await new Promise(r=>setTimeout(r,80));
+      await new Promise(r=>setTimeout(r,150));
       const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+      const visible=[...document.querySelectorAll('#dealerRows tr')].some(tr=>(tr.getAttribute('oncontextmenu')||'').includes(','+deleteId+')'));
       const remote={
         dealers:[{id:deleteId,name,phone,city:'remote copy',updatedAt:Date.now()+60000}],
         groups:[],products:[],ops:[],deletedDealers:{},deletedDealerKeys:{},receiptSeq:1,
@@ -93,6 +100,7 @@ async function main(){
         deleted:!state.dealers.some(d=>d.id===deleteId),
         survivor:state.dealers.some(d=>d.id===keepId),
         persisted:!(saved.dealers||[]).some(d=>d.id===deleteId),
+        removedFromVisibleList:!visible,
         history:(saved.ops||[]).some(o=>o.dealerId===deleteId&&o.dealer===name),
         tombstone:!!saved.deletedDealers?.[String(deleteId)],
         noResurrection:!(merged.dealers||[]).some(d=>d.id===deleteId),
@@ -100,8 +108,8 @@ async function main(){
       };
     } finally {window.confirm=original}
   })()`);
-  assert.deepEqual(deletion,{confirmations:2,deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true,survivorAfterMerge:true});
-  socket.close();console.log('PASS: installed app right-click menu deletes only selected duplicate, persists deletion, preserves history and blocks sync resurrection');
+  assert.deepEqual(deletion,{confirmations:2,deleted:true,survivor:true,persisted:true,removedFromVisibleList:true,history:true,tombstone:true,noResurrection:true,survivorAfterMerge:true});
+  socket.close();console.log('PASS: final installed 8.9.39 UI deletes selected dealer, removes the visible row, persists deletion, preserves history and blocks sync resurrection');
  }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F']);}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

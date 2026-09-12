@@ -119,6 +119,18 @@ test('8.9.37 dealer deletion fix remains packaged and reachable in later release
   assert.match(main8937,/release-8937-main\.js/);
   const loader=fs.readFileSync(path.join(appDir,'release-8937-main.js'),'utf8');
   assert.match(loader,/dealer-delete-8937\.js/);
-  const currentMain=fs.readFileSync(path.join(appDir,pkg.main),'utf8');
-  assert.ok(pkg.main==='main-8937.js'||/main-8937\.js/.test(currentMain),'newer entrypoint must retain 8.9.37 chain');
+
+  let cursor=pkg.main;
+  const seen=new Set();
+  let reaches8937=false;
+  for(let depth=0;depth<8&&cursor&&!seen.has(cursor);depth++){
+    seen.add(cursor);
+    if(cursor==='main-8937.js'){reaches8937=true;break}
+    const src=fs.readFileSync(path.join(appDir,cursor),'utf8');
+    const m=src.match(/require\(['"]\.\/(main-\d+\.js)['"]\)/g);
+    if(!m||!m.length)break;
+    const last=m[m.length-1].match(/main-\d+\.js/);
+    cursor=last&&last[0];
+  }
+  assert.ok(reaches8937,'newer entrypoint chain must eventually retain main-8937.js');
 });
