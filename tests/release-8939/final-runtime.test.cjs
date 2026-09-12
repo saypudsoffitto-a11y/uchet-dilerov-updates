@@ -23,6 +23,7 @@ test('final runtime explicitly restores verified 8.9.37 remover after a later ov
   let ticks=[];
   const verifiedRemove=()=>true;
   const verifiedMerge=()=>({ok:true});
+  const listeners={};
   const document={
     documentElement:{dataset:{}},
     getElementById:()=>null,
@@ -33,6 +34,7 @@ test('final runtime explicitly restores verified 8.9.37 remover after a later ov
     console,document,
     window:{
       innerWidth:1200,innerHeight:800,
+      addEventListener:(name,fn,capture)=>{listeners[name]={fn,capture}},
       __dealerDelete8937:{removeDealerNow:verifiedRemove,mergeSyncState:verifiedMerge},
       deleteDealerFromList:()=>false,
       showDealerContextMenu:()=>false
@@ -52,6 +54,8 @@ test('final runtime explicitly restores verified 8.9.37 remover after a later ov
   assert.equal(ctx.window.deleteDealerPermanent8939,verifiedRemove);
   assert.equal(ctx.window.mergeSyncState,verifiedMerge);
   assert.equal(ctx.document.documentElement.dataset.dealerFix,'8.9.39');
+  assert.equal(typeof listeners.contextmenu?.fn,'function');
+  assert.equal(listeners.contextmenu?.capture,true);
 });
 
 test('Windows smoke waits for 8.9.39 final handler and verifies visible row disappears',()=>{
