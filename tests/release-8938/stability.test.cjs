@@ -13,8 +13,18 @@ test('8.9.38 runtime remains packaged and reachable in later releases',()=>{
   assert.ok(version[0]>8 || (version[0]===8 && (version[1]>9 || (version[1]===9 && version[2]>=38))),'package must be 8.9.38 or newer');
   for(const f of ['main-8938.js','release-8938-main.js','stable-fix-8938.js','pdf-compact-8938.js']) assert.ok(pkg.build.files.includes(f),f+' missing from build.files');
   if(pkg.main!=='main-8938.js'){
-    const current=read('app/'+pkg.main);
-    assert.match(current,/main-8938\.js/,'newer main entrypoint must retain 8.9.38 chain');
+    const seen=new Set();
+    const stack=[pkg.main];
+    let found=false;
+    while(stack.length){
+      const file=stack.pop();
+      if(seen.has(file))continue;
+      seen.add(file);
+      if(file==='main-8938.js'){found=true;break;}
+      const src=read('app/'+file);
+      for(const m of src.matchAll(/require\(['"]\.\/(main-[^'"]+\.js)['"]\)/g)) stack.push(m[1]);
+    }
+    assert.equal(found,true,'newer main entrypoint must retain the 8.9.38 runtime through its require chain');
   }
 });
 
