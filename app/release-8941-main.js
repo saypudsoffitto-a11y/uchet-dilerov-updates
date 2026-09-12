@@ -2,12 +2,21 @@
 const {app}=require('electron');
 const fs=require('fs');
 const path=require('path');
+const {TextDecoder}=require('util');
+
+function decodeStockCsv(buffer){
+  try{
+    return new TextDecoder('utf-8',{fatal:true}).decode(buffer).replace(/^\uFEFF/,'');
+  }catch(_utf8Error){
+    return new TextDecoder('windows-1251').decode(buffer).replace(/^\uFEFF/,'');
+  }
+}
 
 function stockGroupCatalogue(){
   const file=path.join(__dirname,'tovar.csv');
   const out={};
   try{
-    const text=fs.readFileSync(file,'utf8').replace(/^\uFEFF/,'');
+    const text=decodeStockCsv(fs.readFileSync(file));
     text.split(/\r?\n/).forEach(line=>{
       if(!line.trim())return;
       const cols=line.split(';').map(v=>String(v||'').trim().replace(/^"|"$/g,''));
