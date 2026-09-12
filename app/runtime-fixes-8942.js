@@ -130,29 +130,58 @@
     try{renderSaleProducts=renderSaleProducts8942}catch(_){}
     try{saleProductKey=saleProductKey8942}catch(_){}
 
-    // Make duplicate same-name groups harmless in data too, not only in the visible filter.
     const initial=canonicalizeDuplicateGroups(state);
     if(initial.changed){
       try{localStorage.setItem(KEY,JSON.stringify(state))}catch(_){}
       try{save()}catch(_){}
     }
 
-    // Keep the same protection after data arrives from the second computer.
-    const previousMerge=typeof mergeSyncState==='function'?mergeSyncState:null;
-    if(previousMerge&&!previousMerge.__groupFilter8942){
-      const merge8942=function(remote,local){
-        const merged=previousMerge(remote,local);
+    const mergeMarks=(a,b)=>{
+      const out={};
+      for(const src of [a||{},b||{}])for(const [k,v] of Object.entries(src))out[String(k)]=Math.max(+out[String(k)]||0,+v||0);
+      return out;
+    };
+
+    // Re-install this guard after every known legacy delayed patch window. This is
+    // intentionally the final authority for sync: an exact-ID dealer tombstone is
+    // permanent, and group duplicates are canonicalized after every merge.
+    const installFinalMergeGuard=()=>{
+      const current=typeof mergeSyncState==='function'?mergeSyncState:null;
+      if(!current)return false;
+      if(current.__finalMerge8942)return true;
+      const base=current;
+      const finalMerge8942=function(remote,local){
+        remote=typeof norm==='function'?norm(remote||{}):(remote||{});
+        local=typeof norm==='function'?norm(local||{}):(local||{});
+        const deletedDealers=mergeMarks(remote.deletedDealers,local.deletedDealers);
+        remote.deletedDealers=deletedDealers;
+        local.deletedDealers=deletedDealers;
+        remote.deletedDealerKeys={};
+        local.deletedDealerKeys={};
+        let merged=base(remote,local);
+        merged=typeof norm==='function'?norm(merged||{}):(merged||{});
+        merged.deletedDealers=deletedDealers;
+        merged.deletedDealerKeys={};
+        merged.dealers=(merged.dealers||[]).filter(d=>!Object.prototype.hasOwnProperty.call(deletedDealers,String(d?.id)));
         canonicalizeDuplicateGroups(merged);
         return merged;
       };
-      merge8942.__groupFilter8942=true;
-      window.mergeSyncState=merge8942;
-      try{mergeSyncState=merge8942}catch(_){}
-    }
+      finalMerge8942.__finalMerge8942=true;
+      finalMerge8942.__baseMerge8942=base;
+      window.mergeSyncState=finalMerge8942;
+      try{mergeSyncState=finalMerge8942}catch(_){}
+      window.__finalMerge8942=finalMerge8942;
+      document.documentElement.dataset.finalMergeFix='8.9.42';
+      return true;
+    };
+
+    installFinalMergeGuard();
+    setTimeout(installFinalMergeGuard,4200);
+    setTimeout(installFinalMergeGuard,6500);
 
     renderSaleProductGroups8942();
     renderSaleProducts8942();
-    window.__runtimeFix8942={normGroupName,sameGroup,canonicalizeDuplicateGroups,saleCandidates,renderSaleProductGroups:renderSaleProductGroups8942,renderSaleProducts:renderSaleProducts8942};
+    window.__runtimeFix8942={normGroupName,sameGroup,canonicalizeDuplicateGroups,saleCandidates,renderSaleProductGroups:renderSaleProductGroups8942,renderSaleProducts:renderSaleProducts8942,installFinalMergeGuard};
     document.documentElement.dataset.groupFilterFix='8.9.42';
     window.__runtimeFix8942Installed=true;
     return true;
