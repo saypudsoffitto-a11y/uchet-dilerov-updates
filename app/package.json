@@ -33,6 +33,7 @@
       "dealer-fix-8935.js",
       "dealer-delete-8937.js",
       "dealer-delete-8939.js",
+      "sync-fix-8939.js",
       "stable-fix-8938.js",
       "pdf-compact-8938.js",
       "updater-8931.js",
