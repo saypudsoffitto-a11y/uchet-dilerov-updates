@@ -27,31 +27,15 @@ test('8.9.39 final runtime explicitly restores verified 8.9.37 remover after a l
   const verifiedRemove=()=>true;
   const verifiedMerge=()=>({ok:true});
   const listeners={};
-  const document={
-    documentElement:{dataset:{}},
-    getElementById:()=>null,
-    createElement:()=>({style:{},append(){},remove(){}}),
-    body:{appendChild(){}}
-  };
+  const document={documentElement:{dataset:{}},getElementById:()=>null,createElement:()=>({style:{},append(){},remove(){}}),body:{appendChild(){}}};
   const ctx={
     console,document,
-    window:{
-      innerWidth:1200,innerHeight:800,
-      addEventListener:(name,fn,capture)=>{listeners[name]={fn,capture}},
-      __dealerDelete8937:{removeDealerNow:verifiedRemove,mergeSyncState:verifiedMerge},
-      deleteDealerFromList:()=>false,
-      showDealerContextMenu:()=>false
-    },
-    setInterval:fn=>{ticks.push(fn);return 1},
-    clearInterval:()=>{},
-    deleteDealerFromList:()=>false,
-    showDealerContextMenu:()=>false,
-    mergeSyncState:()=>({bad:true})
+    window:{innerWidth:1200,innerHeight:800,addEventListener:(name,fn,capture)=>{listeners[name]={fn,capture}},__dealerDelete8937:{removeDealerNow:verifiedRemove,mergeSyncState:verifiedMerge},deleteDealerFromList:()=>false,showDealerContextMenu:()=>false},
+    setInterval:fn=>{ticks.push(fn);return 1},clearInterval:()=>{},deleteDealerFromList:()=>false,showDealerContextMenu:()=>false,mergeSyncState:()=>({bad:true})
   };
   vm.createContext(ctx);
   vm.runInContext(src,ctx,{filename:'dealer-delete-8939.js'});
-  assert.equal(ticks.length,1);
-  ticks[0]();
+  assert.equal(ticks.length,1);ticks[0]();
   assert.equal(ctx.window.__dealerDelete8939Installed,true);
   assert.equal(ctx.window.deleteDealerFromList,verifiedRemove);
   assert.equal(ctx.window.deleteDealerPermanent8939,verifiedRemove);
@@ -61,10 +45,12 @@ test('8.9.39 final runtime explicitly restores verified 8.9.37 remover after a l
   assert.equal(listeners.contextmenu?.capture,true);
 });
 
-test('Windows smoke verifies whichever final dealer runtime the current package installs',()=>{
+test('Windows smoke verifies the current final dealer runtime through a table re-render',()=>{
   const smoke=read('scripts/windows-smoke.cjs');
   assert.match(smoke,/dealerFix/);
   assert.match(smoke,/deleteDealerPermanent89\d+/);
-  assert.match(smoke,/removedFromVisibleList/);
-  assert.match(smoke,/right-click path a user performs/);
+  assert.match(smoke,/lockedBefore/);
+  assert.match(smoke,/lockedAfter/);
+  assert.match(smoke,/state\.dealers\.reverse\(\);renderDealers\(\)/);
+  assert.match(smoke,/dealer ID changed after table re-render/);
 });
