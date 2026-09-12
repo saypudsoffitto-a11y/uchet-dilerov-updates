@@ -3,9 +3,15 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
+const {TextDecoder}=require('node:util');
 
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const readCsv=p=>{
+  const buffer=fs.readFileSync(path.join(root,p));
+  try{return new TextDecoder('utf-8',{fatal:true}).decode(buffer).replace(/^\uFEFF/,'')}
+  catch(_e){return new TextDecoder('windows-1251').decode(buffer).replace(/^\uFEFF/,'')}
+};
 
 test('8.9.41 packages catalogue, group-link backup, then repair runtime',()=>{
   const pkg=JSON.parse(read('app/package.json'));
@@ -13,6 +19,8 @@ test('8.9.41 packages catalogue, group-link backup, then repair runtime',()=>{
   const loader=read('app/release-8941-main.js');
   assert.match(loader,/stockGroupCatalogue/);
   assert.match(loader,/__stockGroupCatalogue8941/);
+  assert.match(loader,/TextDecoder\('utf-8',\{fatal:true\}\)/);
+  assert.match(loader,/TextDecoder\('windows-1251'\)/);
   assert.match(loader,/group-backup-8941\.js/);
   assert.match(loader,/data-fix-8941\.js/);
   assert.ok(loader.indexOf('backupPatch')<loader.lastIndexOf('dataPatch'));
@@ -48,7 +56,7 @@ test('missing catalogue group can be recreated without guessing from product tex
   const src=read('app/data-fix-8941.js');
   assert.match(src,/note:'Восстановлено из исходного списка товаров'/);
   assert.match(src,/catalogue\[productKey\(p\)\]/);
-  const csv=read('app/tovar.csv');
+  const csv=readCsv('app/tovar.csv');
   assert.match(csv,/СВЕТОДИОДНЫЕ ЛЕНТЫ/);
 });
 
