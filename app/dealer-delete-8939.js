@@ -1,8 +1,12 @@
 (()=>{
   'use strict';
+  // Newer releases load the verified 8.9.41 dealer handler directly from preload.
+  // Never let this compatibility patch overwrite a newer handler afterwards.
+  if(window.__dealerDelete8941Installed||window.__runtimeFix8942Installed)return;
   if(window.__dealerDelete8939Installed)return;
 
   const install=()=>{
+    if(window.__dealerDelete8941Installed||window.__runtimeFix8942Installed)return true;
     const verified=window.__dealerDelete8937;
     if(!verified||typeof verified.removeDealerNow!=='function')return false;
 
