@@ -28,7 +28,26 @@ function installEditContextMenu(win){
   });
 }
 
+function versionAtLeast(current,target){
+  const a=String(current||'0').split('.').map(x=>parseInt(x,10)||0);
+  const b=String(target||'0').split('.').map(x=>parseInt(x,10)||0);
+  for(let i=0;i<Math.max(a.length,b.length);i++){
+    if((a[i]||0)!==(b[i]||0))return (a[i]||0)>(b[i]||0);
+  }
+  return true;
+}
+
+function usesModernRenderer(){
+  try{
+    // 8.9.41+ has deterministic preload loading and must never be overwritten by
+    // the legacy 8.9.30 runtime. Keep this main-process module only for the native
+    // edit context menu (copy/paste/undo/etc.).
+    return typeof app.getVersion==='function'&&versionAtLeast(app.getVersion(),'8.9.41');
+  }catch(_){return false}
+}
+
 function installRenderer8930(win){
+  if(usesModernRenderer())return;
   const patchPath=path.join(__dirname,'runtime-fixes-8930.js');
   const run=()=>{
     if(win.isDestroyed()||!fs.existsSync(patchPath))return;
@@ -45,3 +64,5 @@ app.on('browser-window-created',(_event,win)=>{
   installEditContextMenu(win);
   installRenderer8930(win);
 });
+
+module.exports={versionAtLeast,usesModernRenderer,installRenderer8930};
