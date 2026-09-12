@@ -1,2 +1,2 @@
 Verify Windows build pipeline for Учёт дилеров group-filter recovery.
-Pass 1 on 2026-09-12 after adding deterministic runtime loading and a real installed-app UI regression test for products whose card group name matches the selected sale group while stored group IDs differ. Package version remains 8.9.41 during verification; do not publish a new release yet.
+Pass 2 on 2026-09-12. The first real installed-app run exposed that delayed 8.9.39 dealer code overwrote the newer 8.9.41 handler. The old patch now yields whenever 8.9.41/8.9.42 is installed. Re-run full tests, Windows build, installer, three legacy UI smokes, and three real product-group filter smokes. Package version remains 8.9.41; no release yet.
