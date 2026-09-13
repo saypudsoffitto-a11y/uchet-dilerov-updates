@@ -19,8 +19,11 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) app.quit();
 
 function decodeIni(buf) {
-  try { return new TextDecoder('windows-1251').decode(buf); }
-  catch (_) { return buf.toString('utf8'); }
+  const bytes = new Uint8Array(buf);
+  if(bytes[0]===0xff&&bytes[1]===0xfe)return new TextDecoder('utf-16le').decode(bytes).replace(/^\uFEFF/,'');
+  if(bytes[0]===0xfe&&bytes[1]===0xff)return new TextDecoder('utf-16be').decode(bytes).replace(/^\uFEFF/,'');
+  try { return new TextDecoder('utf-8',{fatal:true}).decode(bytes).replace(/^\uFEFF/,''); }
+  catch (_) { return new TextDecoder('windows-1251').decode(bytes).replace(/^\uFEFF/,''); }
 }
 function sendIniFile(filePath) {
   try {

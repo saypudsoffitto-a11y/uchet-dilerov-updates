@@ -25,5 +25,19 @@ function confirmExit(win){if(!win||win.isDestroyed())return Promise.resolve(true
  s.pending=Promise.resolve().then(async()=>{try{const r=await dialog.showMessageBox(win,{type:'question',title:'Выход из программы',message:'Точно хотите закрыть «Учёт дилеров»?',detail:'Несохранённые изменения в открытых формах могут быть потеряны.',buttons:['Остаться','Закрыть программу'],defaultId:0,cancelId:0,noLink:true});accepted=r.response===1;return accepted}catch{return false}finally{s.dialogOpen=false;s.pending=null;if(!accepted)restore(win)}});return s.pending;
 }
 function allowClose(win){if(win&&!win.isDestroyed()){install(win);states.get(win).allowed=true}}
-ipcMain.on('window:dialog',(event,payload)=>{event.returnValue=false;if(!trusted(event))return;const win=BrowserWindow.fromWebContents(event.sender);if(!win||win.isDestroyed())return;install(win);const s=states.get(win);if(s.dialogOpen)return;const confirm=payload?.kind==='confirm';s.dialogOpen=true;try{const response=dialog.showMessageBoxSync(win,{type:confirm?'question':'info',title:'Учёт дилеров',message:String(payload?.message||'').slice(0,12000),buttons:confirm?['Отмена','Подтвердить']:['OK'],defaultId:0,cancelId:0,noLink:true});event.returnValue=confirm?response===1:true}catch{event.returnValue=false}finally{s.dialogOpen=false;setImmediate(()=>restore(win))}});
+ipcMain.on('window:dialog',(event,payload)=>{
+ // A synchronous IPC reply must be sent once, after the user has answered.
+ if(!trusted(event)){event.returnValue=false;return}
+ const win=BrowserWindow.fromWebContents(event.sender);
+ if(!win||win.isDestroyed()){event.returnValue=false;return}
+ install(win);const s=states.get(win);
+ if(s.dialogOpen){event.returnValue=false;return}
+ const confirm=payload?.kind==='confirm';
+ let result=false;s.dialogOpen=true;
+ try{
+  const response=dialog.showMessageBoxSync(win,{type:confirm?'question':'info',title:'Учёт дилеров',message:String(payload?.message||'').slice(0,12000),buttons:confirm?['Отмена','Подтвердить']:['OK'],defaultId:0,cancelId:0,noLink:true});
+  result=confirm?response===1:true;
+ }catch{result=false}finally{s.dialogOpen=false;setImmediate(()=>restore(win))}
+ event.returnValue=result;
+});
 module.exports={install,confirmExit,allowClose};
