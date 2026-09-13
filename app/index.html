@@ -562,10 +562,13 @@ function parseIni(text){
   });
   return out;
 }
-function decodeIniBytes(bytes){
-  if(typeof bytes==='string')return bytes;
-  let u=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes||[]);
-  try{return new TextDecoder('windows-1251').decode(u)}catch(e){return new TextDecoder('utf-8').decode(u)}
+function decodeIniBytes(buf) {
+  if(typeof buf==='string')return buf;
+  const bytes = new Uint8Array(buf);
+  if(bytes[0]===0xff&&bytes[1]===0xfe)return new TextDecoder('utf-16le').decode(bytes).replace(/^\uFEFF/,'');
+  if(bytes[0]===0xfe&&bytes[1]===0xff)return new TextDecoder('utf-16be').decode(bytes).replace(/^\uFEFF/,'');
+  try { return new TextDecoder('utf-8',{fatal:true}).decode(bytes).replace(/^\uFEFF/,''); }
+  catch (_) { return new TextDecoder('windows-1251').decode(bytes).replace(/^\uFEFF/,''); }
 }
 function nmPrices(){return state.newmatros.prices||{}}
 function nmFindRollWidth(data){
