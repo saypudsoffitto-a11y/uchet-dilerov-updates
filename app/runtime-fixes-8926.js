@@ -56,16 +56,24 @@
 
   function ceilingFrom(data,payload){
     const z=data?.['Заказ']||{},c=data?.['Контрагент']||{};
+    if(!Object.keys(z).length||!(nmNumSafe(z['КоличествоПродукция'])>0)||
+       !String(z['МатериалКаталог']||z['МатериалМатериал']||'').trim()){
+      throw new Error('В файле не распознаны материал и площадь потолка. Повтори выгрузку заказа из NewMatRos.');
+    }
     if(typeof nmFindDealer!=='function')throw new Error('Не загружен поиск дилера NewMatRos');
     if(typeof nmBuildItems!=='function')throw new Error('Не загружен расчёт позиций NewMatRos');
     const found=nmFindDealer(data)||{};
     const dealer=found.dealer||null;
     const name=dealer?.name||found.name||c['Наименование']||c['ФИО']||c['Контрагент']||'Дилер не определён';
     const phone=dealer?.phone||found.rawPhone||c['Телефон']||'';
+    if(!dealer&&!String(found.rawPhone||'').trim()&&(!name||name==='Дилер NewMatRos'||name==='Дилер не определён')){
+      throw new Error('В выгрузке не указан дилер. Проверь контрагента в NewMatRos и повтори выгрузку.');
+    }
     const items=(nmBuildItems(data)||[]).map(x=>({...x}));
     const total=items.reduce((s,i)=>s+(Number.isFinite(+i.total)?+i.total:(+i.qty||0)*(+i.price||0)),0);
     const mat=items.find(i=>i.article==='NM-MAT')||null;
     const width=widthOf(data,z);
+    if(!(width>0))throw new Error('В выгрузке не распознана ширина полотна. Проверь ширину в NewMatRos и повтори выгрузку.');
     let key='';try{if(typeof nmOrderKey==='function')key=String(nmOrderKey(data)||'').trim()}catch(_){ }
     if(!key||key==='|')key='fallback|'+[z['НомерРасчета']||'',z['ИндексПотолка']||'',z['МатериалМатериал']||z['МатериалКаталог']||'',z['МатериалЦвет']||'',nmNumSafe(z['КоличествоПродукция']),nmNumSafe(z['ПериметрПомещения']),width].join('|');
     return {
@@ -84,7 +92,15 @@
   }
 
   function draftTotal(d){return (d?.ceilings||[]).reduce((s,c)=>s+(+c.total||0),0)}
-  function draftHasErrors(d){return (d?.ceilings||[]).some(c=>!(+c.total>0)||!(+c.materialPrice>0))}
+  function ceilingHasErrors(c){return !c||!(+c.total>0)||!(+c.materialPrice>0)||!(+c.area>0)||!(+c.width>0)||!String(c.material||'').trim()||!(c.items||[]).some(i=>i.article==='NM-MAT'&&+i.qty>0&&+i.price>0)}
+  function draftHasErrors(d){return (d?.ceilings||[]).some(ceilingHasErrors)}
+  function emptyLegacyCeiling(c){return c&&!(+c.area>0)&&!(+c.total>0)&&!(c.items||[]).length&&!c.number&&!c.ceilingIndex&&!c.material&&c.dealerId==null}
+  function backupDraft(d){
+    // Never discard a broken draft if its recovery copy cannot be persisted.
+    const prefix=DRAFT_KEY+'-recovery-'+Date.now();let backupKey=prefix,index=0;
+    while(localStorage.getItem(backupKey)!==null)backupKey=prefix+'-'+(++index);
+    localStorage.setItem(backupKey,JSON.stringify(d));
+  }
 
   function ensureUi(){
     if(!document.getElementById('nmDraftStyle8926')){
@@ -96,7 +112,7 @@
     let banner=document.getElementById('nmDraftBanner8926');
     if(!banner){banner=document.createElement('div');banner.id='nmDraftBanner8926';banner.className='hidden';banner.innerHTML='<div><b>Открытая продажа NewMatRos</b><div id="nmDraftBannerText8926" style="margin-top:3px"></div></div><div class="actions"><button id="nmDraftOpen8926" class="primary" type="button">Открыть продажу</button></div>';document.body.appendChild(banner);banner.querySelector('#nmDraftOpen8926').onclick=()=>renderDraft(true)}
     let modal=document.getElementById('nmDraftModal8926');
-    if(!modal){modal=document.createElement('div');modal.id='nmDraftModal8926';modal.className='hidden';modal.innerHTML='<div class="nmDraftBox"><div class="nmDraftHead"><h2>Открытая продажа NewMatRos</h2><button id="nmDraftHide8926" class="secondary" type="button">Свернуть и продолжить выгрузку</button></div><div id="nmDraftBody8926"></div></div>';document.body.appendChild(modal);modal.querySelector('#nmDraftHide8926').onclick=()=>modal.classList.add('hidden');modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.add('hidden')})}
+    if(!modal){modal=document.createElement('div');modal.id='nmDraftModal8926';modal.className='hidden';modal.innerHTML='<div class="nmDraftBox"><div class="nmDraftHead"><h2>Открытая продажа NewMatRos</h2><button id="nmDraftHide8926" class="secondary" type="button">Закрыть</button></div><div id="nmDraftBody8926"></div></div>';document.body.appendChild(modal);modal.querySelector('#nmDraftHide8926').onclick=()=>modal.classList.add('hidden');modal.addEventListener('click',e=>{if(e.target===modal)modal.classList.add('hidden')})}
     return {banner,modal};
   }
 
@@ -111,7 +127,7 @@
       const rows=(c.items||[]).map((i,n)=>'<tr><td>'+(n+1)+'</td><td>'+h(i.article||'')+'</td><td>'+h(i.name||'')+'</td><td>'+h(i.qty||0)+' '+h(i.unit||'')+'</td><td>'+m(i.price)+'</td><td>'+m(Number.isFinite(+i.total)?+i.total:(+i.qty||0)*(+i.price||0))+'</td></tr>').join('');
       const width=c.width?c.width.toLocaleString('ru-RU',{maximumFractionDigits:2})+' м':'не распознана';
       const priceSource=c.priceProductName?('Карточка: '+c.priceProductName):(c.priceSource||'—');
-      const warn=!(+c.materialPrice>0)?'<div class="nmDraftWarn" style="margin:8px 12px"><b>Цена плёнки не определена.</b> Этот потолок нужно проверить до закрытия продажи.</div>':'';
+      const warn=ceilingHasErrors(c)?'<div class="nmDraftWarn" style="margin:8px 12px"><b>Потолок не рассчитан.</b> Проверь материал, ширину и цену в карточке товара, затем повтори выгрузку этого потолка из NewMatRos — ошибочная запись будет заменена.</div>':'';
       return `<div class="nmCeiling"><div class="nmCeilingHead"><div><b>Потолок ${idx+1}${c.ceilingIndex?' · индекс '+h(c.ceilingIndex):''}</b><div class="nmCeilingMeta">Расчёт: ${h(c.number||'—')} · ${h(c.material||'—')} · цвет ${h(c.color||'—')} · ширина ${h(width)} · площадь ${h(c.area||0)} м²</div><div class="nmCeilingMeta">Источник цены: ${h(priceSource)}</div></div><b>${m(c.total)}</b></div>${warn}<table><thead><tr><th>№</th><th>Артикул</th><th>Позиция</th><th>Количество</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>${rows||'<tr><td colspan="6">Позиции не распознаны</td></tr>'}</tbody></table></div>`;
     }).join('');
     const warning=draftHasErrors(d)?'<div class="nmDraftWarn"><b>Продажу пока нельзя закрыть:</b> в одном из потолков не определена цена или сумма.</div>':'<div class="nmDraftOk"><b>Продажа открыта.</b> Продолжай выгружать потолки этого клиента — они будут добавляться автоматически в этот же чек.</div>';
@@ -121,22 +137,64 @@
     if(openModal)ui.modal.classList.remove('hidden');
   }
 
-  function addCeiling(payload){
+  function addCeiling(payload,options={}){
     disableAutoPost();
     try{
       const data=parsePayload(payload),ceil=ceilingFrom(data,payload);
-      if(alreadyImported(ceil.key)){renderDraft(false);alert('Этот потолок уже был оформлен раньше. Повторно в продажу он не добавлен.');return}
+      if(alreadyImported(ceil.key)){if(!options.quiet){renderDraft(false);alert('Этот потолок уже был оформлен раньше. Повторно в продажу он не добавлен.');}return}
       let d=loadDraft();
-      if(d&&(d.ceilings||[]).some(x=>x.key===ceil.key)){renderDraft(true);alert('Этот потолок уже есть в открытой продаже. Повторно он не добавлен.');return}
+      const duplicate=d&&(d.ceilings||[]).find(x=>x.key===ceil.key);
+      if(duplicate&&!ceilingHasErrors(duplicate)){if(!options.quiet){renderDraft(true);alert('Этот потолок уже есть в открытой продаже. Повторно он не добавлен.');}return}
+      // Empty placeholders from older releases have no order/dealer identity.
+      // Archive them before accepting a real ceiling; preserve all actual orders.
+      if(d&&(d.ceilings||[]).some(emptyLegacyCeiling)){
+        backupDraft(d);
+        d.ceilings=d.ceilings.filter(c=>!emptyLegacyCeiling(c));
+        if(!d.ceilings.length)d=null;
+      }
       if(d&&!sameDealer(d,ceil)){renderDraft(true);alert('Сейчас открыта продажа для «'+d.dealerName+'». Новая выгрузка относится к другому дилеру «'+ceil.dealerName+'» и не была добавлена. Сначала закрой текущую продажу.');return}
+      if(options.recoverOnly&&!d&&!options.allowEmptyRecovery)return;
       if(!d)d={version:1,createdAt:Date.now(),dealerId:ceil.dealerId,dealerName:ceil.dealerName,dealerPhone:ceil.dealerPhone,ceilings:[]};
       else{if(d.dealerId==null&&ceil.dealerId!=null)d.dealerId=ceil.dealerId;if(!d.dealerPhone&&ceil.dealerPhone)d.dealerPhone=ceil.dealerPhone;if((!d.dealerName||d.dealerName==='Дилер не определён')&&ceil.dealerName)d.dealerName=ceil.dealerName}
-      d.ceilings.push(ceil);d.updatedAt=Date.now();saveDraft(d);
+      const replace=d.ceilings.findIndex(c=>c.key===ceil.key&&ceilingHasErrors(c));
+      if(replace>=0){backupDraft(d);d.ceilings[replace]=ceil;}else d.ceilings.push(ceil);
+      d.updatedAt=Date.now();saveDraft(d);
       try{if(typeof clearNewMatRosNotification==='function')clearNewMatRosNotification()}catch(_){ }
-      clearOldPending();try{if(typeof go==='function')go('newmatros')}catch(_){ }renderDraft(true);
+      clearOldPending();try{if(!options.quiet&&typeof go==='function')go('newmatros')}catch(_){ }renderDraft(!options.quiet);
       const s=document.getElementById('nmStatus');if(s)s.textContent='Открытая продажа: '+d.dealerName+' · добавлен потолок '+d.ceilings.length+' · итого '+m(draftTotal(d));
-    }catch(e){console.error('8.9.26 add ceiling',e);alert('Не удалось добавить потолок из NewMatRos: '+String(e&&e.message||e))}
+      return true;
+    }catch(e){console.error('NewMatRos add ceiling',e);if(!options.quiet)alert('Не удалось добавить потолок из NewMatRos: '+String(e&&e.message||e));return false}
   }
+
+  async function recoverDraft(){
+    const d=loadDraft();
+    if(!d||!draftHasErrors(d)||!window.newmatrosAPI?.rereadIni)return;
+    for(const c of d.ceilings||[]){
+      if(!ceilingHasErrors(c)||!c.fileName)continue;
+      try{
+        const payload=await window.newmatrosAPI.rereadIni(c.fileName);
+        const current=loadDraft();
+        // The user may have finished or replaced the draft while the file was read.
+        if(!current||current.createdAt!==d.createdAt)break;
+        if(payload?.text){
+          const repaired=ceilingFrom(parsePayload(payload),payload);
+          // The exporter may have reused the file for a different ceiling.
+          if(repaired.key===c.key||emptyLegacyCeiling(c))addCeiling(payload,{quiet:true,recoverOnly:true,allowEmptyRecovery:emptyLegacyCeiling(c)});
+        }
+      }catch(e){console.error('NewMatRos draft recovery',e)}
+    }
+  }
+
+  // Both the file picker and folder watcher must append to the same open sale.
+  window.chooseNewMatRosIni=async function(){
+    if(window.newmatrosAPI?.chooseIni){
+      const payload=await window.newmatrosAPI.chooseIni();
+      if(payload&&!payload.canceled)addCeiling(payload);
+      return;
+    }
+    const input=document.createElement('input');input.type='file';input.accept='.ini,text/plain';
+    input.onchange=async()=>{const f=input.files?.[0];if(f)addCeiling({name:f.name,text:decodeIniBytes(await f.arrayBuffer())})};input.click();
+  };
 
   function finishDraft(){
     const d=loadDraft();if(!d||!(d.ceilings||[]).length)return;
@@ -160,6 +218,7 @@
   disableAutoPost();clearOldPending();document.getElementById('nmLiveBanner')?.remove();document.getElementById('nmReviewModal8923')?.remove();
   if(window.newmatrosAPI?.setIniHandler)window.newmatrosAPI.setIniHandler(addCeiling);else if(window.newmatrosAPI?.onIni)window.newmatrosAPI.onIni(addCeiling);
   renderDraft(false);
+  recoverDraft();
   const old=document.getElementById('runtime8921Badge');if(old)old.textContent='исправления 8.9.26 активны';
   document.documentElement.dataset.uchetRuntime='8.9.26';
 })();

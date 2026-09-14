@@ -100,6 +100,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Windows UI smoke pass $pass failed" }
             node scripts/windows-group-filter-smoke.cjs "$installedExe"
             if ($LASTEXITCODE -ne 0) { throw "Windows product group filter smoke pass $pass failed" }
+            node scripts/windows-newmatros-smoke.cjs "$installedExe"
+            if ($LASTEXITCODE -ne 0) { throw "Windows NewMatRos recovery smoke pass $pass failed" }
           }
 
       - name: Generate latest.json

@@ -108,6 +108,17 @@ ipcMain.handle('newmatros:chooseIni', async () => {
 });
 ipcMain.handle('newmatros:setWatch', (_e,enabled) => enabled ? startNmWatcher() : (stopNmWatcher(),{ok:true,folder:nmFolder}));
 
+ipcMain.handle('newmatros:rereadIni', (_e, name) => {
+  try {
+    // Recovery is restricted to INI basenames in the existing NewMatRos folder.
+    if(typeof name!=='string'||name!==path.win32.basename(name)||/[\\/\x00:]/.test(name)||!/^.+\.ini$/i.test(name))return {error:'Некорректное имя выгрузки'};
+    const filePath=path.join(nmFolder,name);
+    const realFolder=fs.realpathSync(nmFolder),realFile=fs.realpathSync(filePath);
+    if(path.dirname(realFile)!==realFolder)return {error:'Файл находится вне папки NewMatRos'};
+    return {name,path:filePath,text:decodeIni(fs.readFileSync(realFile))};
+  }catch(e){return {error:'Не удалось перечитать выгрузку: '+String(e&&e.message||e)}}
+});
+
 function decodeCsv(buf) {
   try { return new TextDecoder('windows-1251').decode(buf); }
   catch (_) { return buf.toString('utf8'); }

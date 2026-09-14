@@ -10,6 +10,7 @@ ipcRenderer.on('newmatros:ini',(_event,payload)=>{
 
 contextBridge.exposeInMainWorld('newmatrosAPI', {
   chooseIni: () => ipcRenderer.invoke('newmatros:chooseIni'),
+  rereadIni: (name) => ipcRenderer.invoke('newmatros:rereadIni', name),
   setWatch: (enabled) => ipcRenderer.invoke('newmatros:setWatch', !!enabled),
   onIni: (callback) => { if(!nmExclusive&&typeof callback==='function') nmCallbacks.push(callback); },
   setIniHandler: (callback) => { nmCallbacks.length=0; nmExclusive=true; if(typeof callback==='function') nmCallbacks.push(callback); },

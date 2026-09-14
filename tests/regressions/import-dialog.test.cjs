@@ -32,7 +32,7 @@ test('Open NewMatRos sale prices three widths from cards and posts one receipt',
  assert.equal(draft.dealerId,1);assert.deepEqual(draft.ceilings.map(c=>c.materialPrice),[100,200,300]);assert.equal(ctx.state.ops.length,0);
  // Capture the actual finish button created by renderDraft.
  const modal=elements.get('nmDraftModal8926'),nodes=new Map();modal.querySelector=id=>{if(!nodes.has(id)){const n=element();n.querySelector=modal.querySelector;nodes.set(id,n)}return nodes.get(id)};
- handler({text:'[Заказ]\nНомерРасчета=100\nИндексПотолка=1',name:'duplicate.ini'});
+ handler({text:'[Заказ]\nНомерРасчета=100\nИндексПотолка=1\nКонтрагент=Тестовый дилер\nМатериалМатериал=МАТ-303 PREMIUM\nКоличествоПродукция=10\nШиринаПолотна=360',name:'duplicate.ini'});
  nodes.get('#nmDraftFinish8926').onclick();
  assert.equal(ctx.state.ops.length,1);assert.equal(ctx.state.ops[0].total,6000);assert.equal(ctx.state.ops[0].newmatrosKeys.length,3);assert.equal(storage.has('uchetNewMatRosOpenSale8926'),false);
 });
