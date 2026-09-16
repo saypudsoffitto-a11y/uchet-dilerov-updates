@@ -4,8 +4,18 @@
   const history=document.getElementById('history');
   const panel=document.createElement('details');panel.className='card archivePanel';panel.id='receiptArchivePanel';
   panel.innerHTML='<summary>Удалённые чеки <span id="receiptArchiveCount" class="tag">0</span></summary><p class="muted">Чеки сохранены в архиве и не входят в долг. Восстановление вернёт чек и его сумму в расчёты.</p><div class="tableWrap"><table><thead><tr><th>Чек</th><th>Дилер</th><th>Сумма</th><th>Удалён</th><th>Действие</th></tr></thead><tbody id="receiptArchiveRows"></tbody></table></div><p id="receiptArchiveEmpty" class="muted">Удалённых чеков нет.</p>';
-  const firstHistoryCard=history.querySelector('.card');
-  if(firstHistoryCard)history.insertBefore(panel,firstHistoryCard);else history.appendChild(panel);
+
+  const sortBar=history.querySelector('.sortBar');
+  if(sortBar)history.insertBefore(panel,sortBar);else history.appendChild(panel);
+
+  const archiveNav=document.createElement('div');archiveNav.className='actions';archiveNav.style.margin='0 0 14px';
+  archiveNav.innerHTML='<button id="openDeletedReceipts" type="button" class="secondary">Удалённые чеки <span id="deletedReceiptsButtonCount" class="tag">0</span></button>';
+  history.insertBefore(archiveNav,panel);
+  document.getElementById('openDeletedReceipts').onclick=()=>{
+    panel.open=true;
+    panel.scrollIntoView({behavior:'smooth',block:'start'});
+  };
+
   function commit(next,id){
     // A failed write must not remove the active receipt or change the visible debt.
     localStorage.setItem(KEY,JSON.stringify(next));state=next;
@@ -32,6 +42,7 @@
   window.renderReceiptArchive=()=>{
     const entries=Object.entries(state.receiptStates||{}).filter(([,e])=>e.archived).sort((a,b)=>b[1].at-a[1].at);
     document.getElementById('receiptArchiveCount').textContent=entries.length;
+    const buttonCount=document.getElementById('deletedReceiptsButtonCount');if(buttonCount)buttonCount.textContent=entries.length;
     document.getElementById('receiptArchiveEmpty').classList.toggle('hidden',!!entries.length);
     const rows=document.getElementById('receiptArchiveRows');rows.replaceChildren();
     for(const [id,e] of entries){
