@@ -95,7 +95,7 @@
       remote.update=local.update||remote.update;
       remote.newmatros=local.newmatros||remote.newmatros;
       remote.sync=local.sync||remote.sync;
-      return norm(remote);
+      return window.receiptArchiveCore?window.receiptArchiveCore.merge(remote,local,norm(remote)):norm(remote);
     };
     mergeSyncState=window.mergeSyncState8933;
 
