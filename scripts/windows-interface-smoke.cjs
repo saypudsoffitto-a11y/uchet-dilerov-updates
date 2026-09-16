@@ -70,6 +70,8 @@ async function main(){
       socket.addEventListener('message',handler);socket.send(JSON.stringify({id,method,params}));
     });
     await sleep(7000); // Includes the last legacy merge guard installation.
+    const hooks=await evaluate(`(()=>{const b=document.getElementById('nmDraftBanner8926');const open=document.getElementById('nmDraftOpen8926');return {version:document.documentElement.dataset.interfaceVersion,dedupe:document.documentElement.dataset.productDedupe,cancel:!!document.getElementById('nmDraftCancel8926'),openRed:!!open?.classList.contains('nmDraftOpenRed8946'),noticeParent:b?.parentElement?.id||''}})()`);
+    assert.deepEqual(hooks,{version:'8.9.46',dedupe:'8.9.46',cancel:true,openRed:true,noticeParent:'workspaceNotices'});
     await evaluate(`newmatrosAPI.setWatch(false)`);
     await evaluate(`(()=>{
       window.confirm=()=>true;window.alert=message=>{throw Error(message)};
@@ -77,8 +79,10 @@ async function main(){
       save();go('home');return true;
     })()`);
     const summary=await evaluate(`({version:document.documentElement.dataset.interfaceVersion,today:document.getElementById('todaySales').textContent,rows:document.querySelectorAll('#homeDealerRows tr').length})`);
-    assert.equal(summary.version,'8.9.45');assert.equal(summary.today,'1');assert.equal(summary.rows,3);
+    assert.equal(summary.version,'8.9.46');assert.equal(summary.today,'1');assert.equal(summary.rows,3);
     const search=await evaluate(`(()=>{homeSearch.value='02';homeSearch.dispatchEvent(new Event('input'));const n=homeDealerRows.children.length;homeSearch.value='';homeSearch.dispatchEvent(new Event('input'));return n})()`);assert.equal(search,1);
+    const dedupe=await evaluate(`(()=>{const sample=norm({groups:[{id:1,name:'Профили'}],products:[{id:11,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:100,updatedAt:1},{id:22,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:110,updatedAt:2},{id:33,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:120,updatedAt:3}],ops:[{id:1,type:'sale',items:[{productId:22,name:'Багет Premium стеновой'}]}]});const result=window.__dataFix8941.repairProductsInState(sample);return {count:sample.products.length,linked:sample.ops[0].items[0].productId===sample.products[0].id,removed:result.duplicatesRemoved,tombstones:Object.keys(sample.deletedProducts||{}).length}})()`);
+    assert.deepEqual(dedupe,{count:1,linked:true,removed:2,tombstones:2});
     const folder=path.resolve('qa-interface');fs.mkdirSync(folder,{recursive:true});
     async function screenshot(name,width,height){await command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await sleep(200);const result=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(folder,name+'.png'),Buffer.from(result.data,'base64'))}
     await screenshot('home',1440,1000);
@@ -91,14 +95,17 @@ async function main(){
     const scroll=await evaluate(`(()=>{const el=document.querySelector('.productTableScroll8938');el.scrollLeft=220;return el.scrollLeft})()`);assert.ok(scroll>0,'Product table must scroll horizontally');
     await evaluate(`(()=>{const b=document.createElement('div');b.id='nmLiveBanner';b.style='position:fixed;left:250px;top:78px;z-index:420';b.textContent='Новая выгрузка NewMatRos';document.body.appendChild(b);return true})()`);await sleep(100);
     const position=await evaluate(`getComputedStyle(document.getElementById('nmLiveBanner')).position`);assert.equal(position,'static');
-    await evaluate(`(()=>{openDealer(1);return true})()`);await screenshot('dealer-small',1100,700);
+    const dealerUi=await evaluate(`(()=>{openDealer(1);const cards=[...document.querySelectorAll('#dealerModalBody>.grid>.card')].slice(0,3);const row=document.querySelector('#dealerModalBody .dealerHistoryDetail tbody tr[data-receipt-id]');return {paid:cards[1]?.classList.contains('dealerMetricPaid8946'),debt:cards[2]?.classList.contains('dealerMetricDebt8946'),receipt:row?.dataset.receiptId||''}})()`);
+    assert.deepEqual(dealerUi,{paid:true,debt:true,receipt:'100'});
+    await screenshot('dealer-small',1100,700);
     const topButton=await evaluate(`(()=>{const b=document.querySelector('#dealerModal .modalBox>.actions button'),r=b.getBoundingClientRect();return document.elementFromPoint(r.x+r.width/2,r.y+r.height/2)===b})()`);assert.equal(topButton,true,'Notification must not cover Close');
+    const clearDebt=await evaluate(`(()=>{openDealer(2);const cards=[...document.querySelectorAll('#dealerModalBody>.grid>.card')].slice(0,3);return cards[2]?.classList.contains('dealerMetricClear8946')||false})()`);assert.equal(clearDebt,true,'Zero debt must be shown as green/clear');
     await evaluate(`(()=>{closeDealerModal();go('sales');return true})()`);await screenshot('sale-small',1100,700);
     // Persistence failure must keep the original receipt, balance and stock.
     const failed=await evaluate(`(()=>{const old=Storage.prototype.setItem;const before=JSON.stringify(state);let message='';window.alert=s=>message=s;Storage.prototype.setItem=function(){throw Error('disk full')};try{archiveReceipt(100)}finally{Storage.prototype.setItem=old}return {unchanged:JSON.stringify(state)===before,error:message.includes('disk full')}})()`);assert.deepEqual(failed,{unchanged:true,error:true});
     assert.doesNotMatch(output,/Uncaught Exception|runtime loader error/);
     socket.close();
-    console.log('PASS: Windows dashboard, search, archive/restore, debt, inventory, stale sync, failed persistence, small-screen scrolling and unobstructed close button');
+    console.log('PASS: Windows dashboard, duplicate products, dealer status colors, receipt context data, NewMatRos actions, archive/restore, sync, scrolling and unobstructed close button');
   }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F'])}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
