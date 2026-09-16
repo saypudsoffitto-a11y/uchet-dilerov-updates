@@ -100,6 +100,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "Windows UI smoke pass $pass failed" }
             node scripts/windows-group-filter-smoke.cjs "$installedExe"
             if ($LASTEXITCODE -ne 0) { throw "Windows product group filter smoke pass $pass failed" }
+            node scripts/windows-interface-smoke.cjs "$installedExe"
+            if ($LASTEXITCODE -ne 0) { throw "Windows interface/archive smoke pass $pass failed" }
             node scripts/windows-newmatros-smoke.cjs "$installedExe"
             if ($LASTEXITCODE -ne 0) { throw "Windows NewMatRos recovery smoke pass $pass failed" }
           }
@@ -145,3 +147,11 @@ jobs:
           if ($LASTEXITCODE -eq 0) { exit 0 }
           git commit -m "Update latest.json for ${{ steps.meta.outputs.version }} [skip ci]"
           git push
+
+      - name: Upload interface screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: interface-screenshots
+          path: qa-interface/*.png
+          retention-days: 7

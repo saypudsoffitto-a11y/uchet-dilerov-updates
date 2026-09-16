@@ -164,7 +164,7 @@
         merged.deletedDealerKeys={};
         merged.dealers=(merged.dealers||[]).filter(d=>!Object.prototype.hasOwnProperty.call(deletedDealers,String(d?.id)));
         canonicalizeDuplicateGroups(merged);
-        return merged;
+        return window.receiptArchiveCore?window.receiptArchiveCore.merge(remote,local,merged):merged;
       };
       finalMerge8942.__finalMerge8942=true;
       finalMerge8942.__baseMerge8942=base;
