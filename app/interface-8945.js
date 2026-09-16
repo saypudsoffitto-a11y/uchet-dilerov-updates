@@ -68,7 +68,10 @@
     const banner=document.getElementById('nmDraftBanner8926');if(!banner)return;
     const actions=banner.querySelector('.actions');
     const open=banner.querySelector('#nmDraftOpen8926');
-    if(open){open.classList.remove('primary','secondary','dangerBtn');open.classList.add('nmDraftOpenRed8946');open.textContent='Открыть продажу'}
+    if(open){
+      if(!open.classList.contains('nmDraftOpenRed8946')){open.classList.remove('primary','secondary','dangerBtn');open.classList.add('nmDraftOpenRed8946')}
+      if(open.textContent!=='Открыть продажу')open.textContent='Открыть продажу';
+    }
     if(actions&&!banner.querySelector('#nmDraftCancel8926')){
       const cancel=document.createElement('button');cancel.id='nmDraftCancel8926';cancel.type='button';cancel.className='secondary nmDraftCancel8946';cancel.textContent='Отмена';cancel.onclick=cancelNewMatRosDraft8946;actions.appendChild(cancel);
     }
