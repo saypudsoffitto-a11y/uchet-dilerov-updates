@@ -55,7 +55,7 @@ test('duplicate groups keep the most-used ID and every duplicate product link is
 test('missing catalogue group can be recreated without guessing from product text',()=>{
   const src=read('app/data-fix-8941.js');
   assert.match(src,/note:'Восстановлено из исходного списка товаров'/);
-  assert.match(src,/catalogue\[productKey\(p\)\]/);
+  assert.match(src,/catalogue\[catalogueKey\(p\)\]/);
   const csv=readCsv('app/tovar.csv');
   assert.match(csv,/СВЕТОДИОДНЫЕ ЛЕНТЫ/);
 });
