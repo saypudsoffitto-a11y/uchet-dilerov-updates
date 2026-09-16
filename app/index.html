@@ -72,10 +72,69 @@ th[draggable="true"]{cursor:grab;user-select:none;position:relative}.colResize{p
 .receipt{padding:16px;max-width:860px;margin:12px auto;font-size:13px}.receipt h2{font-size:20px;margin:0 0 9px}.receipt .meta{gap:4px 14px;margin-bottom:8px}.receipt th,.receipt td{padding:5px 7px;line-height:1.15;vertical-align:middle}.receipt .total{font-size:16px;margin-top:8px}.receipt .sign{margin-top:16px}.receipt .actions{margin-top:12px!important}.receipt .actions button{padding:8px 10px}.receiptEditInput{padding:3px 5px;font-size:12px;min-height:28px}.receiptEditHelp{font-size:11px;margin:0 0 5px}
 @media print{.receipt{font-size:12px;padding:8px}.receipt h2{font-size:18px;margin-bottom:6px}.receipt th,.receipt td{padding:4px 5px}.receipt .sign{margin-top:12px}}
 </style>
+
+<style id="workspace-ui-refresh">
+@media screen {
+  html body{line-height:1.45}
+  html main{max-width:1920px;padding:90px 24px 32px}
+  html section>h2{font-size:24px;margin-bottom:14px;letter-spacing:-.4px}
+  html .card{border-color:var(--line);box-shadow:0 2px 8px #20302b05}
+  html .big{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  html .grid .card{font-size:13px;color:var(--muted)}
+  html .grid .big{color:var(--text)}
+  html .grid .big.danger{color:var(--red)}
+  html .grid .big.ok{color:var(--green)}
+  html .quick button{box-shadow:none;padding:16px;border-radius:12px}
+  html .quick button:first-child{background:var(--blue);border-color:var(--blue);color:white}
+  html .quick button:first-child span{color:#fff}
+  html button:focus-visible,html .btn:focus-visible{outline:3px solid #168777;outline-offset:3px}
+  html button{min-height:36px}
+  html input,html select,html textarea{min-height:42px}
+  html input[type=checkbox],html input[type=radio]{min-height:0}
+  html .search{border-color:#a5b8b1;box-shadow:0 2px 4px #20302b04}
+  html th{font-weight:650;letter-spacing:.01em}
+  html td{vertical-align:middle;font-variant-numeric:tabular-nums}
+  html main section>table tbody tr:nth-child(even) td{background:#f8faf9}
+  html #products .productTable th,html #products .productTable td{padding:8px 10px!important;line-height:1.35!important;font-size:13px}
+  html #products .productTableScroll8938{border-radius:10px;min-height:160px}
+  html .tableWrap,html .paymentTableWrap{border-radius:10px}
+  html #sales #saleProductList .choiceRow{padding:9px 11px;line-height:1.35}
+  html #sales #saleProductList .choiceRow b{font-size:14px}
+  html #sales .cart th,html #sales .cart td{padding:8px;line-height:1.35}
+  html .choiceRow.active{background:#e7f3ed;box-shadow:inset 3px 0 0 var(--blue)}
+  html .modalBox{padding:0 22px 22px;scroll-padding-top:86px}
+  html .modalBox>.actions:first-child{position:sticky;top:0;z-index:6;background:white;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:18px;flex-wrap:nowrap}
+  html .modalBox>.actions:first-child h2{margin:0;font-size:22px}
+  html .modalBox>.actions:first-child button{flex-shrink:0}
+  html .qtyModalBox{padding-top:22px}
+  html .nmDraftHead,html .nmReviewHead{position:sticky;top:-20px;z-index:6;background:white;padding:14px 0;border-bottom:1px solid var(--line);margin-bottom:14px}
+  html .nmDraftHead button,html .nmReviewHead button{flex-shrink:0}
+  html .nmDraftHead h2,html .nmReviewHead h2{font-size:22px}
+  html .nmDraftActions,html .nmReviewActions{position:sticky;bottom:-20px;background:white;padding:14px 0;border-top:1px solid var(--line);z-index:5}
+  html #workspaceNotices:has(> :not(.hidden)){margin-bottom:16px}
+  html #workspaceNotices #nmLiveBanner,html #workspaceNotices #nmDraftBanner8926{position:static!important;inset:auto!important;width:100%!important;z-index:auto!important;box-shadow:none!important;padding:8px 12px!important;border-radius:10px!important;gap:12px!important;font-size:13px!important;margin-bottom:8px}
+  html #workspaceNotices .actions{flex-shrink:0}
+  html #workspaceNotices button{font-size:13px;padding:7px 10px}
+  html #workspaceNotices>div>div:first-child{min-width:0;overflow-wrap:anywhere}
+  html #nmNotification{font-size:13px;padding:8px 12px}
+  @media(max-width:1200px){
+    html nav{width:202px;padding-left:8px;padding-right:8px}
+    html nav button{font-size:14px}
+    html header{padding-left:226px}
+    html main{margin-left:202px;padding-left:20px;padding-right:20px}
+    html .dealerSummary{grid-template-columns:80px 1fr;gap:14px}
+    html .dealerAvatar{width:72px;height:72px}
+    html .dealerSummary>.actions{grid-column:1/-1}
+  }
+  @media(prefers-reduced-motion:reduce){html *{transition:none!important;scroll-behavior:auto!important}}
+}
+</style>
+<link rel="stylesheet" href="interface-8945.css">
+<script src="receipt-archive-core.js"></script>
 </head>
 <body>
 <nav>
-<div class="brand">Учёт дилеров<span>Windows · версия 8.9.13</span></div>
+<div class="brand">Учёт дилеров<span>Продажи и расчёты</span></div>
 <div class="navLabel">Основное</div>
 <button class="active" data-section="home" onclick="show('home',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span>Главная</button>
 <button data-section="dealers" onclick="show('dealers',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg></span>Дилеры</button>
@@ -94,26 +153,22 @@ th[draggable="true"]{cursor:grab;user-select:none;position:relative}.colResize{p
 <button data-section="backup" onclick="show('backup',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg></span>Резервная копия</button>
 <button data-section="updates" onclick="show('updates',this)"><span class="navIcon"><svg viewBox="0 0 24 24"><path d="M20 7v5h-5"/><path d="M19 12a7 7 0 1 0-2 5"/></svg></span>Обновление</button>
 </nav>
-<header><b id="pageTitle">Главная</b><span class="statusPill">Windows 10/11</span></header>
+<header><b id="pageTitle">Главная</b><div class="actions"><button id="connectionIndicator" class="connectionIndicator" onclick="go('sync')">Сервер не настроен</button><span class="statusPill">Windows 10/11</span></div></header>
 <main>
+<div id="workspaceNotices" role="region" aria-label="Уведомления NewMatRos"></div>
 <section id="home">
-<h2>Главная</h2>
-<p class="sectionHint">Вся важная информация и самые частые действия — на одном экране.</p>
-<div class="quick">
-<button onclick="go('sales')"><b>＋ Новая продажа</b><span>Создать накладную и добавить долг</span></button>
-<button onclick="go('payments')"><b>₽ Принять оплату</b><span>Уменьшить долг дилера</span></button>
-<button onclick="go('newmatros')"><b>↔ Импорт NewMatRos</b><span>Загрузить потолок из INI</span></button>
-<button onclick="go('debts')"><b>📌 Посмотреть долги</b><span>Все дилеры и остатки</span></button>
+<div class="homeHeading"><div><h2>Главная</h2><p class="muted">Всё для работы с дилерами</p></div><div class="actions"><button class="primary" onclick="go('sales')">＋ Новая продажа</button><button class="secondary" onclick="go('payments')">₽ Принять оплату</button></div></div>
+<div class="homeStats">
+<div class="card"><span class="metricIcon">♙</span><div><span class="muted">Дилеров</span><div class="big" id="dcount">0</div></div></div>
+<div class="card"><span class="metricIcon">▤</span><div><span class="muted">Продаж за сегодня</span><div class="big" id="todaySales">0</div></div></div>
+<div class="card"><span class="metricIcon red">₽</span><div><span class="muted">Общий долг</span><div class="big danger" id="debtTotal">0 ₽</div></div></div>
+<div class="card"><span class="metricIcon">₽</span><div><span class="muted">Оплачено сегодня</span><div class="big ok" id="todayPayments">0 ₽</div></div></div>
 </div>
-<div class="grid">
-<div class="card">Дилеров<div class="big" id="dcount">0</div></div>
-<div class="card clickable" onclick="show('products')">Товаров<div class="big" id="pcount">0</div></div>
-<div class="card">Продаж<div class="big" id="saleCount">0</div></div>
-<div class="card">Общий долг<div class="big danger" id="debtTotal">0 ₽</div></div>
-<div class="card">Общая прибыль<div class="big ok" id="profitTotal">0 ₽</div></div>
+<div class="hidden" aria-hidden="true"><span id="pcount"></span><span id="saleCount"></span><span id="profitTotal"></span></div>
+<div class="card homeTable"><div class="homeTableHead"><h3>Дилеры и текущие долги</h3><input id="homeSearch" class="search" aria-label="Поиск дилера" placeholder="Поиск по имени или телефону" oninput="renderHomeDashboard()"></div>
+<div class="homeFilters" role="group" aria-label="Фильтр дилеров"><button id="homeAll" class="primary" aria-pressed="true" onclick="setHomeDebtFilter(false)">Все дилеры</button><button id="homeDebtors" class="secondary" aria-pressed="false" onclick="setHomeDebtFilter(true)">С долгом</button></div>
+<div class="tableWrap"><table><thead><tr><th>Дилер</th><th>Город</th><th>Последняя покупка</th><th>Текущий долг</th><th></th></tr></thead><tbody id="homeDealerRows"></tbody></table></div><p id="homeEmpty" class="muted hidden">Дилеры не найдены. Измени поиск или добавь дилера в разделе «Дилеры».</p>
 </div>
-<br><h2>Дилеры и текущие долги</h2>
-<table><thead><tr><th>Дилер</th><th>Телефон</th><th>Город</th><th>Текущий долг</th></tr></thead><tbody id="homeDealerRows"></tbody></table>
 </section>
 
 <section id="dealers" class="hidden">
@@ -506,7 +561,7 @@ function renderCart(){cartRows.innerHTML=cart.map((i,idx)=>'<tr class="clickable
 function clearCart(){cart=[];renderCart()}
 
 function saveSale(){let d=state.dealers.find(x=>x.id==saleDealer.value);if(!d)return alert('Выбери дилера');if(!cart.length)return alert('Добавь хотя бы один товар');let total=cart.reduce((s,i)=>s+i.total,0),profit=cart.reduce((s,i)=>s+i.profit,0),num=state.receiptSeq++,date=new Date().toLocaleString('ru-RU');let op={id:Date.now(),ts:Date.now(),type:'sale',date,dealerId:d.id,dealer:d.name,receiptNo:num,items:cart.map(x=>({...x})),total,profit};state.ops.push(op);cart=[];save();renderReceipt(op,d);renderCart();saleProductSearch.value='';saleProduct.value='';selectedPhoto.innerHTML='';renderSaleProducts()}
-function renderReceiptHtml(op,d){let rows=(op.items||[]).map((i,n)=>'<tr><td>'+(n+1)+'</td><td>'+esc(i.article)+'</td><td>'+esc(i.name)+'</td><td><input class="receiptEditInput" type="number" min="0.01" step="0.01" value="'+(+i.qty||0)+'" onchange="editReceiptItem('+op.id+','+n+',\'qty\',this.value)"> '+esc(i.unit||'шт')+'</td><td><input class="receiptEditInput" type="number" min="0" step="0.01" value="'+(+i.price||0)+'" onchange="editReceiptItem('+op.id+','+n+',\'price\',this.value)"></td><td>'+money(i.total)+'</td></tr>').join('');return '<div class="receipt" id="receiptPrint" data-receipt-op-id="'+op.id+'"><h2>ТОВАРНАЯ НАКЛАДНАЯ № '+op.receiptNo+' от '+esc(op.date)+'</h2><div class="meta"><div><b>Поставщик:</b> ____________________</div><div><b>Покупатель:</b> '+esc(d.name)+'</div></div><p class="receiptEditHelp">Количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.</p><table><thead><tr><th>№</th><th>Артикул</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total">Итого: '+money(op.total)+'</div><p><b>Остаток долга:</b> '+money(debtOf(d.id))+'</p><div class="sign"><span>Отпустил: ____________</span><span>Получил: ____________</span></div><div class="actions" style="margin-top:20px"><button class="primary" onclick="printReceipt()">Распечатать</button><button class="primary" onclick="downloadReceipt('+op.id+')">Скачать накладную</button><button class="primary" onclick="sendWhatsApp('+op.id+')">Отправить в WhatsApp</button><button class="primary" type="button" onclick="openReceiptAdd('+op.id+')">Добавить товар в этот чек</button></div></div>'}
+function renderReceiptHtml(op,d){let rows=(op.items||[]).map((i,n)=>'<tr><td>'+(n+1)+'</td><td>'+esc(i.article)+'</td><td>'+esc(i.name)+'</td><td><input class="receiptEditInput" type="number" min="0.01" step="0.01" value="'+(+i.qty||0)+'" onchange="editReceiptItem('+op.id+','+n+',\'qty\',this.value)"> '+esc(i.unit||'шт')+'</td><td><input class="receiptEditInput" type="number" min="0" step="0.01" value="'+(+i.price||0)+'" onchange="editReceiptItem('+op.id+','+n+',\'price\',this.value)"></td><td>'+money(i.total)+'</td></tr>').join('');return '<div class="receipt" id="receiptPrint" data-receipt-op-id="'+op.id+'"><h2>ТОВАРНАЯ НАКЛАДНАЯ № '+op.receiptNo+' от '+esc(op.date)+'</h2><div class="meta"><div><b>Поставщик:</b> ____________________</div><div><b>Покупатель:</b> '+esc(d.name)+'</div></div><p class="receiptEditHelp">Количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.</p><table><thead><tr><th>№</th><th>Артикул</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total">Итого: '+money(op.total)+'</div><p><b>Остаток долга:</b> '+money(debtOf(d.id))+'</p><div class="sign"><span>Отпустил: ____________</span><span>Получил: ____________</span></div><div class="actions" style="margin-top:20px"><button class="primary" onclick="printReceipt()">Распечатать</button><button class="primary" onclick="downloadReceipt('+op.id+')">Скачать накладную</button><button class="primary" onclick="sendWhatsApp('+op.id+')">Отправить в WhatsApp</button><button class="primary" type="button" onclick="openReceiptAdd('+op.id+')">Добавить товар в этот чек</button><button class="dangerBtn" type="button" onclick="archiveReceipt('+op.id+')">Удалить чек</button></div></div>'}
 function renderReceipt(op,d){receiptArea.innerHTML=renderReceiptHtml(op,d)}
 function editReceiptItem(opId,itemIndex,field,value){let op=state.ops.find(x=>x.id==opId&&x.type==='sale');if(!op||!op.items||!op.items[itemIndex])return;let v=Number(String(value||'').replace(',','.'));if(!Number.isFinite(v)||(field==='qty'&&v<=0)||(field==='price'&&v<0)){alert(field==='qty'?'Количество должно быть больше 0':'Цена не может быть отрицательной');refreshReceiptViews(opId);return}let item=op.items[itemIndex];item[field]=v;item.total=(+item.qty||0)*(+item.price||0);item.profit=((+item.price||0)-(+item.buyPrice||0))*(+item.qty||0);op.total=op.items.reduce((sum,x)=>sum+(+x.total||0),0);op.profit=op.items.reduce((sum,x)=>sum+(+x.profit||0),0);save();refreshReceiptViews(opId)}
 function refreshReceiptViews(opId){let op=state.ops.find(x=>x.id==opId),d=op&&state.dealers.find(x=>x.id==op.dealerId);if(!op||!d)return;let html=renderReceiptHtml(op,d);if(receiptArea.querySelector('[data-receipt-op-id="'+opId+'"]'))receiptArea.innerHTML=html;if(receiptViewBody.querySelector('[data-receipt-op-id="'+opId+'"]'))receiptViewBody.innerHTML=html}
@@ -531,7 +586,7 @@ function confirmInitialDebt(){let d=state.dealers.find(x=>x.id==initialDebtDeale
 function closeInitialDebtModal(){initialDebtModal.classList.add('hidden');initialDebtDealerId=null}
 function saveDealerEdit(id){let d=state.dealers.find(x=>x.id==id);if(!d)return;d.name=dealerEditName.value.trim()||d.name;d.phone=dealerEditPhone.value.trim();d.city=dealerEditCity.value.trim();d.company=dealerEditCompany.value.trim();d.fio=dealerEditFio.value.trim();d.address=dealerEditAddress.value.trim();d.email=dealerEditEmail.value.trim();d.www=dealerEditWww.value.trim();d.clientGroup=dealerEditGroup.value.trim();d.paymentMethod=dealerEditPay.value.trim();d.shippingMethod=dealerEditShip.value.trim();d.note=dealerEditNote.value.trim();save();openDealer(id);alert('Карточка дилера сохранена')}
 function closeDealerModal(){dealerModal.classList.add('hidden')}
-function showReceiptFromHistory(id){let op=state.ops.find(x=>x.id==id),d=op&&state.dealers.find(x=>x.id==op.dealerId);if(!op||!d)return;receiptViewBody.innerHTML=renderReceiptHtml(op,d);receiptViewModal.classList.remove('hidden')}
+function showReceiptFromHistory(id){let op=state.ops.find(x=>x.id==id&&x.type==='sale'),d=op&&state.dealers.find(x=>x.id==op.dealerId);if(!op||!d)return;receiptViewBody.innerHTML=renderReceiptHtml(op,d);receiptViewModal.classList.remove('hidden')}
 function closeReceiptView(){receiptViewModal.classList.add('hidden');receiptViewBody.innerHTML=''}
 
 function forceInputFocus(el,selectAll){if(!el||!el.isConnected||el.disabled||el.readOnly||!el.getClientRects().length)return;try{el.focus({preventScroll:true});if(selectAll&&el.select)el.select()}catch(_){}}
@@ -727,6 +782,8 @@ function render(){
  renderDealers();renderDebts();renderProducts();renderSaleProductGroups();renderPaymentDealers();renderSaleDealers();renderSaleProducts();renderNewMatRosSettings();renderNewMatRosNotification();renderUpdateSettings();renderSyncSettings();
  renderHistory();
  renderCart();
+ if(window.renderHomeDashboard)renderHomeDashboard();
+ if(window.renderReceiptArchive)renderReceiptArchive();
  applyStoredColumnOrders();
 }
 setupReorderableTables();
@@ -741,5 +798,23 @@ restartSyncTimer();
 if(window.newmatrosAPI&&window.newmatrosAPI.appInfo){window.newmatrosAPI.appInfo().then(info=>{let pill=document.querySelector('.statusPill');if(pill&&info)pill.textContent='Windows '+(info.arch||'x64')+' · v'+(info.version||'8.9.10');let v=document.getElementById('updateCurrentVersion');if(v&&info)v.textContent=info.version||'8.9.10'}).catch(()=>{})}
 if(window.newmatrosAPI&&window.newmatrosAPI.setWatch){state.newmatros.watching=true;state.newmatros.autoPost=true;save();window.newmatrosAPI.setWatch(true).then(r=>{if(r&&r.ok){nmStatus.textContent='Автоприём NewMatRos включён: '+r.folder}else{state.newmatros.watching=false;save();if(r&&r.error)nmStatus.textContent=r.error}})}
 </script>
+
+<script>
+// Keep import notices in document flow, below the header and behind every modal.
+// Moving existing nodes preserves their handlers and the import/draft lifecycle.
+(()=>{
+  const dock=document.getElementById('workspaceNotices');
+  const moveNotices=()=>{
+    for(const id of ['nmLiveBanner','nmDraftBanner8926']){
+      const banner=document.getElementById(id);
+      if(banner&&banner.parentElement!==dock)dock.appendChild(banner);
+    }
+  };
+  moveNotices();
+  new MutationObserver(moveNotices).observe(document.body,{childList:true});
+})();
+</script>
+<script src="interface-8945.js"></script>
+<script src="receipt-archive-ui.js"></script>
 </body>
 </html>
