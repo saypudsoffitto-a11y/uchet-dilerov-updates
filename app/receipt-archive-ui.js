@@ -4,7 +4,8 @@
   const history=document.getElementById('history');
   const panel=document.createElement('details');panel.className='card archivePanel';panel.id='receiptArchivePanel';
   panel.innerHTML='<summary>Удалённые чеки <span id="receiptArchiveCount" class="tag">0</span></summary><p class="muted">Чеки сохранены в архиве и не входят в долг. Восстановление вернёт чек и его сумму в расчёты.</p><div class="tableWrap"><table><thead><tr><th>Чек</th><th>Дилер</th><th>Сумма</th><th>Удалён</th><th>Действие</th></tr></thead><tbody id="receiptArchiveRows"></tbody></table></div><p id="receiptArchiveEmpty" class="muted">Удалённых чеков нет.</p>';
-  history.appendChild(panel);
+  const firstHistoryCard=history.querySelector('.card');
+  if(firstHistoryCard)history.insertBefore(panel,firstHistoryCard);else history.appendChild(panel);
   function commit(next,id){
     // A failed write must not remove the active receipt or change the visible debt.
     localStorage.setItem(KEY,JSON.stringify(next));state=next;
@@ -17,7 +18,11 @@
   window.archiveReceipt=id=>{
     const op=state.ops.find(o=>String(o.id)===String(id)&&o.type==='sale');if(!op)return;
     if(!confirm('Удалить чек № '+op.receiptNo+' для «'+(op.dealer||'Дилер')+'» на '+money(op.total)+'?\n\nДолг уменьшится на эту сумму. Оплаты сохранятся. Чек можно будет восстановить: История → Удалённые чеки.'))return;
-    try{commit(core.transition(state,id,true),id);go('history');panel.open=true}catch(e){alert('Не удалось удалить чек: '+e.message)}
+    try{
+      const dealerId=op.dealerId;
+      commit(core.transition(state,id,true),id);
+      if(dealerId!=null&&typeof openDealer==='function')openDealer(dealerId);
+    }catch(e){alert('Не удалось удалить чек: '+e.message)}
   };
   window.restoreReceipt=id=>{
     const e=state.receiptStates?.[String(id)];if(!e?.archived)return;
