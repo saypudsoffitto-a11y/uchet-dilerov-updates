@@ -62,3 +62,27 @@
  html #productGroupFilterWrap{margin-bottom:14px}
  @media(max-width:1200px){html .brand{font-size:19px;padding-left:8px}html nav button{font-size:13px;padding:10px}html .navLabel{padding-top:12px}}
 }
+
+@media screen {
+ html #dealerModalBody .dealerMetric8946{box-shadow:none;border-width:1px;border-style:solid;transition:.15s}
+ html #dealerModalBody .dealerMetricSales8946{background:#f3f7fb;border-color:#dce6ef;color:#40576c}
+ html #dealerModalBody .dealerMetricPaid8946{background:#edf8f2;border-color:#cce8d8;color:#166241}
+ html #dealerModalBody .dealerMetricDebt8946{background:#fff0f0;border-color:#f2c7c8;color:#8f252b}
+ html #dealerModalBody .dealerMetricClear8946{background:#eaf8ef;border-color:#c3e7d0;color:#12613b}
+ html #dealerModalBody .dealerMetricPaid8946 .big,html #dealerModalBody .dealerMetricClear8946 .big{color:#087a4b!important}
+ html #dealerModalBody .dealerMetricDebt8946 .big{color:#b42328!important}
+ html #workspaceNotices #nmDraftBanner8926{padding:7px 10px!important;min-height:42px!important;gap:10px!important}
+ html #workspaceNotices #nmDraftBanner8926>div:first-child{font-size:12px;line-height:1.3}
+ html #workspaceNotices #nmDraftBanner8926>div:first-child b{font-size:13px}
+ html #workspaceNotices #nmDraftBanner8926 .actions{gap:6px!important}
+ html #workspaceNotices .nmDraftOpenRed8946{background:#b42328!important;color:#fff!important;border:1px solid #9d1f24!important;padding:6px 9px!important;min-height:31px!important;font-size:12px!important;box-shadow:0 0 0 2px #fff,0 0 0 4px #f0c5c7}
+ html #workspaceNotices .nmDraftOpenRed8946:hover{background:#981e23!important}
+ html #workspaceNotices .nmDraftCancel8946{padding:6px 9px!important;min-height:31px!important;font-size:12px!important}
+ html .dealerHistoryDetail tbody tr[data-receipt-id]{cursor:context-menu}
+ html .dealerHistoryDetail tbody tr[data-receipt-id]:hover td{background:#f7faf8!important}
+ html .dealerReceiptContextMenu8946{position:fixed;z-index:650;background:#fff;border:1px solid #cfd9d4;border-radius:10px;box-shadow:0 14px 40px #0003;padding:6px;min-width:220px}
+ html .dealerReceiptContextMenu8946 button{display:block;width:100%;text-align:left;background:#fff;color:#172c28;padding:9px 11px;border-radius:7px;border:0}
+ html .dealerReceiptContextMenu8946 button:hover{background:#edf5f1}
+ html .dealerReceiptContextMenu8946 .dangerMenuItem{color:#b42328}
+ html .dealerReceiptContextMenu8946 .dangerMenuItem:hover{background:#fff0f0}
+}
