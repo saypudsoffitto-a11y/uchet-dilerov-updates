@@ -39,6 +39,16 @@
         }
       }
     }
+    // Recalculate payment running balances for corrected dealers, keeping amounts/methods intact.
+    const affected=new Set(Object.values(state.receiptStates).map(e=>key(e.receipt.dealerId)));
+    const balances={};
+    const time=o=>Number(o.ts)||Number(o.id)||0;
+    for(const op of (state.ops||[]).slice().sort((a,b)=>time(a)-time(b))){
+      const id=key(op.dealerId);if(!affected.has(id))continue;
+      const before=balances[id]||0;
+      if(op.type==='payment'){op.beforeDebt=before;op.afterDebt=before-(+op.total||0);balances[id]=op.afterDebt}
+      else if(op.type==='sale'||op.type==='initial_debt')balances[id]=before+(+op.total||0);
+    }
     return state;
   }
   function transition(state,id,archived,now=Date.now()){
