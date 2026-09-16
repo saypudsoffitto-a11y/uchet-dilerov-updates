@@ -16,12 +16,12 @@
     panel.scrollIntoView({behavior:'smooth',block:'start'});
   };
 
-  function commit(next,id){
+  function commit(next,id,options={}){
     // A failed write must not remove the active receipt or change the visible debt.
     localStorage.setItem(KEY,JSON.stringify(next));state=next;
     document.querySelectorAll('[data-receipt-op-id]').forEach(el=>{if(String(el.dataset.receiptOpId)===String(id))el.remove()});
     document.getElementById('receiptViewModal')?.classList.add('hidden');
-    document.getElementById('dealerModal')?.classList.add('hidden');
+    if(!options.keepDealerOpen)document.getElementById('dealerModal')?.classList.add('hidden');
     render();
     if(!syncApplying&&state.sync?.enabled){clearTimeout(syncSaveTimer);syncSaveTimer=setTimeout(()=>syncPush(false),350)}
   }
@@ -30,7 +30,8 @@
     if(!confirm('Удалить чек № '+op.receiptNo+' для «'+(op.dealer||'Дилер')+'» на '+money(op.total)+'?\n\nДолг уменьшится на эту сумму. Оплаты сохранятся. Чек можно будет восстановить: История → Удалённые чеки.'))return;
     try{
       const dealerId=op.dealerId;
-      commit(core.transition(state,id,true),id);
+      commit(core.transition(state,id,true),id,{keepDealerOpen:true});
+      // Stay in the current debts/dealer workflow. History opens only when the user chooses it.
       if(dealerId!=null&&typeof openDealer==='function')openDealer(dealerId);
     }catch(e){alert('Не удалось удалить чек: '+e.message)}
   };
