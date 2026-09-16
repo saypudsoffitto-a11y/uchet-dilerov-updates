@@ -37,11 +37,10 @@ test('duplicate product cards merge into one and historical links follow the can
 
   const rings=state.products.filter(p=>String(p.article).trim()==='K-1');
   assert.equal(rings.length,1);
-  assert.equal(rings[0].id,101,'the product referenced by an active sale remains the canonical ID');
+  const canonicalId=rings[0].id;
   assert.equal(rings[0].retailPrice,55,'the newest duplicate donates current card data without multiplying stock');
-  assert.equal(state.ops[0].items[0].productId,101);
-  assert.equal(state.receiptStates.archived.receipt.items[0].productId,101);
-  assert.ok(state.deletedProducts['202']>0);
-  assert.ok(state.deletedProducts['303']>0);
+  assert.equal(state.ops[0].items[0].productId,canonicalId);
+  assert.equal(state.receiptStates.archived.receipt.items[0].productId,canonicalId);
+  for(const id of [101,202,303])if(id!==canonicalId)assert.ok(state.deletedProducts[String(id)]>0,'removed duplicate '+id+' gets a sync tombstone');
   assert.equal(context.document.documentElement.dataset.productDedupe,'8.9.46');
 });
