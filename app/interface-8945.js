@@ -110,7 +110,7 @@
   }
   function installDealerDecorator(){
     const current=typeof openDealer==='function'?openDealer:null;if(!current||current.__ui8946)return;
-    const wrapped=function(id){const result=current.apply(this,arguments);setTimeout(()=>decorateDealerCard8946(id),0);return result};wrapped.__ui8946=true;wrapped.__base=current;
+    const wrapped=function(id){const result=current.apply(this,arguments);decorateDealerCard8946(id);setTimeout(()=>decorateDealerCard8946(id),0);return result};wrapped.__ui8946=true;wrapped.__base=current;
     window.openDealer=wrapped;try{openDealer=wrapped}catch(_){}
   }
   installDealerDecorator();setTimeout(installDealerDecorator,1500);setTimeout(installDealerDecorator,5000);
