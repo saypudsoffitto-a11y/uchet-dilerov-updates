@@ -91,7 +91,7 @@
       ]
     }
   },
-  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11",
+  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 · релиз 8.9.46",
   "devDependencies": {
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
