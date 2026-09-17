@@ -97,6 +97,47 @@
     return true;
   }
 
+  const closeDealerItemMenu=()=>document.getElementById('dealerItemContext8947')?.remove();
+
+  function showDealerItemMenu8947(e,opId,itemIndex){
+    e.preventDefault();e.stopPropagation();closeDealerItemMenu();
+    const op=state.ops.find(x=>String(x.id)===String(opId)&&x.type==='sale');
+    const item=op?.items?.[itemIndex];if(!op||!item)return;
+    const menu=document.createElement('div');menu.id='dealerItemContext8947';menu.className='saleContextMenu';
+    menu.style.left=Math.min(e.clientX,window.innerWidth-280)+'px';menu.style.top=Math.min(e.clientY,window.innerHeight-170)+'px';
+    const title=document.createElement('div');title.className='dealerItemMenuTitle8947';title.textContent=(item.name||'Товар')+' · '+(+item.qty||0)+' '+(item.unit||'шт');
+    const open=document.createElement('button');open.type='button';open.textContent='Открыть чек';open.onclick=()=>{closeDealerItemMenu();showReceiptFromHistory(op.id)};
+    const remove=document.createElement('button');remove.type='button';remove.className='dangerMenuItem';remove.textContent=op.items.length>1?'Удалить товар из чека':'Удалить товар — последний в чеке';remove.disabled=op.items.length<=1;remove.onclick=()=>{closeDealerItemMenu();window.removeReceiptItem8947(op.id,itemIndex)};
+    const del=document.createElement('button');del.type='button';del.className='dangerMenuItem';del.textContent='Удалить весь чек';del.onclick=()=>{closeDealerItemMenu();if(typeof archiveReceipt==='function')archiveReceipt(op.id)};
+    menu.append(title,open,remove,del);document.body.appendChild(menu);
+  }
+
+  function tagDealerHistoryRows8947(dealerId){
+    const root=document.getElementById('dealerModalBody');if(!root)return;
+    const counters=new Map();
+    root.querySelectorAll('.dealerHistoryDetail tbody tr').forEach(row=>{
+      const type=row.cells?.[1]?.textContent||'';const match=type.match(/Накладная\s*№\s*(.+)/i);if(!match)return;
+      const receiptNo=match[1].trim();
+      const op=(state.ops||[]).find(o=>o.type==='sale'&&String(o.dealerId)===String(dealerId)&&String(o.receiptNo)===receiptNo);if(!op)return;
+      const k=String(op.id),idx=counters.get(k)||0;counters.set(k,idx+1);
+      if(!op.items?.[idx])return;
+      row.dataset.receiptId=k;row.dataset.receiptItemIndex=String(idx);
+      row.title='Правая кнопка: открыть чек, удалить этот товар или удалить весь чек';
+      row.oncontextmenu=e=>showDealerItemMenu8947(e,op.id,idx);
+    });
+  }
+
+  function installDealerItemContext(){
+    if(typeof openDealer!=='function')return false;
+    if(openDealer.__itemContext8947)return true;
+    const base=openDealer;
+    const wrapped=function(id){const result=base.apply(this,arguments);setTimeout(()=>tagDealerHistoryRows8947(id),0);return result};
+    wrapped.__itemContext8947=true;wrapped.__base=base;
+    window.openDealer=wrapped;try{openDealer=wrapped}catch(_){}
+    document.addEventListener('click',closeDealerItemMenu);window.addEventListener('blur',closeDealerItemMenu);
+    return true;
+  }
+
   function loadDraft(){try{return JSON.parse(localStorage.getItem(DRAFT_KEY)||'null')}catch(_){return null}}
   function saveDraft(d){if(d)localStorage.setItem(DRAFT_KEY,JSON.stringify(d));else localStorage.removeItem(DRAFT_KEY)}
 
@@ -144,6 +185,8 @@
       .nmCeilingRight8947{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
       .nmDeleteCeiling8947{white-space:nowrap}
       .receiptItemAction8947{white-space:nowrap;width:1%}
+      .dealerItemMenuTitle8947{padding:8px 11px 7px;font-size:12px;font-weight:800;color:#36506f;border-bottom:1px solid #e6eaf0;margin-bottom:4px;white-space:normal;max-width:300px}
+      #dealerItemContext8947 button:disabled{opacity:.45;cursor:not-allowed}
       @media(max-width:760px){.nmCeilingHead{align-items:flex-start}.nmCeilingRight8947{align-items:flex-end;flex-direction:column}}
     `;document.head.appendChild(style);
     const observer=new MutationObserver(enhanceNewMatRosDraft);observer.observe(document.body,{childList:true,subtree:true});
@@ -188,8 +231,9 @@
   function install(){
     const a=installSeparateSaleLines();
     const b=installReceiptItemButtons();
+    const c=installDealerItemContext();
     installNewMatRosCeilingDelete();
-    if(a&&b){
+    if(a&&b&&c){
       window.__release8947Installed=true;
       document.documentElement.dataset.releaseFix='8.9.47';
       restoreMissingBundledProducts8947();
