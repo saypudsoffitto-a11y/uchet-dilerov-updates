@@ -28,13 +28,18 @@
     return out;
   }
 
+  function ensureReceiptLineIds(op){
+    if(!op||op.type!=='sale'||!Array.isArray(op.items))return op;
+    op.items.forEach((item,index)=>{if(!item._lineId)item._lineId='r'+key(op.id)+'-i'+index});
+    return op;
+  }
+
   function ensureLineIds(state){
-    const visit=op=>{
-      if(!op||op.type!=='sale'||!Array.isArray(op.items))return;
-      op.items.forEach((item,index)=>{if(!item._lineId)item._lineId='r'+key(op.id)+'-i'+index});
-    };
-    for(const op of state.ops||[])visit(op);
-    for(const entry of Object.values(state.receiptStates||{}))visit(entry&&entry.receipt);
+    const receiptIds=new Set(Object.values(state.receiptItemStates||{}).map(entry=>key(entry.receiptId)));
+    for(const id of receiptIds){
+      ensureReceiptLineIds((state.ops||[]).find(op=>key(op.id)===id&&op.type==='sale'));
+      ensureReceiptLineIds(state.receiptStates?.[id]?.receipt);
+    }
     return state;
   }
 
@@ -97,6 +102,7 @@
       if(state.receiptStates?.[receiptId]?.archived)continue;
       const op=(state.ops||[]).find(o=>key(o.id)===receiptId&&o.type==='sale');
       if(!op)continue;
+      ensureReceiptLineIds(op);
       const idx=(op.items||[]).findIndex(item=>item&&item._lineId===entry.lineId);
       if(entry.archived){
         if(idx>=0)op.items.splice(idx,1);
@@ -117,7 +123,6 @@
 
   function transition(state,id,archived,now=Date.now()){
     const next=clone(state);next.receiptStates=next.receiptStates||{};
-    ensureLineIds(next);
     const previous=next.receiptStates[key(id)];
     if(archived&&previous?.archived)return next;
     if(!archived&&!previous?.archived)return next;
@@ -134,10 +139,10 @@
 
   function deleteItem(state,receiptId,itemIndex,now=Date.now()){
     const next=clone(state);next.receiptItemStates=next.receiptItemStates||{};
-    ensureLineIds(next);
     const op=(next.ops||[]).find(o=>key(o.id)===key(receiptId)&&o.type==='sale');
     if(!op)throw Error('Чек не найден. Обнови список.');
     if((op.items||[]).length<=1)throw Error('В чеке только одна позиция. Для неё используй «Удалить чек», чтобы чек сохранился в архиве.');
+    ensureReceiptLineIds(op);
     const item=op.items?.[itemIndex];
     if(!item)throw Error('Позиция не найдена. Обнови чек.');
     const lineId=item._lineId;
