@@ -56,4 +56,13 @@
   const next=core.apply(JSON.parse(JSON.stringify(state)));
   if(JSON.stringify(next)!==JSON.stringify(state)){localStorage.setItem(KEY,JSON.stringify(next));state=next;render()}
   renderReceiptArchive();
+
+  // 8.9.47 work is kept in one late runtime module so it can safely wrap
+  // receipt, sale and NewMatRos functions after the older fixes are installed.
+  if(!document.querySelector('script[data-release-8947]')){
+    const script=document.createElement('script');
+    script.src='release-8947.js';
+    script.dataset.release8947='1';
+    document.body.appendChild(script);
+  }
 })();
