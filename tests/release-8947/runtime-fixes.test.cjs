@@ -15,20 +15,24 @@ function makeContext(){
   const document={
     documentElement:{dataset:{}},
     head:{appendChild(){}},
-    body:{},
+    body:{appendChild(){}},
+    addEventListener(){},
     getElementById(id){return nodes[id]||null},
     querySelector(){return null},
+    querySelectorAll(){return []},
     createElement(tag){
       if(tag==='style')return {id:'',textContent:''};
       if(tag==='template')return {innerHTML:'',content:{firstElementChild:null}};
-      return {appendChild(){},querySelector(){return null},querySelectorAll(){return []},classList:{add(){},remove(){},contains(){return false}},dataset:{},style:{}};
+      return {append(){},appendChild(){},querySelector(){return null},querySelectorAll(){return []},classList:{add(){},remove(){},contains(){return false}},dataset:{},style:{},setAttribute(){}};
     }
   };
   const context={
     window:null,globalThis:null,console,JSON,Math,Date,Number,String,Object,Array,
     document,
     MutationObserver:class{constructor(fn){this.fn=fn}observe(){}},
-    setInterval(fn){fn();return 1},clearInterval(){},
+    setInterval(fn){fn();return 1},clearInterval(){},setTimeout(fn){fn();return 1},clearTimeout(){},
+    addEventListener(){},
+    innerWidth:1200,innerHeight:800,
     localStorage:{
       getItem(k){return store.has(k)?store.get(k):null},
       setItem(k,v){store.set(k,String(v))},
@@ -46,6 +50,8 @@ function makeContext(){
     render(){},save(){context.saved=(context.saved||0)+1},
     refreshReceiptViews(){context.refreshed=(context.refreshed||0)+1},
     openDealer(){context.openedDealer=(context.openedDealer||0)+1},
+    showReceiptFromHistory(){context.openedReceipt=(context.openedReceipt||0)+1},
+    archiveReceipt(){context.archivedReceipt=(context.archivedReceipt||0)+1},
     alert(msg){context.lastAlert=String(msg)},
     confirm(){return true},
     money(n){return String(n)},
