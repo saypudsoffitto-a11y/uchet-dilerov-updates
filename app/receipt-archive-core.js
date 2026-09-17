@@ -55,11 +55,13 @@
     return amounts;
   }
 
-  function recalcPaymentBalances(state){
+  function recalcPaymentBalances(state,affected){
+    if(!affected||!affected.size)return;
     const balances={};
     const time=o=>Number(o.ts)||Number(o.id)||0;
     for(const op of (state.ops||[]).slice().sort((a,b)=>time(a)-time(b))){
-      const id=key(op.dealerId),before=balances[id]||0;
+      const id=key(op.dealerId);if(!affected.has(id))continue;
+      const before=balances[id]||0;
       if(op.type==='payment'){
         op.beforeDebt=before;
         op.afterDebt=round(before-(+op.total||0));
@@ -106,7 +108,10 @@
       if(!entry.key)entry.key=entryKey;
     }
 
-    recalcPaymentBalances(state);
+    const affected=new Set();
+    for(const e of Object.values(state.receiptStates||{}))if(e?.receipt?.dealerId!=null)affected.add(key(e.receipt.dealerId));
+    for(const e of Object.values(state.receiptItemStates||{}))if(e?.dealerId!=null)affected.add(key(e.dealerId));
+    recalcPaymentBalances(state,affected);
     return state;
   }
 
