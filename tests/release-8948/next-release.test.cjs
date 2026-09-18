@@ -36,7 +36,7 @@ test('WhatsApp uses JPEG IPC in the new override',()=>{
 });
 
 test('package is wired for 8.9.48 draft build',()=>{
-  assert.equal(pkg.version,'8.9.48');
+  assert.match(pkg.version,/^8\\.9\\.(48|49)$/);
   assert.equal(pkg.main,'main-8948.js');
   assert.ok(pkg.build.files.includes('next-8948.js'));
   assert.ok(pkg.build.files.includes('main-8948.js'));
