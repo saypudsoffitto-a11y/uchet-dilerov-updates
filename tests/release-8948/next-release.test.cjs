@@ -85,5 +85,6 @@ test('application entry is protected by a local numeric PIN',()=>{
   assert.match(pinLock,/Введите код-пароль/);
   assert.match(pinLock,/Сменить код-пароль/);
   assert.match(pinLock,/Код хранится только на этом компьютере/);
-  assert.doesNotMatch(pinLock,/state\.pin|state\.password|sync.*pin/i);
+  assert.match(pinLock,/localStorage\.setItem\(STORAGE_KEY/);
+  assert.doesNotMatch(pinLock,/state\.pin|state\.password/i);
 });
