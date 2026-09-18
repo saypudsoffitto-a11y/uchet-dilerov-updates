@@ -5,6 +5,7 @@ const path=require('node:path');
 const {spawn,spawnSync}=require('node:child_process');
 const assert=require('node:assert/strict');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const expectedRuntime=require('../app/package.json').version;
 const watchdog=setTimeout(()=>{console.error('Windows smoke timeout');process.exit(1)},90000);watchdog.unref();
 async function main(){
  if(process.platform!=='win32')throw Error('This check must run on Windows');
@@ -43,10 +44,10 @@ async function main(){
   let result;
   for(let i=0;i<180;i++){
    try{result=await evaluate(`(()=>({ready:document.readyState,text:document.body?.innerText||'',runtime:document.documentElement?.dataset?.uchetRuntime||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',groupFix:document.documentElement?.dataset?.groupFix||'',finalMergeFix:document.documentElement?.dataset?.finalMergeFix||'',deleteHandler:typeof window.deleteDealerPermanent8941,finalInstalled:!!window.__dealerDelete8941Installed,dataInstalled:!!window.__dataFix8941Installed,mergeInstalled:!!window.__finalMerge8942&&!!mergeSyncState.__finalMerge8942}))()`)}catch(_){result=null}
-   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.runtime==='8.9.42'&&result.dealerFix==='8.9.41'&&result.groupFix==='8.9.41'&&result.finalMergeFix==='8.9.42'&&result.deleteHandler==='function'&&result.finalInstalled&&result.dataInstalled&&result.mergeInstalled)break;
+   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.runtime===expectedRuntime&&result.dealerFix==='8.9.41'&&result.groupFix==='8.9.41'&&result.finalMergeFix==='8.9.42'&&result.deleteHandler==='function'&&result.finalInstalled&&result.dataInstalled&&result.mergeInstalled)break;
    await sleep(200);
   }
-  assert.equal(result?.runtime,'8.9.42');
+  assert.equal(result?.runtime,expectedRuntime);
   assert.equal(result?.dealerFix,'8.9.41');
   assert.equal(result?.groupFix,'8.9.41');
   assert.equal(result?.finalMergeFix,'8.9.42');
@@ -111,7 +112,7 @@ async function main(){
   assert.deepEqual(deletion,{confirmations:2,lockedBefore:String(deletion.lockedBefore),lockedAfter:String(deletion.lockedAfter),deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true});
   assert.equal(deletion.lockedBefore,deletion.lockedAfter,'dealer ID changed after table re-render');
   socket.close();
-  console.log('PASS: 8.9.42 keeps right-click dealer ID locked and blocks sync resurrection through final merge guard');
+  console.log('PASS: '+expectedRuntime+' keeps right-click dealer ID locked and blocks sync resurrection through final merge guard');
  }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F']);}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
