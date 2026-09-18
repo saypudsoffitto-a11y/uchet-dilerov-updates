@@ -24,9 +24,10 @@ test('all receipt WhatsApp overrides use JPEG instead of PDF',()=>{
     const src=read(file);
     const start=src.indexOf('window.sendWhatsApp');
     assert.ok(start>=0,file+' must define sendWhatsApp');
-    const tail=src.slice(start,start+1200);
-    assert.match(tail,/sendJpeg/);
-    assert.match(tail,/\.jpg/);
-    assert.doesNotMatch(tail,/sendPdf\s*\(/);
+    const next=src.indexOf('window.downloadReceipt',start);
+    const block=src.slice(start,next>start?next:start+900);
+    assert.match(block,/sendJpeg/);
+    assert.match(block,/\.jpg/);
+    assert.doesNotMatch(block,/sendPdf\s*\(/);
   }
 });
