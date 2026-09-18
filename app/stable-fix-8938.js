@@ -227,9 +227,10 @@
   if(window.receiptAPI?.sendPdf){
     window.sendWhatsApp=async function(id){
       const op=(state.ops||[]).find(x=>x.id==id),d=op&&dealerById(op.dealerId);if(!op)return;
-      const r=await window.receiptAPI.sendPdf({phone:d?.phone||'',fileName:`Товарная_накладная_${op.receiptNo}.pdf`,html:receiptPdfHtml8938(op,d)});
-      if(!r?.ok)return alert(r?.message||'Не удалось подготовить PDF для WhatsApp');
-      alert(r.message||'PDF накладной подготовлен для WhatsApp.');
+      if(!window.receiptAPI?.sendJpeg)return alert('Отправка JPEG доступна только в установленном приложении Windows.');
+      const r=await window.receiptAPI.sendJpeg({phone:d?.phone||'',fileName:`Товарная_накладная_${op.receiptNo}.jpg`,html:receiptPdfHtml8938(op,d)});
+      if(!r?.ok)return alert(r?.message||'Не удалось подготовить JPEG для WhatsApp');
+      if(r.message)alert(r.message);
     };
     window.downloadReceipt=async function(id){
       const op=(state.ops||[]).find(x=>x.id==id),d=op&&dealerById(op.dealerId);if(!op)return;
