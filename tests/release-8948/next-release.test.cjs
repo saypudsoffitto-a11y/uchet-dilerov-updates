@@ -59,3 +59,13 @@ test('uploaded interface improvements are merged safely without replacing the wo
   assert.match(editMenu,/label:'Удалить',role:'delete'/);
   assert.doesNotMatch(patch,/inputContextMenu/);
 });
+
+
+test('same dealer name and phone are deduplicated across sync without losing history',()=>{
+  assert.match(patch,/canonicalizeDealerDuplicates8948/);
+  assert.match(patch,/dealerAliases/);
+  assert.match(patch,/deletedDealers/);
+  assert.match(patch,/normDealerPhone8948/);
+  assert.match(patch,/Never merge name-only cards: phone is required/);
+  assert.match(patch,/Такой дилер с этим именем и телефоном уже есть/);
+});
