@@ -12,14 +12,37 @@ function safeJpegName(name){
 }
 
 async function htmlToImage8948(html){
-  const w=new BrowserWindow({show:false,width:1040,height:1400,backgroundColor:'#ffffff',webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  // Start with a short hidden window: the old 1400px viewport forced even a
+  // two-line receipt to become a very tall JPEG with a large white tail.
+  const w=new BrowserWindow({show:false,width:1100,height:260,backgroundColor:'#ffffff',webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  const measure=()=>w.webContents.executeJavaScript(`(()=>{
+    const b=document.body;
+    const r=b?.getBoundingClientRect?.();
+    const s=b?getComputedStyle(b):null;
+    const mx=(parseFloat(s?.marginLeft)||0)+(parseFloat(s?.marginRight)||0);
+    const my=(parseFloat(s?.marginTop)||0)+(parseFloat(s?.marginBottom)||0);
+    return {
+      w:Math.ceil(Math.max(Number(r?.width)||0,Number(b?.scrollWidth)||0)+mx),
+      h:Math.ceil(Math.max(Number(r?.height)||0,Number(b?.scrollHeight)||0)+my)
+    };
+  })()`,true);
   try{
     await w.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(String(html||'')));
-    const dims=await w.webContents.executeJavaScript(`(()=>({w:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth,1040),h:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,900)}))()`,true);
-    const width=Math.max(1040,Math.min(1400,Math.ceil(Number(dims?.w)||1040)));
-    const height=Math.max(900,Math.min(12000,Math.ceil(Number(dims?.h)||1400)+8));
+    let dims=await measure();
+    const width=Math.max(720,Math.min(1400,(Number(dims?.w)||980)+4));
+    let height=Math.max(180,Math.min(12000,(Number(dims?.h)||420)+4));
     w.setContentSize(width,height);
     await new Promise(r=>setTimeout(r,80));
+
+    // Re-measure after resize so wrapped rows are included, but never pad the
+    // image to a fixed screen-sized height.
+    dims=await measure();
+    const measuredHeight=Math.max(180,Math.min(12000,(Number(dims?.h)||height)+4));
+    if(measuredHeight!==height){
+      height=measuredHeight;
+      w.setContentSize(width,height);
+      await new Promise(r=>setTimeout(r,40));
+    }
     return await w.webContents.capturePage({x:0,y:0,width,height});
   }finally{
     if(!w.isDestroyed())w.destroy();
