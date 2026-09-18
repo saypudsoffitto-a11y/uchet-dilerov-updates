@@ -6,6 +6,7 @@ const {spawn,spawnSync}=require('node:child_process');
 const assert=require('node:assert/strict');
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const expectedRuntime=require('../app/package.json').version;
 const watchdog=setTimeout(()=>{console.error('Windows group filter smoke timeout');process.exit(1)},90000);watchdog.unref();
 
 async function main(){
@@ -57,10 +58,10 @@ async function main(){
       try{
         ready=await evaluate(`(()=>({ready:document.readyState,runtime:document.documentElement?.dataset?.uchetRuntime||'',groupFilter:document.documentElement?.dataset?.groupFilterFix||'',installed:!!window.__runtimeFix8942Installed}))()`);
       }catch{ready=null}
-      if(ready?.ready==='complete'&&ready.runtime==='8.9.42'&&ready.groupFilter==='8.9.42'&&ready.installed)break;
+      if(ready?.ready==='complete'&&ready.runtime===expectedRuntime&&ready.groupFilter==='8.9.42'&&ready.installed)break;
       await sleep(200);
     }
-    assert.equal(ready?.runtime,'8.9.42',JSON.stringify(ready));
+    assert.equal(ready?.runtime,expectedRuntime,JSON.stringify(ready));
     assert.equal(ready?.groupFilter,'8.9.42',JSON.stringify(ready));
     assert.equal(ready?.installed,true,JSON.stringify(ready));
 
