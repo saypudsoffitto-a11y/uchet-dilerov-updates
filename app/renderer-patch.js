@@ -165,9 +165,10 @@
   if(window.receiptAPI){
     window.sendWhatsApp=async function(id){
       const op=(state.ops||[]).find(x=>x.id==id),d=op&&(state.dealers||[]).find(x=>x.id==op.dealerId);if(!op)return;
-      const r=await window.receiptAPI.sendPdf({phone:d?.phone||'',fileName:`Товарная_накладная_${op.receiptNo}.pdf`,html:receiptPdfHtml(op,d)});
-      if(!r?.ok)return alert(r?.message||'Не удалось подготовить PDF для WhatsApp');
-      alert(r.message||'PDF готов. В WhatsApp нажми Ctrl+V, чтобы прикрепить файл, затем отправь сообщение.');
+      if(!window.receiptAPI?.sendJpeg)return alert('Отправка JPEG доступна только в установленном приложении Windows.');
+      const r=await window.receiptAPI.sendJpeg({phone:d?.phone||'',fileName:`Товарная_накладная_${op.receiptNo}.jpg`,html:receiptPdfHtml(op,d)});
+      if(!r?.ok)return alert(r?.message||'Не удалось подготовить JPEG для WhatsApp');
+      if(r.message)alert(r.message);
     };
     window.downloadReceipt=async function(id){
       const op=(state.ops||[]).find(x=>x.id==id),d=op&&(state.dealers||[]).find(x=>x.id==op.dealerId);if(!op)return;
