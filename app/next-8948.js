@@ -189,6 +189,208 @@
     if(r.message)alert(r.message);
   };
 
-  window.__next8948={compactMaterialName:compactMaterialName8948,enhanceProductRows:enhanceProductRows8948};
+
+  // 8.9.48: один и тот же дилер (нормализованные имя + телефон) должен
+  // существовать в общей базе только один раз, даже если три ПК создали
+  // разные ID до синхронизации.
+  const normDealerName8948=v=>String(v??'')
+    .normalize('NFKC').replace(/\u00a0/g,' ').trim().replace(/\s+/g,' ')
+    .replace(/ё/g,'е').toLocaleLowerCase('ru-RU');
+  const normDealerPhone8948=v=>{
+    let d=String(v??'').replace(/\D/g,'');
+    if(d.length===11&&d[0]==='8')d='7'+d.slice(1);
+    if(d.length===10)d='7'+d;
+    return d;
+  };
+  const dealerKey8948=d=>{
+    const name=normDealerName8948(d?.name),phone=normDealerPhone8948(d?.phone);
+    return name&&phone?name+'\u0000'+phone:'';
+  };
+  const dealerStamp8948=d=>{
+    const direct=Number(d?.updatedAt||d?.ts||0);
+    if(Number.isFinite(direct)&&direct>0)return direct;
+    const parsed=Date.parse(String(d?.updatedAt||''));
+    if(Number.isFinite(parsed))return parsed;
+    const id=Number(d?.id||0);
+    return Number.isFinite(id)?id:0;
+  };
+  const dealerScore8948=d=>[
+    'city','company','fio','address','email','www','clientGroup',
+    'paymentMethod','shippingMethod','note','photo','source'
+  ].reduce((n,k)=>n+(String(d?.[k]??'').trim()?1:0),0);
+  const mergeAliases8948=(a,b)=>{
+    const out={};
+    for(const src of [a||{},b||{}])for(const [k,v] of Object.entries(src)){
+      const from=String(k),to=String(v??'');
+      if(from&&to&&from!==to)out[from]=to;
+    }
+    return out;
+  };
+  const resolveAlias8948=(aliases,id)=>{
+    let cur=String(id??''),seen=new Set();
+    for(let i=0;i<24&&cur&&aliases?.[cur]&&!seen.has(cur);i++){
+      seen.add(cur);cur=String(aliases[cur]);
+    }
+    return cur;
+  };
+  const mergeDealerFields8948=(target,source)=>{
+    if(!target||!source)return target;
+    for(const k of ['phone','city','company','fio','address','email','www','clientGroup','paymentMethod','shippingMethod','note','photo','source']){
+      if(!String(target[k]??'').trim()&&String(source[k]??'').trim())target[k]=source[k];
+    }
+    const t=dealerStamp8948(target),s=dealerStamp8948(source);
+    if(s>t&&source.updatedAt)target.updatedAt=source.updatedAt;
+    return target;
+  };
+  function canonicalizeDealerDuplicates8948(s){
+    if(!s||!Array.isArray(s.dealers))return {changed:false,removed:0,relinked:0,aliases:{}};
+    s.ops=Array.isArray(s.ops)?s.ops:[];
+    s.deletedDealers=s.deletedDealers&&typeof s.deletedDealers==='object'?s.deletedDealers:{};
+    s.dealerAliases=s.dealerAliases&&typeof s.dealerAliases==='object'?s.dealerAliases:{};
+
+    // Apply previously learned aliases to history first. This keeps old sales and
+    // payments attached even if an older PC sends an obsolete duplicate ID.
+    let relinked=0;
+    for(const op of s.ops){
+      if(!op||op.dealerId==null)continue;
+      const target=resolveAlias8948(s.dealerAliases,op.dealerId);
+      if(target&&target!==String(op.dealerId)){op.dealerId=/^\d+$/.test(target)?Number(target):target;relinked++}
+    }
+
+    const usage=new Map();
+    for(const op of s.ops||[]){
+      if(op?.dealerId==null)continue;
+      const k=String(op.dealerId);usage.set(k,(usage.get(k)||0)+1);
+    }
+    const buckets=new Map();
+    for(const d of s.dealers){
+      if(!d)continue;
+      const key=dealerKey8948(d);
+      if(!key)continue; // Never merge name-only cards: phone is required.
+      if(!buckets.has(key))buckets.set(key,[]);
+      buckets.get(key).push(d);
+    }
+
+    const remove=new Set(),now=Date.now();
+    for(const list of buckets.values()){
+      if(list.length<2)continue;
+      const ranked=list.slice().sort((a,b)=>
+        (usage.get(String(b.id))||0)-(usage.get(String(a.id))||0) ||
+        dealerScore8948(b)-dealerScore8948(a) ||
+        dealerStamp8948(b)-dealerStamp8948(a) ||
+        String(a.id).localeCompare(String(b.id),undefined,{numeric:true})
+      );
+      const canonical=ranked[0];
+      for(const duplicate of ranked.slice(1)){
+        const dupId=String(duplicate.id),canonicalId=String(canonical.id);
+        mergeDealerFields8948(canonical,duplicate);
+        s.dealerAliases[dupId]=canonicalId;
+        s.deletedDealers[dupId]=Math.max(Number(s.deletedDealers[dupId]||0),now);
+        remove.add(dupId);
+      }
+    }
+
+    // Collapse alias chains and relink every operation to the surviving card.
+    for(const k of Object.keys(s.dealerAliases)){
+      const target=resolveAlias8948(s.dealerAliases,k);
+      if(!target||target===k)delete s.dealerAliases[k];
+      else s.dealerAliases[k]=target;
+    }
+    for(const op of s.ops){
+      if(!op||op.dealerId==null)continue;
+      const target=resolveAlias8948(s.dealerAliases,op.dealerId);
+      if(target&&target!==String(op.dealerId)){op.dealerId=/^\d+$/.test(target)?Number(target):target;relinked++}
+    }
+    if(remove.size)s.dealers=s.dealers.filter(d=>d&&!remove.has(String(d.id)));
+    return {changed:remove.size>0||relinked>0,removed:remove.size,relinked,aliases:{...s.dealerAliases}};
+  }
+
+  const previousMergeDealerDedupe8948=typeof mergeSyncState==='function'?mergeSyncState:null;
+  if(previousMergeDealerDedupe8948&&!previousMergeDealerDedupe8948.__dealerDedupe8948){
+    const mergedWithDealerDedupe8948=function(remote,local){
+      remote=typeof norm==='function'?norm(remote||{}):(remote||{});
+      local=typeof norm==='function'?norm(local||{}):(local||{});
+      const aliases=mergeAliases8948(remote.dealerAliases,local.dealerAliases);
+      remote.dealerAliases=aliases;local.dealerAliases=aliases;
+      for(const s of [remote,local]){
+        s.ops=Array.isArray(s.ops)?s.ops:[];
+        for(const op of s.ops){
+          if(!op||op.dealerId==null)continue;
+          const target=resolveAlias8948(aliases,op.dealerId);
+          if(target&&target!==String(op.dealerId))op.dealerId=/^\d+$/.test(target)?Number(target):target;
+        }
+      }
+      let merged=previousMergeDealerDedupe8948(remote,local);
+      merged=typeof norm==='function'?norm(merged||{}):(merged||{});
+      merged.dealerAliases=mergeAliases8948(aliases,merged.dealerAliases);
+      canonicalizeDealerDuplicates8948(merged);
+      return merged;
+    };
+    mergedWithDealerDedupe8948.__dealerDedupe8948=true;
+    mergedWithDealerDedupe8948.__baseMergeDealerDedupe8948=previousMergeDealerDedupe8948;
+    window.mergeSyncState=mergedWithDealerDedupe8948;
+    try{mergeSyncState=mergedWithDealerDedupe8948}catch(_){}
+  }
+
+  // Manual creation also refuses an exact name+phone duplicate.
+  const previousAddDealer8948=typeof addDealer==='function'?addDealer:null;
+  if(previousAddDealer8948&&!previousAddDealer8948.__dealerDedupe8948){
+    const addDealer8948=function(){
+      const name=String(document.getElementById('dname')?.value||'').trim();
+      const phone=String(document.getElementById('dphone')?.value||'').trim();
+      const key=dealerKey8948({name,phone});
+      const existing=key?(state.dealers||[]).find(d=>dealerKey8948(d)===key):null;
+      if(existing){
+        const city=String(document.getElementById('dcity')?.value||'').trim();
+        const note=String(document.getElementById('dnote')?.value||'').trim();
+        if(!existing.city&&city)existing.city=city;
+        if(!existing.note&&note)existing.note=note;
+        existing.updatedAt=Date.now();
+        for(const id of ['dname','dphone','dcity','dnote']){const el=document.getElementById(id);if(el)el.value=''}
+        try{if(typeof toggleNewDealerForm==='function')toggleNewDealerForm(false)}catch(_){}
+        try{save()}catch(_){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(__){}}
+        try{alert('Такой дилер с этим именем и телефоном уже есть. Повторная карточка не создана.')}catch(_){}
+        return existing;
+      }
+      const out=previousAddDealer8948.apply(this,arguments);
+      const r=canonicalizeDealerDuplicates8948(state);
+      if(r.changed)try{save()}catch(_){}
+      return out;
+    };
+    addDealer8948.__dealerDedupe8948=true;
+    window.addDealer=addDealer8948;
+    try{addDealer=addDealer8948}catch(_){}
+  }
+
+  const previousSaveDealerEdit8948=typeof saveDealerEdit==='function'?saveDealerEdit:null;
+  if(previousSaveDealerEdit8948&&!previousSaveDealerEdit8948.__dealerDedupe8948){
+    const saveDealerEdit8948=function(id){
+      const out=previousSaveDealerEdit8948.apply(this,arguments);
+      const r=canonicalizeDealerDuplicates8948(state);
+      if(r.changed){
+        try{localStorage.setItem(KEY,JSON.stringify(state));render()}catch(_){}
+        try{if(state.sync?.enabled&&typeof syncPush==='function')setTimeout(()=>syncPush(false),80)}catch(_){}
+      }
+      return out;
+    };
+    saveDealerEdit8948.__dealerDedupe8948=true;
+    window.saveDealerEdit=saveDealerEdit8948;
+    try{saveDealerEdit=saveDealerEdit8948}catch(_){}
+  }
+
+  // Clean existing triplicates on the first launch of 8.9.48 and push the
+  // canonical list back to the common server.
+  setTimeout(()=>{
+    try{
+      const r=canonicalizeDealerDuplicates8948(state);
+      if(r.changed){
+        localStorage.setItem(KEY,JSON.stringify(state));
+        if(typeof render==='function')render();
+        if(state.sync?.enabled&&state.sync?.url&&typeof syncPush==='function')setTimeout(()=>syncPush(true),120);
+      }
+    }catch(e){console.error('8.9.48 dealer dedupe error',e)}
+  },250);
+
+  window.__next8948={compactMaterialName:compactMaterialName8948,enhanceProductRows:enhanceProductRows8948,canonicalizeDealerDuplicates:canonicalizeDealerDuplicates8948,dealerKey:dealerKey8948};
   document.documentElement.dataset.nextRelease='8.9.48';
 })();
