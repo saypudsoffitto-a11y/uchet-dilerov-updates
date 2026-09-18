@@ -8,6 +8,7 @@ const patch=fs.readFileSync(path.join(appDir,'next-8948.js'),'utf8');
 const preload=fs.readFileSync(path.join(appDir,'preload.js'),'utf8');
 const main=fs.readFileSync(path.join(appDir,'main-8948.js'),'utf8');
 const editMenu=fs.readFileSync(path.join(appDir,'release-8930-main.js'),'utf8');
+const pinLock=fs.readFileSync(path.join(appDir,'pin-lock-8948.js'),'utf8');
 const pkg=require('../../app/package.json');
 
 test('next release keeps NewMatRos receipt description compact',()=>{
@@ -68,4 +69,21 @@ test('same dealer name and phone are deduplicated across sync without losing his
   assert.match(patch,/normDealerPhone8948/);
   assert.match(patch,/Never merge name-only cards: phone is required/);
   assert.match(patch,/Такой дилер с этим именем и телефоном уже есть/);
+});
+
+
+test('application entry is protected by a local numeric PIN',()=>{
+  assert.ok(pkg.build.files.includes('pin-lock-8948.js'));
+  assert.match(preload,/\.\/pin-lock-8948\.js/);
+  assert.ok(preload.indexOf('./pin-lock-8948.js')<preload.indexOf('./hotfix-8917.js'),'PIN lock must load first');
+  assert.match(pinLock,/uchet_pin_auth_v1/);
+  assert.match(pinLock,/PBKDF2/);
+  assert.match(pinLock,/SHA-256/);
+  assert.match(pinLock,/120000/);
+  assert.match(pinLock,/^|[^\w]\\d\{4,8\}/);
+  assert.match(pinLock,/Создайте код-пароль/);
+  assert.match(pinLock,/Введите код-пароль/);
+  assert.match(pinLock,/Сменить код-пароль/);
+  assert.match(pinLock,/Код хранится только на этом компьютере/);
+  assert.doesNotMatch(pinLock,/state\.pin|state\.password|sync.*pin/i);
 });
