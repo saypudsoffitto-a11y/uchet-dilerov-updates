@@ -39,3 +39,10 @@ test('package is wired for 8.9.48 draft build',()=>{
   assert.ok(pkg.build.files.includes('next-8948.js'));
   assert.ok(pkg.build.files.includes('main-8948.js'));
 });
+
+test('runtime loader points at 8.9.48 patch exactly once',()=>{
+  assert.match(preload,/\.\/next-8948\.js/);
+  assert.match(preload,/\?runtime=8948/);
+  assert.match(preload,/dataset\.uchetRuntime='8\.9\.48'/);
+  assert.doesNotMatch(preload,/\?\?runtime=8948/);
+});
