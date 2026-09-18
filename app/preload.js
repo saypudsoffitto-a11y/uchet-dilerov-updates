@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('whatsappAPI',{send:(payload)=>ipcRenderer.invok
 
 contextBridge.exposeInMainWorld('receiptAPI', {
   sendPdf: (payload) => ipcRenderer.invoke('receipt:sendPdfWhatsApp', payload),
+  sendJpeg: (payload) => ipcRenderer.invoke('receipt:sendJpegWhatsApp', payload),
   savePdf: (payload) => ipcRenderer.invoke('receipt:savePdf', payload)
 });
 
@@ -62,12 +63,13 @@ window.addEventListener('DOMContentLoaded',()=>{
       './sync-fix-8939.js',
       './dealer-delete-8941.js',
       './group-backup-8941.js',
-      './runtime-fixes-8942.js'
+      './runtime-fixes-8942.js',
+      './next-8948.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8942';
+        s.src=src+'??runtime=8948';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
