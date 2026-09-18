@@ -70,13 +70,13 @@ window.addEventListener('DOMContentLoaded',()=>{
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8950';
+        s.src=src+'?runtime=8951';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.50';
+    document.documentElement.dataset.uchetRuntime='8.9.51';
   })()`;
   try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.50 runtime loader error',e))}
   catch(e){console.error('8.9.50 preload loader error',e)}
