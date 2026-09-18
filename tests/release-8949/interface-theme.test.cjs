@@ -17,3 +17,16 @@ test('8.9.49 uses approved light-blue interface instead of the old green theme',
   assert.match(css,/html nav button:hover[\s\S]*background:#c5e1ff/);
   assert.doesNotMatch(css,/#064d3c|#06392f|#087f57/);
 });
+
+
+test('all receipt WhatsApp overrides use JPEG instead of PDF',()=>{
+  for(const file of ['app/next-8948.js','app/pdf-compact-8938.js','app/stable-fix-8938.js','app/renderer-patch.js']){
+    const src=read(file);
+    const start=src.indexOf('window.sendWhatsApp');
+    assert.ok(start>=0,file+' must define sendWhatsApp');
+    const tail=src.slice(start,start+1200);
+    assert.match(tail,/sendJpeg/);
+    assert.match(tail,/\.jpg/);
+    assert.doesNotMatch(tail,/sendPdf\s*\(/);
+  }
+});
