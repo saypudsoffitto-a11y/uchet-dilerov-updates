@@ -54,6 +54,7 @@
       "interface-8945.js",
       "receipt-archive-core.js",
       "receipt-archive-ui.js",
+      "pin-lock-8948.js",
       "next-8948.js",
       "main-8948.js"
     ],
