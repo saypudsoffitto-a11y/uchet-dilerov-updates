@@ -52,6 +52,16 @@
     .productContextMenu8948 button:hover{background:#edf4ff}
     .productContextMenu8948 .dangerMenuItem{color:#b42318}
     .productContextMenu8948 .dangerMenuItem:hover{background:#fff0f0}
+
+    /* Интерфейс из присланной улучшенной версии: читаемость без потери компактных рабочих таблиц. */
+    html body{line-height:1.5}
+    html button,html .btn{min-height:40px;padding:12px 16px;display:inline-flex;align-items:center;justify-content:center}
+    html .miniBtn,html .receipt .actions button,html #products .productTable .actions button{min-height:auto}
+    html th,html td{padding:12px 13px;font-size:14px;line-height:1.4;vertical-align:middle}
+    html #products .productTable th,html #products .productTable td{font-size:14px!important;line-height:1.35!important}
+    html .choiceRow{min-height:36px;font-size:14px}
+    html .modal{backdrop-filter:blur(2px)}
+    html .modalBox{border:1px solid var(--line)}
   `;
   (document.head||document.documentElement).appendChild(style);
 
@@ -149,6 +159,26 @@
     <div class="total">Итого: ${rub(op.total)}</div><div class="debt"><b>Остаток долга:</b> ${rub(debtOf(op.dealerId))}</div>
     <div class="sign"><span>Отпустил: ____________________</span><span>Получил: ____________________</span></div></body></html>`;
   }
+
+  const modalCloseMap8948={
+    productModal:'closeProductModal',
+    dealerModal:'closeDealerModal',
+    receiptViewModal:'closeReceiptView',
+    qtyModal:'closeQtyModal',
+    initialDebtModal:'closeInitialDebtModal',
+    debtReportModal:'closeDebtReport'
+  };
+  function closeModalOnEscape8948(e){
+    if(e.key!=='Escape'||e.defaultPrevented)return;
+    const open=[...document.querySelectorAll('.modal:not(.hidden)')].filter(m=>m.offsetParent!==null||m.getClientRects().length);
+    if(!open.length)return;
+    const modal=open[open.length-1],fnName=modalCloseMap8948[modal.id];
+    const fn=fnName&&(window[fnName]||globalThis[fnName]);
+    if(typeof fn==='function'){e.preventDefault();fn();return}
+    const close=modal.querySelector('.actions button.secondary,button[onclick*="close"],button[onclick*="Close"]');
+    if(close){e.preventDefault();close.click()}
+  }
+  document.addEventListener('keydown',closeModalOnEscape8948);
 
   window.sendWhatsApp=async function(id){
     const op=(state.ops||[]).find(x=>String(x.id)===String(id)),d=op&&(state.dealers||[]).find(x=>String(x.id)===String(op.dealerId));
