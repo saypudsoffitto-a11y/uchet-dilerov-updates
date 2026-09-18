@@ -125,11 +125,14 @@
     const op=(state.ops||[]).find(x=>x.id==id&&x.type==='sale');
     if(!op)return;
     const d=(state.dealers||[]).find(x=>x.id==op.dealerId);
-    await sendPdf({
+    if(!window.receiptAPI?.sendJpeg)return alert('Отправка JPEG доступна только в установленном приложении Windows.');
+    const r=await window.receiptAPI.sendJpeg({
       phone:d?.phone||'',
-      fileName:`Товарная_накладная_${op.receiptNo}.pdf`,
+      fileName:`Товарная_накладная_${op.receiptNo}.jpg`,
       html:receiptPdfHtml8938(op,d)
-    },'Не удалось подготовить накладную PDF для WhatsApp');
+    });
+    if(!r?.ok)return alert(r?.message||'Не удалось подготовить JPEG для WhatsApp');
+    if(r.message)alert(r.message);
   };
 
   window.downloadReceipt=async function(id){
