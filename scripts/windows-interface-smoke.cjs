@@ -63,6 +63,13 @@ async function main(){
     }
     assert.equal(ready?.runtime,expectedRuntime,JSON.stringify(ready));
     assert.equal(ready?.groupFilter,'8.9.42',JSON.stringify(ready));
+    const pinReady=await evaluate(`(async()=>{
+      if(!window.__pinLock8948)return {present:false};
+      if(!window.__pinLock8948.isConfigured())await window.__pinLock8948.setInitialPin('2468','2468');
+      else if(!window.__pinLock8948.isUnlocked())await window.__pinLock8948.unlock('2468');
+      return {present:true,configured:window.__pinLock8948.isConfigured(),unlocked:window.__pinLock8948.isUnlocked(),overlay:!!document.getElementById('appPinLock8948')};
+    })()`);
+    assert.deepEqual(pinReady,{present:true,configured:true,unlocked:true,overlay:false},'PIN lock first-run setup/unlock failed');
     assert.equal(ready?.installed,true,JSON.stringify(ready));
 
     const command=(method,params={})=>new Promise((resolve,reject)=>{
