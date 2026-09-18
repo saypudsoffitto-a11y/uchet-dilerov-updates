@@ -159,6 +159,20 @@ function sanitizeState(incoming, previous) {
   state.dealerAliases = mergeAliases(prev.dealerAliases, state.dealerAliases);
   const dealers = Array.isArray(state.dealers) ? state.dealers : [];
   state.dealers = dealers.filter(d => d && !Object.prototype.hasOwnProperty.call(deletedDealers, String(d.id)));
+
+  // If an older PC uploads a state containing only an obsolete duplicate ID,
+  // keep the already-known canonical card instead of letting that old client
+  // accidentally erase it.
+  const ids = new Set(state.dealers.map(d => String(d.id)));
+  const previousDealers = new Map((Array.isArray(prev.dealers) ? prev.dealers : []).filter(Boolean).map(d => [String(d.id), d]));
+  const incomingIds = new Set(dealers.filter(Boolean).map(d => String(d.id)));
+  for (const [from, toRaw] of Object.entries(state.dealerAliases || {})) {
+    const to = resolveAlias(state.dealerAliases, toRaw);
+    if (!incomingIds.has(String(from)) || ids.has(String(to)) || Object.prototype.hasOwnProperty.call(deletedDealers, String(to))) continue;
+    const canonical = previousDealers.get(String(to));
+    if (canonical) { state.dealers.push(canonical); ids.add(String(to)); }
+  }
+
   canonicalizeDealerDuplicates(state);
   state.dealers = state.dealers.filter(d => d && !Object.prototype.hasOwnProperty.call(state.deletedDealers, String(d.id)));
   return state;
