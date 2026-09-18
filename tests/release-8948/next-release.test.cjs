@@ -7,6 +7,7 @@ const appDir=path.join(__dirname,'..','..','app');
 const patch=fs.readFileSync(path.join(appDir,'next-8948.js'),'utf8');
 const preload=fs.readFileSync(path.join(appDir,'preload.js'),'utf8');
 const main=fs.readFileSync(path.join(appDir,'main-8948.js'),'utf8');
+const editMenu=fs.readFileSync(path.join(appDir,'release-8930-main.js'),'utf8');
 const pkg=require('../../app/package.json');
 
 test('next release keeps NewMatRos receipt description compact',()=>{
@@ -45,4 +46,16 @@ test('runtime loader points at 8.9.48 patch exactly once',()=>{
   assert.match(preload,/\?runtime=8948/);
   assert.match(preload,/dataset\.uchetRuntime='8\.9\.48'/);
   assert.doesNotMatch(preload,/\?\?runtime=8948/);
+});
+
+
+test('uploaded interface improvements are merged safely without replacing the working renderer',()=>{
+  assert.match(patch,/html button,html \.btn\{min-height:40px/);
+  assert.match(patch,/html th,html td\{padding:12px 13px;font-size:14px;line-height:1\.4/);
+  assert.match(patch,/html #products \.productTable th,html #products \.productTable td\{font-size:14px!important/);
+  assert.match(patch,/backdrop-filter:blur\(2px\)/);
+  assert.match(patch,/closeModalOnEscape8948/);
+  for(const fn of ['closeProductModal','closeDealerModal','closeReceiptView','closeQtyModal','closeInitialDebtModal','closeDebtReport'])assert.match(patch,new RegExp(fn));
+  assert.match(editMenu,/label:'Удалить',role:'delete'/);
+  assert.doesNotMatch(patch,/inputContextMenu/);
 });
