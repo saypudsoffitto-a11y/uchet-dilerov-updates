@@ -1,0 +1,81 @@
+/* 8.9.49 — согласованная голубая тема. Загружается после interface-8945.css,
+   поэтому меняет только оформление и не затрагивает рабочую логику 8.9.48. */
+@media screen {
+  html:root{
+    --bg:#f5f8fc!important;
+    --card:#ffffff!important;
+    --text:#18263a!important;
+    --muted:#65758a!important;
+    --blue:#1f6fd6!important;
+    --blue2:#e8f2ff!important;
+    --green:#1f6fd6!important;
+    --line:#dce5ef!important;
+    --sidebar:#dceeff!important;
+    --sidebar2:#c7e2ff!important;
+  }
+  html body{background:#f5f8fc!important;color:#18263a!important}
+  html nav{
+    background:linear-gradient(180deg,#e6f3ff 0%,#d7ebff 100%)!important;
+    color:#17385f!important;
+    border-right:1px solid #bdd8f3!important;
+    box-shadow:8px 0 28px rgba(35,93,150,.08)!important;
+  }
+  html .brand{color:#123a68!important}
+  html .brand span{color:#5f7f9f!important}
+  html .navLabel{color:#6887a7!important}
+  html nav button{
+    color:#244a73!important;
+    background:transparent!important;
+    border:1px solid transparent!important;
+    box-shadow:none!important;
+  }
+  html nav button:hover{
+    color:#113f73!important;
+    background:#c5e1ff!important;
+    border-color:#a8cff5!important;
+    filter:none!important;
+  }
+  html nav button.active{
+    color:#fff!important;
+    background:#1f6fd6!important;
+    border-color:#1f6fd6!important;
+    box-shadow:0 7px 18px rgba(31,111,214,.24)!important;
+  }
+  html nav button.active .navIcon{color:#fff!important}
+  html .navBadge{box-shadow:0 0 0 2px #dceeff!important}
+
+  html header{background:#fff!important;border-bottom-color:#dce5ef!important}
+  html .primary{background:#1f6fd6!important;color:#fff!important}
+  html .primary:hover{background:#195fb9!important}
+  html .secondary{background:#edf4fb!important;color:#244a73!important;border-color:#d4e3f2!important}
+  html .secondary:hover{background:#e0edf9!important}
+
+  html .metricIcon{background:#e3f0ff!important;color:#1f6fd6!important}
+  html .metricIcon.red{background:#fce9e8!important;color:var(--red)!important}
+  html .choiceRow:hover,html .choiceRow.active{
+    background:#e7f2ff!important;
+    box-shadow:inset 4px 0 0 #1f6fd6!important;
+  }
+  html .clickable:hover td,html .clickable:focus td{background:#edf6ff!important}
+  html .clickable:hover td:first-child{box-shadow:inset 4px 0 0 #1f6fd6!important}
+  html .clickable:hover b{color:#185fb8!important}
+  html input:focus,html select:focus,html textarea:focus{
+    border-color:#70a9e8!important;
+    box-shadow:0 0 0 3px #e4f1ff!important;
+  }
+  html button:focus-visible,html .btn:focus-visible{outline-color:#2b7edb!important}
+
+  html .statusPill{background:#edf4fb!important;color:#315d8a!important}
+  html .statusPill:before{background:#1f6fd6!important}
+  html .connectionIndicator[data-status=online]{
+    background:#e7f2ff!important;color:#1b63b5!important;border-color:#c8def5!important;
+  }
+  html .homeAvatar{background:#e5f1ff!important;color:#1f6fd6!important}
+  html .archiveNotice{background:#edf6ff!important;border-color:#cbdff4!important;color:#285f98!important}
+  html .dealerMetricPaid8946,html .dealerMetricClear8946{
+    background:#edf6ff!important;border-color:#cbdff4!important;color:#285f98!important;
+  }
+  html .dealerMetricPaid8946 .big,html .dealerMetricClear8946 .big{color:#1f6fd6!important}
+  html .qtyTotalCard{background:#eef6ff!important;border-color:#cfe2f6!important}
+  html .serverOk,html .ok{color:#1f6fd6!important}
+}
