@@ -6,6 +6,7 @@ const {spawn,spawnSync}=require('node:child_process');
 const assert=require('node:assert/strict');
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const expectedRuntime=require('../app/package.json').version;
 const watchdog=setTimeout(()=>{console.error('Windows interface and archive smoke timeout');process.exit(1)},90000);watchdog.unref();
 
 async function main(){
@@ -57,11 +58,18 @@ async function main(){
       try{
         ready=await evaluate(`(()=>({ready:document.readyState,runtime:document.documentElement?.dataset?.uchetRuntime||'',groupFilter:document.documentElement?.dataset?.groupFilterFix||'',installed:!!window.__runtimeFix8942Installed}))()`);
       }catch{ready=null}
-      if(ready?.ready==='complete'&&ready.runtime==='8.9.42'&&ready.groupFilter==='8.9.42'&&ready.installed)break;
+      if(ready?.ready==='complete'&&ready.runtime===expectedRuntime&&ready.groupFilter==='8.9.42'&&ready.installed)break;
       await sleep(200);
     }
-    assert.equal(ready?.runtime,'8.9.42',JSON.stringify(ready));
+    assert.equal(ready?.runtime,expectedRuntime,JSON.stringify(ready));
     assert.equal(ready?.groupFilter,'8.9.42',JSON.stringify(ready));
+    const pinReady=await evaluate(`(async()=>{
+      if(!window.__pinLock8948)return {present:false};
+      if(!window.__pinLock8948.isConfigured())await window.__pinLock8948.setInitialPin('2468','2468');
+      else if(!window.__pinLock8948.isUnlocked())await window.__pinLock8948.unlock('2468');
+      return {present:true,configured:window.__pinLock8948.isConfigured(),unlocked:window.__pinLock8948.isUnlocked(),overlay:!!document.getElementById('appPinLock8948')};
+    })()`);
+    assert.deepEqual(pinReady,{present:true,configured:true,unlocked:true,overlay:false},'PIN lock first-run setup/unlock failed');
     assert.equal(ready?.installed,true,JSON.stringify(ready));
 
     const command=(method,params={})=>new Promise((resolve,reject)=>{

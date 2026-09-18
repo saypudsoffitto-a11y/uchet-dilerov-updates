@@ -13,7 +13,11 @@ test('later package keeps the verified 8.9.39 runtime in its loader chain',()=>{
   assert.match(pkg.main,/^main-89\d+\.js$/);
   for(const f of ['main-8939.js','release-8939-main.js','dealer-delete-8939.js'])assert.ok(pkg.build.files.includes(f),f+' missing from build');
   const current=read('app/'+pkg.main);
-  assert.match(current,/main-8940\.js|main-8939\.js/);
+  assert.match(current,/main-8941\.js|main-8940\.js|main-8939\.js/);
+  if(/main-8941\.js/.test(current)){
+    const wrapper8941=read('app/main-8941.js');
+    assert.match(wrapper8941,/main-8940\.js/);
+  }
   const wrapper8940=read('app/main-8940.js');
   assert.match(wrapper8940,/main-8939\.js/);
   const main8939=read('app/main-8939.js');

@@ -42,12 +42,14 @@ contextBridge.exposeInMainWorld('whatsappAPI',{send:(payload)=>ipcRenderer.invok
 
 contextBridge.exposeInMainWorld('receiptAPI', {
   sendPdf: (payload) => ipcRenderer.invoke('receipt:sendPdfWhatsApp', payload),
+  sendJpeg: (payload) => ipcRenderer.invoke('receipt:sendJpegWhatsApp', payload),
   savePdf: (payload) => ipcRenderer.invoke('receipt:savePdf', payload)
 });
 
 window.addEventListener('DOMContentLoaded',()=>{
   const code=`(async()=>{
     const files=[
+      './pin-lock-8948.js',
       './hotfix-8917.js',
       './final-fixes-8917.js',
       './runtime-fixes-8924.js',
@@ -62,21 +64,22 @@ window.addEventListener('DOMContentLoaded',()=>{
       './sync-fix-8939.js',
       './dealer-delete-8941.js',
       './group-backup-8941.js',
-      './runtime-fixes-8942.js'
+      './runtime-fixes-8942.js',
+      './next-8948.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8942';
+        s.src=src+'?runtime=8948';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.42';
+    document.documentElement.dataset.uchetRuntime='8.9.48';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.42 runtime loader error',e))}
-  catch(e){console.error('8.9.42 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.48 runtime loader error',e))}
+  catch(e){console.error('8.9.48 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
