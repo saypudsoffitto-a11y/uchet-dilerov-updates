@@ -18,6 +18,7 @@ function installEditContextMenu(win){
         {label:'Вырезать',role:'cut',enabled:params.editFlags?.canCut!==false},
         {label:'Копировать',role:'copy',enabled:params.editFlags?.canCopy!==false||selected},
         {label:'Вставить',role:'paste',enabled:params.editFlags?.canPaste!==false},
+        {label:'Удалить',role:'delete',enabled:selected&&params.editFlags?.canDelete!==false},
         {type:'separator'},
         {label:'Выделить всё',role:'selectAll'}
       );
