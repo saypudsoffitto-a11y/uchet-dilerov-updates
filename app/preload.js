@@ -49,6 +49,7 @@ contextBridge.exposeInMainWorld('receiptAPI', {
 window.addEventListener('DOMContentLoaded',()=>{
   const code=`(async()=>{
     const files=[
+      './pin-lock-8948.js',
       './hotfix-8917.js',
       './final-fixes-8917.js',
       './runtime-fixes-8924.js',
