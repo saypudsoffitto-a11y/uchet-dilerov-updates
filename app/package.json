@@ -113,4 +113,4 @@
     "prebuild:win": "node --test ../tests/regressions/*.test.cjs && node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs && node --test ../tests/release-8939/*.test.cjs && node --test ../tests/release-8940/*.test.cjs && node --test ../tests/release-8941/*.test.cjs && node --test ../tests/release-8942/*.test.cjs && node --test ../tests/release-8946/*.test.cjs && node --test ../tests/release-8947/*.test.cjs && node --test ../tests/release-8948/*.test.cjs && node --test ../tests/release-8949/*.test.cjs"
   },
   "version": "8.9.49"
-}\n
+}
