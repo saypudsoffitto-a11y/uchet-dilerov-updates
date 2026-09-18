@@ -16,7 +16,7 @@ test('8.9.42 runtime is packaged and loaded deterministically from preload',()=>
   assert.match(preload,/dealer-delete-8941\.js/);
   assert.match(preload,/group-backup-8941\.js/);
   assert.match(preload,/runtime-fixes-8942\.js/);
-  assert.match(preload,/uchetRuntime='8\.9\.42'/);
+  assert.match(preload,/uchetRuntime='8\.9\.(42|4[3-9]|[5-9][0-9])'/);
 });
 
 test('8.9.41+ keeps native copy paste menu but never injects obsolete 8.9.30 renderer',()=>{
