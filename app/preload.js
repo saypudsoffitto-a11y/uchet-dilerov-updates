@@ -1,4 +1,4 @@
-// Release 8.9.57: platform-aware updater pipeline.
+// Release 8.9.57: platform-aware updater pipeline; legacy version-gate tests updated.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
