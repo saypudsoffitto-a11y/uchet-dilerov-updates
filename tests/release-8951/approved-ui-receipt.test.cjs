@@ -9,13 +9,13 @@ test('8.9.51 final UI runtime is wired after 8.9.50 layers',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const html=read('app/index.html');
   const preload=read('app/preload.js');
-  assert.match(pkg.version,/^8\.9\.(51|52|53)$/);
+  assert.match(pkg.version,/^8\.9\.(51|52|53|54)$/);
   assert.ok(pkg.build.files.includes('interface-8951.css'));
   assert.ok(pkg.build.files.includes('release-8951.js'));
   assert.match(html,/interface-8950\.css[\s\S]*interface-8951\.css/);
   assert.ok(preload.indexOf("'./release-8951.js'")>preload.indexOf("'./next-8948.js'"));
-  assert.match(preload,/runtime=895(1|2|3)/);
-  assert.match(preload,/dataset\.uchetRuntime='8\.9\.(51|52|53)'/);
+  assert.match(preload,/runtime=895(1|2|3|4)/);
+  assert.match(preload,/dataset\.uchetRuntime='8\.9\.(51|52|53|54)'/);
 });
 
 test('approved compact interface keeps colored sidebar and dense tables',()=>{
@@ -40,9 +40,9 @@ test('receipt is compact numbered and has no article column',()=>{
   assert.match(src,/openReceiptAdd/);
 });
 
-test('WhatsApp JPEG is cropped to actual compact receipt height',()=>{
+test('WhatsApp JPEG is cropped to the actual receipt sheet',()=>{
   const main=read('app/main-8948.js');
-  assert.match(main,/scrollHeight,document\.body\.scrollHeight,320/);
-  assert.match(main,/const height=Math\.max\(320/);
-  assert.doesNotMatch(main,/const height=Math\.max\(900/);
+  assert.match(main,/document\.querySelector\('\.sheet'\)\|\|document\.body/);
+  assert.match(main,/const height=Math\.max\(180/);
+  assert.doesNotMatch(main,/Math\.max\(840/);
 });
