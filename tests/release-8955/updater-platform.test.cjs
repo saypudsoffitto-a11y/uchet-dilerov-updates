@@ -22,6 +22,7 @@ test('macOS updater installs ZIP and relaunches app',()=>{
   assert.match(main,/\/usr\/bin\/ditto/);
   assert.match(main,/\/usr\/bin\/open/);
   assert.match(main,/Applications/);
+  assert.match(main,/AppTranslocation/);
 });
 
 test('macOS release manifest publishes ZIP URL and checksum',()=>{
