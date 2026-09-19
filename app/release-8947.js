@@ -242,7 +242,8 @@
       if(!created)return result;
 
       // Only reset the input form after a sale was actually saved.
-      // The freshly created receipt stays on screen and remains in history/debt.
+      // The saved receipt remains in history/debt, while the sale page returns
+      // to its clean starting state for the next customer / next receipt.
       try{
         if(window.saleDealerSearch)saleDealerSearch.value='';
         if(window.saleDealer)saleDealer.value='';
@@ -259,6 +260,9 @@
         if(window.selectedPhoto)selectedPhoto.innerHTML='';
         if(typeof saleProductCursor!=='undefined')saleProductCursor=0;
 
+        // The completed receipt is persisted already; clear only the current
+        // work surface so the next sale starts from a clean page.
+        if(window.receiptArea)receiptArea.innerHTML='';
         if(Array.isArray(cart)&&cart.length){cart.length=0;try{renderCart()}catch(_){}}
         try{renderSaleProducts()}catch(_){}
         try{renderSaleDealers()}catch(_){}
@@ -276,13 +280,140 @@
     return true;
   }
 
+
+  function installBackNavigation8948(){
+    if(window.__backNavigation8948Installed)return true;
+    if(typeof show!=='function')return false;
+
+    const stack=[];
+    let suppressPush=false;
+    const currentSection=()=>document.querySelector('main>section:not(.hidden)')?.id||'';
+
+    const baseShow=show;
+    const wrappedShow=function(id,b){
+      const current=currentSection();
+      if(!suppressPush&&current&&id&&current!==id){
+        if(stack[stack.length-1]!==current)stack.push(current);
+        if(stack.length>30)stack.shift();
+      }
+      return baseShow.apply(this,arguments);
+    };
+    wrappedShow.__backNav8948=true;
+    wrappedShow.__base=baseShow;
+    window.show=wrappedShow;
+    try{show=wrappedShow}catch(_){}
+
+    // Rebind go because the original function resolves the lexical show()
+    // that existed before this late runtime module.
+    const go8948=function(id){
+      const b=document.querySelector('nav button[data-section="'+id+'"]');
+      return wrappedShow(id,b);
+    };
+    window.go=go8948;
+    try{go=go8948}catch(_){}
+
+    function visibleModal(){
+      const all=[...document.querySelectorAll('.modal, #nmDraftModal8926, #nmReviewModal8923')];
+      return all.reverse().find(el=>el&&!el.classList.contains('hidden')&&el.getClientRects().length>0)||null;
+    }
+
+    function closeModal(modal){
+      if(!modal)return false;
+      const buttons=[...modal.querySelectorAll('button')];
+      const close=buttons.find(b=>/^закрыть$/i.test((b.textContent||'').trim()))
+        || buttons.find(b=>/^отмена$/i.test((b.textContent||'').trim()));
+      if(close){close.click();return true}
+      modal.classList.add('hidden');
+      return true;
+    }
+
+    function closeInlineState(){
+      try{
+        if(window.paymentForm&&!paymentForm.classList.contains('hidden')&&typeof clearPayDealer==='function'){
+          clearPayDealer();return true;
+        }
+      }catch(_){}
+      for(const [id,fn] of [
+        ['newDealerForm',()=>typeof toggleNewDealerForm==='function'&&toggleNewDealerForm(false)],
+        ['addProductForm',()=>typeof toggleAddProductForm==='function'&&toggleAddProductForm(false)],
+        ['stockTransferPanel',()=>typeof toggleStockTransfer==='function'&&toggleStockTransfer(false)]
+      ]){
+        const el=document.getElementById(id);
+        if(el&&!el.classList.contains('hidden')){fn();return true}
+      }
+      return false;
+    }
+
+    window.historyBack8948=function(){
+      const modal=visibleModal();
+      if(modal)return closeModal(modal);
+      if(closeInlineState())return true;
+
+      const current=currentSection();
+      let prev='';
+      while(stack.length&&!prev){
+        const candidate=stack.pop();
+        if(candidate&&candidate!==current&&document.getElementById(candidate))prev=candidate;
+      }
+      if(!prev)prev='home';
+      if(prev===current)return false;
+      suppressPush=true;
+      try{go8948(prev)}finally{suppressPush=false}
+      return true;
+    };
+
+    function enhanceBackButtons(){
+      const headers=[
+        ...document.querySelectorAll('.modal .modalBox > .actions, #nmDraftModal8926 .nmDraftHead, #nmReviewModal8923 .nmDraftHead')
+      ];
+      headers.forEach(header=>{
+        if(header.querySelector('.backBtn8948'))return;
+        const close=[...header.querySelectorAll(':scope > button')].find(b=>/^закрыть$/i.test((b.textContent||'').trim()));
+        if(!close)return;
+        const group=document.createElement('div');
+        group.className='actions backCloseGroup8948';
+        const back=document.createElement('button');
+        back.type='button';
+        back.className='secondary backBtn8948';
+        back.textContent='← Назад';
+        back.onclick=e=>{e.preventDefault();e.stopPropagation();window.historyBack8948()};
+        header.insertBefore(group,close);
+        group.append(back,close);
+      });
+    }
+
+    const style=document.createElement('style');
+    style.id='backNavigation8948Style';
+    style.textContent='.backCloseGroup8948{display:flex!important;align-items:center!important;gap:7px!important;margin-left:auto!important}.backBtn8948{white-space:nowrap!important;font-weight:700!important}';
+    document.head.appendChild(style);
+
+    // Capture Escape before inline input handlers so one key press performs
+    // exactly one Back action (it must not close a modal and then leave the section).
+    document.addEventListener('keydown',e=>{
+      if(e.key!=='Escape'||e.defaultPrevented)return;
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof e.stopImmediatePropagation==='function')e.stopImmediatePropagation();
+      window.historyBack8948();
+    },true);
+
+    const observer=new MutationObserver(enhanceBackButtons);
+    observer.observe(document.body,{childList:true,subtree:true});
+    enhanceBackButtons();
+
+    window.__backNavigation8948Installed=true;
+    window.__backNavigation8948Stack=stack;
+    return true;
+  }
+
   function install(){
     const a=installSeparateSaleLines();
     const b=installReceiptItemButtons();
     const c=installDealerItemContext();
     const d=installSaleReset8948();
+    const e=installBackNavigation8948();
     installNewMatRosCeilingDelete();
-    if(a&&b&&c&&d){
+    if(a&&b&&c&&d&&e){
       window.__release8947Installed=true;
       document.documentElement.dataset.releaseFix='8.9.47';
       restoreMissingBundledProducts8947();
