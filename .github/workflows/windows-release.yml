@@ -38,13 +38,17 @@ jobs:
           if (!(Test-Path 'app/package.json')) { throw 'app/package.json not found' }
           $version = node -p "require('./app/package.json').version"
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-          $tags = @(gh release list --repo "$env:GITHUB_REPOSITORY" --limit 100 --json tagName --jq '.[].tagName')
-          if ($tags -contains $version) {
+          $setupName = "Uchet-dilerov-Setup-$version-x64.exe"
+          $hasSetup = $false
+          gh release view "$version" --repo "$env:GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>$null | ForEach-Object {
+            if ($_ -eq $setupName) { $hasSetup = $true }
+          }
+          if ($hasSetup) {
             "exists=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-            Write-Host "Release $version already exists."
+            Write-Host "Windows Setup for $version already exists."
           } else {
             "exists=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-            Write-Host "Release $version does not exist. Building it."
+            Write-Host "Windows Setup for $version is missing. Building it."
           }
 
       - name: Install dependencies
@@ -134,7 +138,12 @@ jobs:
           $portable = "app/dist/Uchet-dilerov-Portable-$version-x64.exe"
           $files = @($setup, 'latest.json')
           if (Test-Path $portable) { $files += $portable }
-          gh release create "$version" @files --repo "$env:GITHUB_REPOSITORY" --title "Учёт дилеров $version" --notes-file 'RELEASE_NOTES.md' --target "$env:GITHUB_SHA"
+          gh release view "$version" --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload "$version" @files --repo "$env:GITHUB_REPOSITORY" --clobber
+          } else {
+            gh release create "$version" @files --repo "$env:GITHUB_REPOSITORY" --title "Учёт дилеров $version" --notes-file 'RELEASE_NOTES.md' --target "$env:GITHUB_SHA"
+          }
 
       - name: Save latest.json to main
         if: steps.meta.outputs.exists != 'true'
