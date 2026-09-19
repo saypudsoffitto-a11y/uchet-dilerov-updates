@@ -32,3 +32,11 @@ test('8.9.55 runtime is shipped and loaded',()=>{
   assert.match(preload,/release-8955\.js/);
   assert.match(preload,/uchetRuntime='8\.9\.55'/);
 });
+
+test('sync server persists deletion tombstones and strips blank products',()=>{
+  const server=fs.readFileSync(path.resolve(__dirname,'../../server/server.js'),'utf8');
+  assert.match(server,/deletedProducts = mergeMarks\(prev\.deletedProducts, state\.deletedProducts\)/);
+  assert.match(server,/state\.products = products\.filter/);
+  assert.match(server,/String\(p\.name \|\| ''\)\.trim\(\)/);
+  assert.match(server,/8\.9\.55-sync3/);
+});
