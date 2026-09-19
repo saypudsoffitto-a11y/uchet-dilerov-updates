@@ -1,0 +1,93 @@
+/* 8.9.51 — утверждённый компактный интерфейс: светлая боковая панель и плотные списки. */
+@media screen {
+  html:root{
+    --bg:#f5f8fc!important;--card:#fff!important;--text:#183153!important;--muted:#6d7f99!important;
+    --blue:#0f6efb!important;--blue2:#eaf3ff!important;--green:#179b69!important;--line:#dce5f1!important;--red:#d92d3f!important
+  }
+  html body{background:#f7f9fd!important;color:var(--text)!important;font-family:'Segoe UI Variable','Segoe UI',Arial,sans-serif!important}
+  html nav{width:244px!important;padding:18px 14px 22px!important;background:#f7faff!important;color:#17315d!important;border-right:1px solid #dbe5f2!important;box-shadow:4px 0 18px rgba(24,49,83,.04)!important}
+  html .brand{display:none!important}
+  html .navLabel{margin:10px 8px 5px!important;padding:0!important;color:#526a8d!important;font-size:10px!important;font-weight:800!important;letter-spacing:.45px!important}
+  html nav button{position:relative!important;width:100%!important;min-height:39px!important;margin:3px 0!important;padding:8px 30px 8px 11px!important;border:1px solid transparent!important;border-radius:9px!important;background:#fff!important;color:#17315d!important;box-shadow:none!important;font-size:13px!important;font-weight:650!important;text-align:left!important}
+  html nav button::after{content:'›';position:absolute;right:11px;top:50%;transform:translateY(-52%);font-size:20px;line-height:1}
+  html nav button:hover{filter:none!important;box-shadow:0 3px 12px rgba(37,78,136,.08)!important}
+  html nav button.active{box-shadow:0 4px 14px rgba(37,78,136,.10)!important}
+  html nav .navIcon{width:20px!important;height:20px!important;display:inline-grid!important;place-items:center!important;flex:0 0 20px!important}
+  html nav button[data-section="home"]{background:#0f6efb!important;color:#fff!important}
+  html nav button[data-section="dealers"]{background:#edf5ff!important;color:#193b78!important;border-color:#d7e8ff!important}
+  html nav button[data-section="sales"]{background:#e5f7ef!important;color:#11724f!important;border-color:#cdeede!important}
+  html nav button[data-section="payments"]{background:#eaf4ff!important;color:#145ca8!important;border-color:#d6e9ff!important}
+  html nav button[data-section="debts"]{background:#ffe9ec!important;color:#b42335!important;border-color:#ffd1d8!important}
+  html nav button[data-section="history"]{background:#eeeaff!important;color:#5040b9!important;border-color:#ddd7ff!important}
+  html nav button[data-section="products"],html nav button[data-section="groups"],html nav button[data-section="newmatros"],html nav button[data-section="sync"],html nav button[data-section="backup"],html nav button[data-section="updates"]{background:#fbfdff!important;color:#17315d!important;border-color:#dfe8f4!important}
+  html nav button[data-section="home"].active{background:#0b63e8!important;color:#fff!important}
+  html nav button[data-section="debts"].active{background:#ffdfe4!important;color:#a91f31!important;border-color:#ffbdc8!important}
+  html header{height:54px!important;padding-left:268px!important;background:#fff!important;border-bottom:1px solid #e4ebf4!important;box-shadow:none!important}
+  html header b{font-size:16px!important;color:#17315d!important}
+  html main{margin-left:244px!important;padding:76px 28px 34px!important;max-width:none!important;background:#f8faff!important}
+  html section>h2{margin:0 0 2px!important;color:#142d56!important;font-size:27px!important;line-height:1.12!important;letter-spacing:-.45px!important}
+  html .sectionHint{margin:0 0 14px!important;color:#70819b!important;font-size:12.5px!important}
+  html .card{border:1px solid #dfe7f2!important;border-radius:11px!important;background:#fff!important;box-shadow:0 3px 14px rgba(37,70,115,.05)!important}
+  html input,html select,html textarea{border:1px solid #d9e3ef!important;border-radius:8px!important;background:#fff!important;color:#183153!important;min-height:36px!important;padding:7px 10px!important;font-size:13px!important;box-shadow:none!important}
+  html .search{min-height:38px!important;font-size:13px!important}
+  html button,html .btn{border-radius:8px!important;font-size:12.5px!important}
+  html .primary{background:#0f6efb!important;border-color:#0f6efb!important;color:#fff!important}
+  html .secondary{background:#f6f9fd!important;border:1px solid #dbe5f0!important;color:#284565!important}
+
+  /* Все рабочие списки — плотные по высоте, ширина не растягивается. */
+  html table{border:1px solid #dfe7f2!important;border-radius:10px!important;background:#fff!important;box-shadow:none!important}
+  html th,html td{padding:7px 10px!important;border-color:#e7edf5!important;font-size:12.5px!important;line-height:1.25!important;vertical-align:middle!important}
+  html th{height:34px!important;background:#f3f7fc!important;color:#58708f!important;font-size:11.5px!important;font-weight:700!important;white-space:nowrap!important}
+  html tbody tr:hover td{background:#f8fbff!important}
+  html td small,html td .muted{font-size:11px!important}
+  html .choiceRow{min-height:31px!important;padding:6px 9px!important;font-size:12.5px!important;line-height:1.2!important}
+  html .sortBar{gap:7px!important;margin:8px 0 10px!important;font-size:12px!important}
+  html .sortBar select{min-width:190px!important;max-width:280px!important;min-height:36px!important}
+  html .actions{gap:7px!important}
+  html .actions button{min-height:34px!important;padding:7px 11px!important}
+  html .miniBtn{min-height:30px!important;padding:6px 9px!important;font-size:11.5px!important}
+  html #dealers>br,html #debts>br,html #products>br,html #payments>br{display:none!important}
+  html #dealerSearch,html #debtSearch,html #productListSearch,html #paymentDealerSearch{margin:7px 0 2px!important;max-width:560px!important}
+  html .homeHeading{margin-bottom:14px!important}
+  html .homeHeading h2{font-size:28px!important}
+  html .homeHeading p{font-size:13px!important}
+  html .homeStats{gap:10px!important;margin-bottom:14px!important}
+  html .homeStats>.card{padding:13px 14px!important;min-height:76px!important}
+  html .homeStats .big{font-size:22px!important;margin-top:3px!important}
+  html .homeTable{padding:14px!important}
+  html .homeTable th,html .homeTable td{padding:7px 10px!important}
+
+  /* Чек — компактный, без лишней ширины; номер позиции, товар, количество, цена, сумма. */
+  html .receipt{max-width:760px!important;padding:14px!important;margin:10px auto!important;font-size:12px!important}
+  html .receipt h2{font-size:17px!important;margin:0 0 8px!important}
+  html .receipt .meta{gap:3px 12px!important;margin-bottom:7px!important}
+  html .receipt th,html .receipt td{padding:4px 6px!important;font-size:11.5px!important;line-height:1.18!important}
+  html .receipt .total{font-size:15px!important;margin-top:7px!important}
+  html .receipt .sign{margin-top:13px!important}
+  html .receipt .actions{margin-top:10px!important}
+  html .receiptEditInput{min-height:26px!important;padding:2px 4px!important;font-size:11.5px!important}
+  html .receipt8951 th:nth-child(1),html .receipt8951 td:nth-child(1){width:42px!important;text-align:center!important}
+  html .receipt8951 th:nth-child(2),html .receipt8951 td:nth-child(2){width:auto!important;white-space:normal!important}
+  html .receipt8951 th:nth-child(3),html .receipt8951 td:nth-child(3){width:105px!important}
+  html .receipt8951 th:nth-child(4),html .receipt8951 td:nth-child(4){width:95px!important}
+  html .receipt8951 th:nth-child(5),html .receipt8951 td:nth-child(5){width:105px!important}
+
+  /* Долги по утверждённому макету. */
+  html .debtHead8951{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:12px}
+  html .debtHead8951 .sectionHint{margin-bottom:0!important}
+  html .debtRefresh8951{display:flex;align-items:center;gap:7px;color:#70819b;font-size:11px;white-space:nowrap;padding-top:4px}
+  html .debtStats8951{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:10px}
+  html .debtStat8951{display:flex;align-items:center;gap:11px;min-height:74px;padding:12px 14px!important}
+  html .debtStat8951 .muted{font-size:11.5px!important}
+  html .debtStat8951 .big{margin-top:2px!important;font-size:20px!important;line-height:1.15!important}
+  html .debtStatIcon8951{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;flex:0 0 36px;font-size:17px;font-weight:800}
+  html .debtStatIcon8951.blue{background:#e4f0ff;color:#0f6efb}html .debtStatIcon8951.red{background:#ffe8ec;color:#d92d3f}html .debtStatIcon8951.violet{background:#ece9ff;color:#5847d8}html .debtStatIcon8951.green{background:#e3f7ef;color:#16815b}
+  html .debtToolbar8951{display:grid;grid-template-columns:minmax(320px,1fr) auto;align-items:center;gap:18px;margin:0 0 10px}
+  html .debtToolbar8951 #debtSearch{margin:0!important;width:100%!important}
+  html .debtToolbar8951 .sortBar{margin:0!important;justify-content:flex-end!important;white-space:nowrap}
+  html .debtTable8951 th:nth-child(1){width:28%}html .debtTable8951 th:nth-child(2){width:14%}html .debtTable8951 th:nth-child(3){width:13%}html .debtTable8951 th:nth-child(4){width:13%}html .debtTable8951 th:nth-child(5){width:16%}html .debtTable8951 th:nth-child(6){width:16%}
+  html .debtPayBtn8951{min-width:105px!important;white-space:nowrap!important}
+
+  @media(max-width:1200px){html nav{width:220px!important;padding-left:10px!important;padding-right:10px!important}html header{padding-left:244px!important}html main{margin-left:220px!important;padding-left:18px!important;padding-right:18px!important}html .debtStats8951{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:980px){html .debtToolbar8951{grid-template-columns:1fr}html .debtToolbar8951 .sortBar{justify-content:flex-start!important}}
+}
