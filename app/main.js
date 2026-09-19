@@ -8,7 +8,7 @@ const windowSafety = require('./window-safety.js');
 
 // Windows-only build. Disabling GPU acceleration avoids a common class of
 // startup crashes on older/integrated Windows graphics drivers.
-app.disableHardwareAcceleration();
+if (process.platform === 'win32') app.disableHardwareAcceleration();
 
 let mainWindow = null;
 let nmWatcher = null;
@@ -42,6 +42,7 @@ function stopNmWatcher(){
 }
 function startNmWatcher(){
   stopNmWatcher();
+  if(process.platform!=='win32') return {ok:false,error:'Автоматическое слежение NewMatRos доступно только в Windows. На Mac можно выбрать INI-файл вручную.'};
   if(!fs.existsSync(nmFolder)) return {ok:false,error:'Папка '+nmFolder+' не найдена. Можно выбрать INI-файл вручную.'};
   try{
     nmWatcher=fs.watch(nmFolder,{persistent:false},(_event,filename)=>{
