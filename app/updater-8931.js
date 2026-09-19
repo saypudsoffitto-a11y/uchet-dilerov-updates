@@ -1,5 +1,5 @@
 'use strict';
-const {app,BrowserWindow,dialog,ipcMain}=require('electron');
+const {app,BrowserWindow,dialog,ipcMain,shell}=require('electron');
 const fs=require('fs');
 const path=require('path');
 const os=require('os');
@@ -7,6 +7,7 @@ const crypto=require('crypto');
 const {spawn}=require('child_process');
 const windowSafety=require('./window-safety.js');
 const DEFAULT_MANIFEST_URL='https://raw.githubusercontent.com/saypudsoffitto-a11y/uchet-dilerov-updates/main/latest.json';
+const DEFAULT_MAC_MANIFEST_URL='https://raw.githubusercontent.com/saypudsoffitto-a11y/uchet-dilerov-updates/main/latest-macos.json';
 
 function mainWindow(){
   const wins=BrowserWindow.getAllWindows();
@@ -126,13 +127,21 @@ async function closeForUpdateAndLaunch(target,args){
 ipcMain.removeHandler('update:checkAndInstall');
 ipMainSafeHandle('update:checkAndInstall',async(_e,manifestUrl)=>{
   try{
-    const requested=String(manifestUrl||'').trim()||DEFAULT_MANIFEST_URL;
+    const isMac=process.platform==='darwin';
+    const requested=isMac?DEFAULT_MAC_MANIFEST_URL:(String(manifestUrl||'').trim()||DEFAULT_MANIFEST_URL);
     const u=new URL(requested);if(!/^https?:$/.test(u.protocol))return {ok:false,message:'Адрес обновлений должен начинаться с http:// или https://'};
     const r=await fetch(u,{cache:'no-store'});if(!r.ok)return {ok:false,message:'Сервер обновлений ответил HTTP '+r.status};
-    const m=await r.json();if(!m||!m.version||!m.url)return {ok:false,message:'Неверный файл latest.json на сервере'};
+    const m=await r.json();if(!m||!m.version||!m.url)return {ok:false,message:'Неверный файл обновления на сервере'};
     if(cmpVersion(m.version,app.getVersion())<=0)return {ok:true,message:'Установлена актуальная версия '+app.getVersion()};
     const fileUrl=new URL(m.url,u).toString(),buf=await fetchBuffer(fileUrl);
     if(m.sha256){const got=crypto.createHash('sha256').update(buf).digest('hex');if(got.toLowerCase()!==String(m.sha256).toLowerCase())return {ok:false,message:'Контрольная сумма обновления не совпала'}}
+    if(isMac){
+      const target=path.join(os.tmpdir(),'Uchet-dilerov-macOS-'+m.version+'-arm64.dmg');
+      fs.writeFileSync(target,buf);
+      const openError=await shell.openPath(target);
+      if(openError)return {ok:false,message:'DMG скачан, но macOS не смогла открыть его: '+openError};
+      return {ok:true,message:'Версия '+m.version+' для macOS скачана и открыта. Перетащи «Учёт дилеров» в Applications, затем открой новую версию.'};
+    }
     const target=path.join(os.tmpdir(),'Uchet-dilerov-Setup-'+m.version+'.exe');fs.writeFileSync(target,buf);
     await closeForUpdateAndLaunch(target,['/S']);
     return {ok:true,message:'Версия '+m.version+' скачана. Программа закроется автоматически, затем установка продолжится.'};
@@ -143,9 +152,15 @@ ipcMain.removeHandler('update:installFromFile');
 ipMainSafeHandle('update:installFromFile',async()=>{
   try{
     const win=mainWindow();
-    const r=await dialog.showOpenDialog(win,{title:'Выбери установщик обновления',properties:['openFile'],filters:[{name:'Установщик Учёт дилеров',extensions:['exe']}]});
+    const isMac=process.platform==='darwin';
+    const r=await dialog.showOpenDialog(win,{title:'Выбери установщик обновления',properties:['openFile'],filters:[isMac?{name:'Учёт дилеров для macOS',extensions:['dmg']}:{name:'Установщик Учёт дилеров',extensions:['exe']}]});
     if(r.canceled||!r.filePaths[0])return {ok:false,message:'Установка отменена'};
     const target=r.filePaths[0];
+    if(isMac){
+      const openError=await shell.openPath(target);
+      if(openError)return {ok:false,message:'Не удалось открыть DMG: '+openError};
+      return {ok:true,message:'DMG открыт. Перетащи «Учёт дилеров» в Applications.'};
+    }
     if(!/Uchet-dilerov-Setup-.*\.exe$/i.test(path.basename(target))){
       const c=await dialog.showMessageBox(win,{type:'warning',buttons:['Продолжить','Отмена'],defaultId:1,cancelId:1,message:'Имя файла не похоже на установщик «Учёт дилеров».',detail:path.basename(target)});
       if(c.response!==0)return {ok:false,message:'Установка отменена'};
@@ -156,4 +171,4 @@ ipMainSafeHandle('update:installFromFile',async()=>{
 });
 
 function ipMainSafeHandle(channel,handler){ipcMain.handle(channel,handler)}
-module.exports={cmpVersion,launchInstallerAfterAppExit,closeForUpdateAndLaunch,DEFAULT_MANIFEST_URL};
+module.exports={cmpVersion,launchInstallerAfterAppExit,closeForUpdateAndLaunch,DEFAULT_MANIFEST_URL,DEFAULT_MAC_MANIFEST_URL};
