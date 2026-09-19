@@ -10,7 +10,8 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 test('8.9.58 is a native Apple Silicon package with ad-hoc signature',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   assert.equal(pkg.version,'8.9.58');
-  assert.equal(pkg.build.mac.identity,'-');
+  assert.equal(pkg.build.mac.identity,null);
+  assert.equal(pkg.build.afterPack,'after-pack-macos.cjs');
   const targets=pkg.build.mac.target||[];
   const byName=Object.fromEntries(targets.map(t=>[t.target,t]));
   for(const name of ['dmg','zip']){
@@ -39,6 +40,14 @@ test('Mac file picker and WhatsApp text contain no Windows-only instruction',()=
   assert.doesNotMatch(main,/Установи приложение WhatsApp для Windows/);
   assert.match(main,/Установи WhatsApp Desktop и повтори попытку/);
   assert.doesNotMatch(receipt,/доступна только в установленном приложении Windows/);
+});
+
+test('afterPack hook applies an ad-hoc signature before DMG/ZIP creation',()=>{
+  const hook=read('app/after-pack-macos.cjs');
+  assert.match(hook,/electronPlatformName!=='darwin'/);
+  assert.match(hook,/execFileSync\('\/usr\/bin\/codesign'/);
+  assert.match(hook,/\['--force','--deep','--sign','-',appPath\]/);
+  assert.match(hook,/\['--verify','--deep','--strict',appPath\]/);
 });
 
 test('published macOS workflow verifies arm64, app version, and code signature before upload',()=>{
