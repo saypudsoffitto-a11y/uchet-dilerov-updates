@@ -79,7 +79,7 @@ async function main(){
     });
     await sleep(7000); // Includes the last legacy merge guard installation.
     const hooks=await evaluate(`(()=>{const b=document.getElementById('nmDraftBanner8926');const open=document.getElementById('nmDraftOpen8926');return {version:document.documentElement.dataset.interfaceVersion,dedupe:document.documentElement.dataset.productDedupe,cancel:!!document.getElementById('nmDraftCancel8926'),openRed:!!open?.classList.contains('nmDraftOpenRed8946'),noticeParent:b?.parentElement?.id||''}})()`);
-    assert.deepEqual(hooks,{version:'8.9.46',dedupe:'8.9.46',cancel:true,openRed:true,noticeParent:'workspaceNotices'});
+    assert.deepEqual(hooks,{version:'8.9.51',dedupe:'8.9.46',cancel:true,openRed:true,noticeParent:'workspaceNotices'});
     await evaluate(`newmatrosAPI.setWatch(false)`);
     await evaluate(`(()=>{
       window.confirm=()=>true;window.alert=message=>{throw Error(message)};
@@ -87,14 +87,14 @@ async function main(){
       save();go('home');return true;
     })()`);
     const summary=await evaluate(`({version:document.documentElement.dataset.interfaceVersion,today:document.getElementById('todaySales').textContent,rows:document.querySelectorAll('#homeDealerRows tr').length})`);
-    assert.equal(summary.version,'8.9.46');assert.equal(summary.today,'1');assert.equal(summary.rows,3);
+    assert.equal(summary.version,'8.9.51');assert.equal(summary.today,'1');assert.equal(summary.rows,3);
     const search=await evaluate(`(()=>{homeSearch.value='02';homeSearch.dispatchEvent(new Event('input'));const n=homeDealerRows.children.length;homeSearch.value='';homeSearch.dispatchEvent(new Event('input'));return n})()`);assert.equal(search,1);
     const dedupe=await evaluate(`(()=>{const sample=norm({groups:[{id:1,name:'Профили'}],products:[{id:11,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:100,updatedAt:1},{id:22,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:110,updatedAt:2},{id:33,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:120,updatedAt:3}],ops:[{id:1,type:'sale',items:[{productId:22,name:'Багет Premium стеновой'}]}]});const result=window.__dataFix8941.repairProductsInState(sample);return {count:sample.products.length,linked:sample.ops[0].items[0].productId===sample.products[0].id,removed:result.duplicatesRemoved,tombstones:Object.keys(sample.deletedProducts||{}).length}})()`);
     assert.deepEqual(dedupe,{count:1,linked:true,removed:2,tombstones:2});
     const folder=path.resolve('qa-interface');fs.mkdirSync(folder,{recursive:true});
     async function screenshot(name,width,height){await command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await sleep(200);const result=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(folder,name+'.png'),Buffer.from(result.data,'base64'))}
     await screenshot('home',1440,1000);
-    const archived=await evaluate(`(()=>{window.__beforeArchive=JSON.parse(JSON.stringify(state));showReceiptFromHistory(100);const button=[...receiptViewBody.querySelectorAll('button')].find(b=>b.textContent==='Удалить чек');if(!button)throw Error('Archive button missing');button.click();return {debt:debtOf(1),stock:state.products[0].stock,archived:state.receiptStates['100'].archived,payments:state.ops.filter(o=>o.type==='payment').length}})()`);
+    const archived=await evaluate(`(()=>{window.__beforeArchive=JSON.parse(JSON.stringify(state));showReceiptFromHistory(100);const button=[...receiptViewBody.querySelectorAll('button')].find(b=>b.textContent==='Удалить этот чек');if(!button)throw Error('Archive button missing');button.click();return {debt:debtOf(1),stock:state.products[0].stock,archived:state.receiptStates['100'].archived,payments:state.ops.filter(o=>o.type==='payment').length}})()`);
     assert.deepEqual(archived,{debt:-100,stock:52,archived:true,payments:1});await screenshot('archive',1440,1000);
     const stale=await evaluate(`(()=>{const merged=mergeSyncState(JSON.parse(JSON.stringify(state)),JSON.parse(JSON.stringify(window.__beforeArchive)));return {sales:merged.ops.filter(o=>o.type==='sale').length,stock:merged.products[0].stock,archived:merged.receiptStates['100'].archived}})()`);assert.deepEqual(stale,{sales:0,stock:52,archived:true});
     const restored=await evaluate(`(()=>{document.querySelector('#receiptArchiveRows button').click();return {debt:debtOf(1),stock:state.products[0].stock,archived:state.receiptStates['100'].archived}})()`);assert.deepEqual(restored,{debt:300,stock:50,archived:false});

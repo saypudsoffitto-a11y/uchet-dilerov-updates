@@ -12,12 +12,12 @@ function safeJpegName(name){
 }
 
 async function htmlToImage8948(html){
-  const w=new BrowserWindow({show:false,width:1040,height:1400,backgroundColor:'#ffffff',webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  const w=new BrowserWindow({show:false,width:860,height:900,backgroundColor:'#ffffff',webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
   try{
     await w.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(String(html||'')));
-    const dims=await w.webContents.executeJavaScript(`(()=>({w:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth,1040),h:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,900)}))()`,true);
-    const width=Math.max(1040,Math.min(1400,Math.ceil(Number(dims?.w)||1040)));
-    const height=Math.max(900,Math.min(12000,Math.ceil(Number(dims?.h)||1400)+8));
+    const dims=await w.webContents.executeJavaScript(`(()=>({w:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth,840),h:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,320)}))()`,true);
+    const width=Math.max(840,Math.min(1200,Math.ceil(Number(dims?.w)||840)));
+    const height=Math.max(320,Math.min(12000,Math.ceil(Number(dims?.h)||320)+8));
     w.setContentSize(width,height);
     await new Promise(r=>setTimeout(r,80));
     return await w.webContents.capturePage({x:0,y:0,width,height});
