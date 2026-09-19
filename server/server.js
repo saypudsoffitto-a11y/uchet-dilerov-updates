@@ -8,7 +8,7 @@ const TOKEN = String(process.env.SYNC_TOKEN || '').trim();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.55-sync3';
+const SERVER_VERSION = '8.9.48-sync2';
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
