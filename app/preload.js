@@ -74,16 +74,16 @@ window.addEventListener('DOMContentLoaded',()=>{
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8955';
+        s.src=src+'?runtime=8957';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.55';
+    document.documentElement.dataset.uchetRuntime='8.9.57';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.55 runtime loader error',e))}
-  catch(e){console.error('8.9.55 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.57 runtime loader error',e))}
+  catch(e){console.error('8.9.57 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
