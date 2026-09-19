@@ -82,8 +82,8 @@ window.addEventListener('DOMContentLoaded',()=>{
     }
     document.documentElement.dataset.uchetRuntime='8.9.55';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.54 runtime loader error',e))}
-  catch(e){console.error('8.9.54 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.55 runtime loader error',e))}
+  catch(e){console.error('8.9.55 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
