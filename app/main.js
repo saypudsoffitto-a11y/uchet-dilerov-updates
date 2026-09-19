@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, dialog, ipcMain, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -169,6 +169,38 @@ function safePdfName(name){
   if(!/\.pdf$/i.test(n))n+='.pdf';
   return n||'Товарная_накладная.pdf';
 }
+
+function safeJpegName(name){
+  let n=String(name||'Товарная_накладная.jpg').replace(/[<>:"/\\|?*\x00-\x1F]/g,'_').trim();
+  if(!/\.jpe?g$/i.test(n))n+='.jpg';
+  return n||'Товарная_накладная.jpg';
+}
+async function htmlToJpegImage(html){
+  const w=new BrowserWindow({
+    show:false,
+    width:900,
+    height:1200,
+    backgroundColor:'#ffffff',
+    webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,javascript:true}
+  });
+  try{
+    await w.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(String(html||'')));
+    const size=await w.webContents.executeJavaScript(`(()=>{
+      const de=document.documentElement,body=document.body;
+      return {
+        width:Math.ceil(Math.max(de?.scrollWidth||0,body?.scrollWidth||0,body?.getBoundingClientRect?.().width||0)),
+        height:Math.ceil(Math.max(de?.scrollHeight||0,body?.scrollHeight||0,body?.getBoundingClientRect?.().height||0))
+      };
+    })()`,true);
+    const width=Math.max(420,Math.min(1400,Number(size&&size.width)||860));
+    const height=Math.max(240,Math.min(6000,Number(size&&size.height)||900));
+    w.setContentSize(width,height);
+    await new Promise(resolve=>setTimeout(resolve,60));
+    return await w.webContents.capturePage({x:0,y:0,width,height});
+  } finally {
+    if(!w.isDestroyed())w.destroy();
+  }
+}
 async function htmlToPdf(html){
   const w=new BrowserWindow({show:false,webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true,javascript:false}});
   try{
@@ -213,6 +245,28 @@ ipcMain.handle('receipt:sendPdfWhatsApp', async (_e,payload)=>{
     if(!copied){shell.showItemInFolder(filePath);return {ok:true,path:filePath,message:'PDF создан. WhatsApp открыт, а файл выделен в Проводнике — прикрепи его к сообщению.'}}
     return {ok:true,path:filePath,message:'PDF создан и скопирован как файл. В открывшемся WhatsApp нажми Ctrl+V и отправь накладную.'};
   }catch(e){return {ok:false,message:'Не удалось подготовить PDF для WhatsApp: '+String(e&&e.message||e)}}
+});
+
+ipcMain.handle('receipt:sendJpegWhatsApp', async (_e,payload)=>{
+  try{
+    const image=await htmlToJpegImage(payload&&payload.html);
+    const jpeg=image.toJPEG(92);
+    const dir=path.join(app.getPath('temp'),'uchet-dilerov-jpeg');fs.mkdirSync(dir,{recursive:true});
+    const filePath=path.join(dir,safeJpegName(payload&&payload.fileName));fs.writeFileSync(filePath,jpeg);
+    let copied=false;
+    try{
+      clipboard.writeImage(image);
+      copied=!clipboard.readImage().isEmpty();
+    }catch(_){}
+    if(!copied)copied=await copyFileToClipboardWindows(filePath);
+    let phone=String(payload&&payload.phone||'').replace(/\D/g,'');if(phone.length===11&&phone[0]==='8')phone='7'+phone.slice(1);
+    await shell.openExternal('whatsapp://send?'+(phone?'phone='+encodeURIComponent(phone):''));
+    if(!copied){
+      shell.showItemInFolder(filePath);
+      return {ok:true,path:filePath,message:'JPEG создан. WhatsApp открыт, а картинка выделена в Проводнике — прикрепи её к сообщению.'};
+    }
+    return {ok:true,path:filePath,message:'JPEG чека скопирован как изображение. В открывшемся WhatsApp нажми Ctrl+V и отправь.'};
+  }catch(e){return {ok:false,message:'Не удалось подготовить JPEG для WhatsApp: '+String(e&&e.message||e)}}
 });
 
 function cmpVersion(a,b){
