@@ -1,0 +1,8 @@
+{
+  "version": "8.9.54",
+  "platform": "darwin",
+  "arch": "arm64",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.54/Uchet-dilerov-macOS-8.9.54-arm64.dmg",
+  "sha256": "b18d0719e6b03a789959486b59babd7d0034d0e0420733827fd6ab4b39380260",
+  "notes": "Сборка «Учёт дилеров» для macOS Apple Silicon (M1/M2/M3)."
+}
