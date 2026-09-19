@@ -1,0 +1,41 @@
+/* 8.9.51 — боковое меню как набор явных кнопок. */
+@media screen {
+  html nav{
+    gap:7px!important;
+  }
+  html nav button{
+    width:100%!important;
+    min-height:44px!important;
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-start!important;
+    gap:8px!important;
+    padding:10px 12px!important;
+    border-radius:11px!important;
+    color:#244a73!important;
+    background:#edf6ff!important;
+    border:1px solid #c9def4!important;
+    box-shadow:0 1px 2px rgba(31,86,139,.06)!important;
+    font-weight:650!important;
+  }
+  html nav button:hover{
+    color:#113f73!important;
+    background:#d9ecff!important;
+    border-color:#9fc8ef!important;
+    box-shadow:0 3px 10px rgba(31,111,214,.12)!important;
+  }
+  html nav button.active{
+    color:#fff!important;
+    background:#1f6fd6!important;
+    border-color:#1f6fd6!important;
+    box-shadow:0 6px 16px rgba(31,111,214,.22)!important;
+  }
+  html nav button .navIcon{
+    flex:0 0 22px!important;
+  }
+  html .navLabel{
+    margin-top:5px!important;
+    margin-bottom:1px!important;
+    padding:7px 8px 2px!important;
+  }
+}
