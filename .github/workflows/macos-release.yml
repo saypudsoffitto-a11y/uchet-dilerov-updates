@@ -74,10 +74,12 @@ jobs:
           set -euo pipefail
           version='${{ steps.meta.outputs.version }}'
           dmg="app/dist/Uchet-dilerov-macOS-$version-arm64.dmg"
+          zip="app/dist/Uchet-dilerov-macOS-$version-arm64.zip"
           sha=$(shasum -a 256 "$dmg" | awk '{print $1}')
-          node - "$version" "$sha" <<'NODE'
+          zip_sha=$(shasum -a 256 "$zip" | awk '{print $1}')
+          node - "$version" "$sha" "$zip_sha" <<'NODE'
           const fs=require('fs');
-          const [version,sha]=process.argv.slice(2);
+          const [version,sha,zipSha]=process.argv.slice(2);
           const repo=process.env.GITHUB_REPOSITORY;
           const manifest={
             version,
@@ -85,6 +87,8 @@ jobs:
             arch:'arm64',
             url:'https://github.com/'+repo+'/releases/download/'+version+'/Uchet-dilerov-macOS-'+version+'-arm64.dmg',
             sha256:sha,
+            zipUrl:'https://github.com/'+repo+'/releases/download/'+version+'/Uchet-dilerov-macOS-'+version+'-arm64.zip',
+            zipSha256:zipSha,
             notes:'Сборка «Учёт дилеров» для macOS Apple Silicon (M1/M2/M3).'
           };
           fs.writeFileSync('latest-macos.json',JSON.stringify(manifest,null,2)+'\n');
