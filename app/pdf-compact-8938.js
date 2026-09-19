@@ -139,21 +139,23 @@
     return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>
       *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
       body{display:inline-block;font-family:"Segoe UI",Arial,sans-serif;color:#172033}
-      .sheet{width:760px;padding:18px 20px 16px;background:#fff}
-      h1{text-align:center;font-size:18px;line-height:1.2;margin:0 0 10px}
-      .meta{display:flex;justify-content:space-between;gap:16px;font-size:12px;margin:0 0 9px}
+      .sheet{width:700px;padding:12px 14px 10px;background:#fff}
+      h1{text-align:center;font-size:15px;line-height:1.15;margin:0 0 5px}
+      .date{text-align:center;color:#6d7a8f;font-size:10.5px;margin:0 0 6px}
+      .meta{display:flex;justify-content:space-between;gap:12px;font-size:11px;margin:0 0 6px}
       .meta span{min-width:0}.meta b{font-weight:700}
-      table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
-      th,td{border:1px solid #cfd7e3;padding:6px 7px;line-height:1.2;vertical-align:middle}
+      table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:11.5px}
+      th,td{border:1px solid #cfd7e3;padding:4px 5px;line-height:1.12;vertical-align:middle}
       th{background:#f3f6fa;text-align:center;font-weight:700;color:#33445f}
-      .n{width:42px;text-align:center}.name{width:auto;text-align:left;overflow-wrap:anywhere}
-      .price{width:112px;text-align:right;white-space:nowrap}.qty{width:105px;text-align:center;white-space:nowrap}
-      .sum{width:118px;text-align:right;white-space:nowrap}
-      .total{margin-top:9px;text-align:right;font-size:16px;font-weight:800}
-      .words{margin-top:4px;font-size:11.5px;line-height:1.25}
-      .debt{margin-top:5px;font-size:12px}.sign{margin-top:17px;font-size:12px}
+      .n{width:36px;text-align:center}.name{width:auto;text-align:left;overflow-wrap:anywhere}
+      .price{width:100px;text-align:right;white-space:nowrap}.qty{width:92px;text-align:center;white-space:nowrap}
+      .sum{width:106px;text-align:right;white-space:nowrap}
+      .total{margin-top:6px;text-align:right;font-size:14px;font-weight:800;white-space:nowrap}
+      .words{margin-top:3px;font-size:10.5px;line-height:1.18}
+      .debt{margin-top:3px;font-size:11px;white-space:nowrap}.sign{margin-top:9px;font-size:11px}
     </style></head><body><div class="sheet">
-      <h1>ТОВАРНАЯ НАКЛАДНАЯ № ${h(op.receiptNo)} от ${h(op.date)}</h1>
+      <h1>ТОВАРНАЯ НАКЛАДНАЯ № ${h(op.receiptNo)}</h1>
+      <div class="date">от ${h(op.date)}</div>
       <div class="meta"><span><b>Поставщик:</b> ____________________</span><span><b>Покупатель:</b> ${h(d?.name||op.dealer||'')}</span></div>
       <table><thead><tr><th>№</th><th>Наименование</th><th>Цена</th><th>Кол-во</th><th>Сумма</th></tr></thead><tbody>${rows}</tbody></table>
       <div class="total">Итого: ${h(fmtMoney(op.total))}</div>
