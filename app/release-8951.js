@@ -57,5 +57,48 @@
   };
   try{renderDebts=window.renderDebts}catch(_){}
   enhanceDebt8951();window.renderDebts();
+
+  // Правый клик по строке покупки в карточке дилера: утверждённые действия.
+  const closeDealerLineMenu8951=()=>document.getElementById('dealerLineMenu8951')?.remove();
+  async function copyDealerLine8951(row){
+    const text=[...row.cells].slice(0,-1).map(td=>td.innerText.trim()).filter(Boolean).join(' | ');
+    try{if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(text);return true}}catch(_){}
+    try{const ta=document.createElement('textarea');ta.value=text;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return !!ok}catch(_){return false}
+  }
+  function dealerLineAction8951(row){
+    const deleteButton=[...row.querySelectorAll('button')].find(b=>/deleteReceiptItem\(/.test(b.getAttribute('onclick')||''));
+    const openButton=[...row.querySelectorAll('button')].find(b=>/showReceiptFromHistory\(/.test(b.getAttribute('onclick')||''));
+    let receiptId=null,itemIndex=null;
+    const dm=(deleteButton?.getAttribute('onclick')||'').match(/deleteReceiptItem\((\d+),(\d+)\)/);
+    if(dm){receiptId=dm[1];itemIndex=dm[2]}
+    if(receiptId==null){
+      const om=(openButton?.getAttribute('onclick')||'').match(/showReceiptFromHistory\((\d+)\)/);
+      if(om)receiptId=om[1];
+    }
+    if(receiptId==null&&row.dataset.receiptId)receiptId=row.dataset.receiptId;
+    return {receiptId,itemIndex,canDelete:itemIndex!=null};
+  }
+  function showDealerLineMenu8951(e,row){
+    const a=dealerLineAction8951(row);if(a.receiptId==null)return;
+    e.preventDefault();e.stopPropagation();closeDealerLineMenu8951();
+    const menu=document.createElement('div');menu.id='dealerLineMenu8951';menu.className='dealerLineMenu8951';
+    menu.style.left=Math.min(e.clientX,window.innerWidth-245)+'px';menu.style.top=Math.min(e.clientY,window.innerHeight-170)+'px';
+    const add=(label,fn,cls,disabled=false)=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.className=cls||'';b.disabled=disabled;b.onclick=()=>{closeDealerLineMenu8951();if(!disabled)fn()};menu.appendChild(b)};
+    add('Удалить строку',()=>deleteReceiptItem(Number(a.receiptId),Number(a.itemIndex)),'dangerMenuItem',!a.canDelete);
+    add('Добавить товар',()=>openReceiptAdd(Number(a.receiptId)));
+    add('Скопировать',async()=>{if(!await copyDealerLine8951(row))alert('Не удалось скопировать строку.')});
+    document.body.appendChild(menu);
+  }
+  function decorateDealerLines8951(){
+    document.querySelectorAll('#dealerModalBody .dealerHistoryDetail tbody tr').forEach(row=>{
+      const a=dealerLineAction8951(row);if(a.receiptId==null)return;
+      row.title=a.canDelete?'Правая кнопка: удалить строку, добавить товар или скопировать':'Правая кнопка: добавить товар или скопировать';
+      row.oncontextmenu=e=>showDealerLineMenu8951(e,row);
+    });
+  }
+  document.addEventListener('click',closeDealerLineMenu8951);window.addEventListener('blur',closeDealerLineMenu8951);
+  new MutationObserver(decorateDealerLines8951).observe(document.getElementById('dealerModalBody')||document.body,{childList:true,subtree:true});
+  decorateDealerLines8951();
+
   document.documentElement.dataset.interfaceVersion='8.9.51';
 })();
