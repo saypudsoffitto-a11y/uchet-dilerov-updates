@@ -302,7 +302,7 @@ async function prepareMacZipInstall(zipPath,version){
   const src=findMacApp(root);
   if(!src)throw new Error('В архиве обновления не найдено приложение .app');
   let current=path.resolve(path.dirname(process.execPath),'../..');
-  if(!/\.app$/i.test(current))current=path.join(os.homedir(),'Applications','Учёт дилеров.app');
+  if(!/\.app$/i.test(current)||/AppTranslocation/i.test(current))current=path.join(os.homedir(),'Applications','Учёт дилеров.app');
   const fallback=path.join(os.homedir(),'Applications',path.basename(current));
   const script=path.join(os.tmpdir(),'uchet-dilerov-install-'+String(version).replace(/[^0-9A-Za-z._-]/g,'_')+'.sh');
   const scriptText=[
