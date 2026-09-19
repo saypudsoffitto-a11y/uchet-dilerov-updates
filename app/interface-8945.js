@@ -118,3 +118,121 @@
   renderHomeDashboard();updateStatus();
   document.documentElement.dataset.interfaceVersion='8.9.46';
 })();
+
+
+/* 8.9.48 debt screen approved layout */
+(()=>{
+  const moneySafe8948=v=>{
+    try{return typeof money==='function'?money(v):Number(v||0).toLocaleString('ru-RU')+' ₽'}catch(_){return String(v||0)+' ₽'}
+  };
+
+  function debtStats8948(){
+    const dealers=Array.isArray(state?.dealers)?state.dealers:[];
+    const withDebt=dealers.filter(d=>(+debtOf(d.id)||0)>0);
+    const total=withDebt.reduce((s,d)=>s+(+debtOf(d.id)||0),0);
+    const paid=dealers.reduce((s,d)=>s+(+paidOf(d.id)||0),0);
+    return {all:dealers.length,withDebt:withDebt.length,total,paid};
+  }
+
+  function enhanceDebtLayout8948(){
+    const root=document.getElementById('debts');if(!root||root.dataset.ui8948)return;
+    root.dataset.ui8948='1';
+
+    const h2=root.querySelector(':scope > h2');
+    const hint=root.querySelector(':scope > .sectionHint');
+    if(h2)h2.textContent='Долги';
+    if(hint)hint.textContent='Контроль задолженностей дилеров';
+
+    const head=document.createElement('div');
+    head.className='debtHead8948';
+    const left=document.createElement('div');
+    if(h2)left.appendChild(h2);
+    if(hint)left.appendChild(hint);
+    const refresh=document.createElement('div');
+    refresh.className='debtRefresh8948';
+    refresh.innerHTML='<span>Обновлено сегодня в <b id="debtUpdatedAt8948">—</b></span><button type="button" class="debtRefreshBtn8948" title="Обновить">↻</button>';
+    refresh.querySelector('button').onclick=()=>{try{renderDebts()}catch(_){}};
+    head.append(left,refresh);
+    root.prepend(head);
+
+    const stats=document.createElement('div');
+    stats.className='debtStats8948';
+    stats.innerHTML=
+      '<div class="card debtStat8948"><span class="debtStatIcon8948 blue">👥</span><div><span class="muted">Всего дилеров</span><div class="big" id="debtStatAll8948">0</div></div></div>'+
+      '<div class="card debtStat8948"><span class="debtStatIcon8948 red">₽</span><div><span class="muted">Общий долг</span><div class="big danger" id="debtStatTotal8948">0 ₽</div></div></div>'+
+      '<div class="card debtStat8948"><span class="debtStatIcon8948 violet">◷</span><div><span class="muted">С долгом</span><div class="big danger" id="debtStatCount8948">0</div></div></div>'+
+      '<div class="card debtStat8948"><span class="debtStatIcon8948 green">✓</span><div><span class="muted">Всего оплачено</span><div class="big ok" id="debtStatPaid8948">0 ₽</div></div></div>';
+    head.after(stats);
+
+    const search=document.getElementById('debtSearch');
+    const sort=root.querySelector(':scope > .sortBar');
+    const toolbar=document.createElement('div');
+    toolbar.className='debtToolbar8948';
+    const searchWrap=document.createElement('div');
+    searchWrap.className='debtSearchWrap8948';
+    if(search){
+      search.placeholder='Поиск по названию или телефону...';
+      searchWrap.appendChild(search);
+    }
+    toolbar.appendChild(searchWrap);
+    if(sort)toolbar.appendChild(sort);
+    stats.after(toolbar);
+
+    const table=root.querySelector(':scope > table');
+    if(table){
+      table.classList.add('debtTable8948');
+      const tr=table.querySelector('thead tr');
+      if(tr)tr.innerHTML='<th>Дилер</th><th>Сумма продаж</th><th>Оплачено</th><th>Остаток</th><th>Последняя оплата</th><th>Действие</th>';
+    }
+
+    const footer=root.querySelector(':scope > p.muted:last-child');
+    if(footer)footer.textContent='Нажми на строку дилера, чтобы открыть все покупки, чеки и оплаты.';
+  }
+
+  function updateDebtStats8948(){
+    const s=debtStats8948();
+    const set=(id,val)=>{const el=document.getElementById(id);if(el)el.textContent=val};
+    set('debtStatAll8948',s.all);
+    set('debtStatTotal8948',moneySafe8948(s.total));
+    set('debtStatCount8948',s.withDebt);
+    set('debtStatPaid8948',moneySafe8948(s.paid));
+    const t=document.getElementById('debtUpdatedAt8948');
+    if(t)t.textContent=new Date().toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  }
+
+  window.openDebtPayment8948=id=>{
+    try{
+      go('payments');
+      setTimeout(()=>{try{selectPayDealer(id)}catch(_){}},0);
+    }catch(_){}
+  };
+
+  const renderDebts8948=function(){
+    enhanceDebtLayout8948();
+    const q=(document.getElementById('debtSearch')?.value||'').toLocaleLowerCase('ru');
+    let arr=(state.dealers||[]).filter(d=>(String(d.name||'')+' '+String(d.phone||'')).toLocaleLowerCase('ru').includes(q));
+    arr=sortDealers(arr,(document.getElementById('debtSort')?.value)||'recent');
+    const body=document.getElementById('debtRows');
+    if(body){
+      body.innerHTML=arr.map(d=>{
+        const payments=(state.ops||[]).filter(o=>o.dealerId==d.id&&o.type==='payment').slice().sort((a,b)=>opTime(b)-opTime(a));
+        const last=payments[0];
+        const debt=+debtOf(d.id)||0;
+        return '<tr class="clickable" tabindex="0" onclick="openDealer('+d.id+')" onkeydown="if(event.key===\\'Enter\\')openDealer('+d.id+')">'+
+          '<td><b>'+esc(d.name)+'</b><br><span class="muted">'+esc(d.phone||'')+'</span></td>'+
+          '<td>'+moneySafe8948(salesOf(d.id))+'</td>'+
+          '<td class="ok">'+moneySafe8948(paidOf(d.id))+'</td>'+
+          '<td class="'+(debt>0?'danger':'ok')+'"><b>'+moneySafe8948(debt)+'</b></td>'+
+          '<td>'+(last?esc(last.date||new Date(opTime(last)).toLocaleDateString('ru-RU')):'—')+'</td>'+
+          '<td><button type="button" class="primary miniBtn debtPayBtn8948" onclick="event.stopPropagation();openDebtPayment8948('+d.id+')">Внести оплату</button></td>'+
+          '</tr>';
+      }).join('');
+    }
+    updateDebtStats8948();
+  };
+
+  window.renderDebts=renderDebts8948;
+  try{renderDebts=renderDebts8948}catch(_){}
+  enhanceDebtLayout8948();
+  renderDebts8948();
+})();
