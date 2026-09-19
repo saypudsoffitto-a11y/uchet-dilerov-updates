@@ -86,3 +86,291 @@
  html .dealerReceiptContextMenu8946 .dangerMenuItem{color:#b42328}
  html .dealerReceiptContextMenu8946 .dangerMenuItem:hover{background:#fff0f0}
 }
+
+
+/* 8.9.48 approved compact blue UI */
+@media screen {
+  html:root{
+    --bg:#f5f7fb!important;
+    --text:#183153!important;
+    --blue:#0f6efb!important;
+    --green:#179b69!important;
+    --muted:#6d7f99!important;
+    --line:#dce5f1!important;
+    --red:#d92d3f!important;
+  }
+
+  html body{
+    background:#f5f7fb!important;
+    color:var(--text)!important;
+    font-family:'Segoe UI Variable','Segoe UI',Arial,sans-serif!important;
+  }
+
+  /* Approved light sidebar */
+  html nav{
+    width:244px!important;
+    padding:18px 14px 22px!important;
+    background:#f7faff!important;
+    color:#17315d!important;
+    border-right:1px solid #dbe5f2!important;
+    box-shadow:4px 0 18px rgba(24,49,83,.04)!important;
+    overflow-y:auto!important;
+  }
+  html nav .brand{display:none!important}
+  html nav .navLabel{
+    margin:10px 8px 5px!important;
+    padding:0!important;
+    color:#526a8d!important;
+    font-size:10px!important;
+    font-weight:800!important;
+    letter-spacing:.45px!important;
+    text-transform:uppercase!important;
+  }
+  html nav button{
+    position:relative!important;
+    width:100%!important;
+    min-height:39px!important;
+    margin:3px 0!important;
+    padding:8px 30px 8px 11px!important;
+    border:1px solid transparent!important;
+    border-radius:9px!important;
+    background:#fff!important;
+    color:#17315d!important;
+    box-shadow:none!important;
+    font-size:13px!important;
+    font-weight:650!important;
+    text-align:left!important;
+    gap:9px!important;
+    transition:transform .12s ease,box-shadow .12s ease,border-color .12s ease!important;
+  }
+  html nav button::after{
+    content:'›';
+    position:absolute;
+    right:11px;
+    top:50%;
+    transform:translateY(-52%);
+    font-size:20px;
+    line-height:1;
+    opacity:.9;
+  }
+  html nav button:hover{
+    transform:translateX(1px)!important;
+    box-shadow:0 3px 12px rgba(37,78,136,.08)!important;
+  }
+  html nav button.active{
+    box-shadow:inset 0 0 0 1px rgba(15,110,251,.15),0 4px 14px rgba(37,78,136,.10)!important;
+  }
+  html nav .navIcon{
+    width:20px!important;
+    height:20px!important;
+    display:grid!important;
+    place-items:center!important;
+    flex:0 0 20px!important;
+  }
+  html nav .navIcon svg{
+    width:19px!important;
+    height:19px!important;
+    fill:none!important;
+    stroke:currentColor!important;
+    stroke-width:1.9!important;
+    stroke-linecap:round!important;
+    stroke-linejoin:round!important;
+  }
+
+  html nav button[data-section="home"]{background:#0f6efb!important;color:#fff!important}
+  html nav button[data-section="dealers"]{background:#edf5ff!important;color:#193b78!important;border-color:#d7e8ff!important}
+  html nav button[data-section="sales"]{background:#e5f7ef!important;color:#11724f!important;border-color:#cdeede!important}
+  html nav button[data-section="payments"]{background:#eaf4ff!important;color:#145ca8!important;border-color:#d6e9ff!important}
+  html nav button[data-section="debts"]{background:#ffe9ec!important;color:#b42335!important;border-color:#ffd1d8!important}
+  html nav button[data-section="history"]{background:#eeeaff!important;color:#5040b9!important;border-color:#ddd7ff!important}
+  html nav button[data-section="products"],
+  html nav button[data-section="groups"],
+  html nav button[data-section="newmatros"],
+  html nav button[data-section="sync"],
+  html nav button[data-section="backup"],
+  html nav button[data-section="updates"]{
+    background:#fbfdff!important;
+    color:#17315d!important;
+    border-color:#dfe8f4!important;
+  }
+  html nav button[data-section="home"].active{background:#0b63e8!important}
+  html nav button[data-section="debts"].active{background:#ffdfe4!important;border-color:#ffbdc8!important}
+
+  html header{
+    padding-left:268px!important;
+    height:54px!important;
+    background:#fff!important;
+    border-bottom:1px solid #e4ebf4!important;
+    box-shadow:none!important;
+  }
+  html header b{font-size:16px!important;color:#17315d!important}
+  html .connectionIndicator,
+  html .statusPill{
+    border-radius:8px!important;
+    font-size:11px!important;
+  }
+
+  html main{
+    margin-left:244px!important;
+    padding:24px 28px 34px!important;
+    max-width:none!important;
+    background:#f8faff!important;
+  }
+  html section>h2{
+    margin:0 0 2px!important;
+    color:#142d56!important;
+    font-size:27px!important;
+    line-height:1.12!important;
+    letter-spacing:-.45px!important;
+  }
+  html .sectionHint{
+    margin:0 0 14px!important;
+    color:#70819b!important;
+    font-size:12.5px!important;
+  }
+
+  html .card{
+    border:1px solid #dfe7f2!important;
+    border-radius:11px!important;
+    background:#fff!important;
+    box-shadow:0 3px 14px rgba(37,70,115,.05)!important;
+  }
+  html input,
+  html select,
+  html textarea{
+    border:1px solid #d9e3ef!important;
+    border-radius:8px!important;
+    background:#fff!important;
+    color:#183153!important;
+    min-height:36px!important;
+    padding:7px 10px!important;
+    font-size:13px!important;
+    box-shadow:none!important;
+  }
+  html input:focus,
+  html select:focus,
+  html textarea:focus{
+    border-color:#7fb2ff!important;
+    box-shadow:0 0 0 3px rgba(15,110,251,.10)!important;
+    outline:none!important;
+  }
+  html .search{min-height:38px!important}
+
+  html button,
+  html .btn{
+    border-radius:8px!important;
+    font-size:12.5px!important;
+  }
+  html .primary{
+    background:#0f6efb!important;
+    border-color:#0f6efb!important;
+    color:#fff!important;
+    box-shadow:0 2px 7px rgba(15,110,251,.18)!important;
+  }
+  html .primary:hover{background:#0b63e8!important}
+  html .secondary{
+    background:#f6f9fd!important;
+    border:1px solid #dbe5f0!important;
+    color:#284565!important;
+  }
+
+  /* Compact lists and tables on every screen */
+  html .tableWrap,
+  html .paymentTableWrap{
+    border-radius:10px!important;
+  }
+  html table{
+    width:100%!important;
+    border-collapse:separate!important;
+    border-spacing:0!important;
+    border:1px solid #dfe7f2!important;
+    border-radius:10px!important;
+    background:#fff!important;
+    box-shadow:none!important;
+    overflow:hidden!important;
+  }
+  html th,
+  html td{
+    padding:7px 10px!important;
+    border:0!important;
+    border-bottom:1px solid #e7edf5!important;
+    font-size:12.5px!important;
+    line-height:1.25!important;
+    vertical-align:middle!important;
+  }
+  html th{
+    height:34px!important;
+    background:#f3f7fc!important;
+    color:#58708f!important;
+    font-size:11.5px!important;
+    font-weight:700!important;
+    white-space:nowrap!important;
+  }
+  html tbody tr:last-child td{border-bottom:0!important}
+  html tbody tr:hover td{background:#f8fbff!important}
+  html td .muted,
+  html td small{font-size:11px!important}
+
+  html .sortBar{
+    display:flex!important;
+    align-items:center!important;
+    justify-content:flex-end!important;
+    gap:7px!important;
+    margin:8px 0 10px!important;
+    font-size:12px!important;
+  }
+  html .sortBar select{
+    min-width:190px!important;
+    max-width:280px!important;
+    min-height:36px!important;
+  }
+
+  html #dealers>br,
+  html #debts>br,
+  html #products>br,
+  html #payments>br{display:none!important}
+
+  html #dealerSearch,
+  html #debtSearch,
+  html #productListSearch,
+  html #paymentDealerSearch{
+    margin:7px 0 2px!important;
+    max-width:540px!important;
+  }
+
+  /* Products: keep product name wide, make service columns narrow */
+  html .productTable{table-layout:fixed!important}
+  html .productTable th:nth-child(1),html .productTable td:nth-child(1){width:120px!important}
+  html .productTable th:nth-child(2),html .productTable td:nth-child(2){width:90px!important}
+  html .productTable th:nth-child(3),html .productTable td:nth-child(3){width:auto!important;min-width:260px!important}
+  html .productTable th:nth-child(4),html .productTable td:nth-child(4){width:76px!important}
+  html .productTable th:nth-child(5),html .productTable td:nth-child(5){width:58px!important}
+  html .productTable th:nth-child(6),html .productTable td:nth-child(6),
+  html .productTable th:nth-child(7),html .productTable td:nth-child(7),
+  html .productTable th:nth-child(8),html .productTable td:nth-child(8){width:86px!important}
+  html .productTable th:nth-child(9),html .productTable td:nth-child(9){width:58px!important}
+
+  html .homeHeading{margin-bottom:14px!important}
+  html .homeHeading h2{font-size:28px!important}
+  html .homeHeading p{font-size:13px!important}
+  html .homeStats{gap:10px!important;margin-bottom:14px!important}
+  html .homeStats>.card{padding:13px 14px!important;min-height:76px!important}
+  html .homeStats .big{font-size:22px!important;margin-top:3px!important}
+  html .metricIcon{width:36px!important;height:36px!important}
+  html .homeTable{padding:14px!important}
+  html .homeTableHead{margin-bottom:9px!important}
+  html .homeFilters{margin-bottom:9px!important}
+  html .homeTable th,html .homeTable td{padding:7px 10px!important}
+
+  html .form{gap:10px!important}
+  html .actions{gap:7px!important}
+  html .actions button{min-height:34px!important;padding:7px 11px!important}
+
+  @media(max-width:1200px){
+    html nav{width:220px!important;padding-left:10px!important;padding-right:10px!important}
+    html header{padding-left:244px!important}
+    html main{margin-left:220px!important;padding:18px 18px 28px!important}
+    html nav button{font-size:12.5px!important}
+    html th,html td{padding:6px 8px!important;font-size:12px!important}
+  }
+}
