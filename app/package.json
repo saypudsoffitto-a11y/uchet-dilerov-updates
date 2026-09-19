@@ -1,5 +1,6 @@
 {
   "build": {
+    "afterPack": "after-pack-macos.cjs",
     "appId": "com.uchetdilerov.windows",
     "artifactName": "Uchet-dilerov-${version}-${arch}.${ext}",
     "asar": true,
@@ -104,7 +105,7 @@
       "artifactName": "Uchet-dilerov-macOS-${version}-${arch}.${ext}",
       "category": "public.app-category.business",
       "hardenedRuntime": false,
-      "identity": "-",
+      "identity": null,
       "target": [
         {
           "target": "dmg",
