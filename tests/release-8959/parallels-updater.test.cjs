@@ -16,17 +16,17 @@ test('8.9.59 Windows updater has multiple manifest routes for VPN/Parallels netw
   assert.match(src,/async function fetchUpdateManifest\(requested\)/);
 });
 
-test('8.9.59 prefers native Windows helpers before Electron-as-Node',()=>{
+test('8.9.59 launches redundant Windows helpers with a shared lock',()=>{
   const src=read('app/updater-8931.js');
   const start=src.indexOf('async function launchInstallerAfterAppExit');
   const end=src.indexOf('async function closeForUpdateAndLaunch',start);
   const block=src.slice(start,end);
-  const ps=block.indexOf('spawnPowerShellFallback');
-  const cmd=block.indexOf('spawnCmdHelper');
-  const node=block.indexOf('spawnNodeHelper');
-  assert.ok(ps>=0&&cmd>ps&&node>cmd);
-  assert.match(block,/PS_READY',8000/);
-  assert.match(block,/CMD_READY',8000/);
+  assert.match(block,/spawnNodeHelper\(info,target,args\)/);
+  assert.match(block,/spawnPowerShellFallback\(info,target,args\)/);
+  assert.match(block,/spawnCmdHelper\(info\)/);
+  assert.match(block,/\['NODE_READY','PS_READY','CMD_READY'\]/);
+  assert.match(block,/mode:'multi'/);
+  assert.match(src,/UCHET_UPDATE_LOCK/);
 });
 
 test('8.9.59 keeps downloaded installer in userData instead of temporary storage',()=>{
