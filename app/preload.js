@@ -65,7 +65,7 @@ window.addEventListener('DOMContentLoaded',()=>{
       './dealer-delete-8941.js',
       './group-backup-8941.js',
       './runtime-fixes-8942.js',
-      './next-8948.js'
+      './next-8948.js',\n      './receipt-jpeg-8951.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
@@ -78,8 +78,8 @@ window.addEventListener('DOMContentLoaded',()=>{
     }
     document.documentElement.dataset.uchetRuntime='8.9.51';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.50 runtime loader error',e))}
-  catch(e){console.error('8.9.50 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.51 runtime loader error',e))}
+  catch(e){console.error('8.9.51 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
