@@ -30,7 +30,7 @@ test('8.9.55 deletion fix remains shipped in 8.9.59 package',()=>{
   assert.equal(pkg.version,'8.9.59');
   assert.ok(pkg.build.files.includes('release-8955.js'));
   assert.match(preload,/release-8955\.js/);
-  assert.match(preload,/uchetRuntime='8\.9\.58'/);
+  assert.match(preload,/uchetRuntime='8\.9\.59'/);
 });
 
 test('sync server persists deletion tombstones and strips blank products',()=>{
