@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('whatsappAPI',{send:(payload)=>ipcRenderer.invok
 
 contextBridge.exposeInMainWorld('receiptAPI', {
   sendPdf: (payload) => ipcRenderer.invoke('receipt:sendPdfWhatsApp', payload),
+  sendJpeg: (payload) => ipcRenderer.invoke('receipt:sendJpegWhatsApp', payload),
   savePdf: (payload) => ipcRenderer.invoke('receipt:savePdf', payload)
 });
 
