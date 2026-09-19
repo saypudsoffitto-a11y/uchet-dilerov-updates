@@ -58,7 +58,9 @@
       "next-8948.js",
       "main-8948.js",
       "interface-8949.css",
-      "interface-8950.css"
+      "interface-8950.css",
+      "interface-8951.css",
+      "receipt-jpeg-8951.js"
     ],
     "nsis": {
       "allowToChangeInstallationDirectory": true,
