@@ -1,3 +1,4 @@
+// Release 8.9.57: platform-aware updater pipeline.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
