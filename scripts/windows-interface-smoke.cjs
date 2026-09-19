@@ -79,7 +79,7 @@ async function main(){
     });
     await sleep(7000); // Includes the last legacy merge guard installation.
     const hooks=await evaluate(`(()=>{const b=document.getElementById('nmDraftBanner8926');const open=document.getElementById('nmDraftOpen8926');return {version:document.documentElement.dataset.interfaceVersion,dedupe:document.documentElement.dataset.productDedupe,cancel:!!document.getElementById('nmDraftCancel8926'),openRed:!!open?.classList.contains('nmDraftOpenRed8946'),noticeParent:b?.parentElement?.id||''}})()`);
-    assert.deepEqual(hooks,{version:'8.9.51',dedupe:'8.9.46',cancel:true,openRed:true,noticeParent:'workspaceNotices'});
+    assert.deepEqual(hooks,{version:expectedRuntime,dedupe:'8.9.46',cancel:true,openRed:true,noticeParent:'workspaceNotices'});
     await evaluate(`newmatrosAPI.setWatch(false)`);
     await evaluate(`(()=>{
       window.confirm=()=>true;window.alert=message=>{throw Error(message)};
@@ -87,7 +87,7 @@ async function main(){
       save();go('home');return true;
     })()`);
     const summary=await evaluate(`({version:document.documentElement.dataset.interfaceVersion,today:document.getElementById('todaySales').textContent,rows:document.querySelectorAll('#homeDealerRows tr').length})`);
-    assert.equal(summary.version,'8.9.51');assert.equal(summary.today,'1');assert.equal(summary.rows,3);
+    assert.equal(summary.version,expectedRuntime);assert.equal(summary.today,'1');assert.equal(summary.rows,3);
     const search=await evaluate(`(()=>{homeSearch.value='02';homeSearch.dispatchEvent(new Event('input'));const n=homeDealerRows.children.length;homeSearch.value='';homeSearch.dispatchEvent(new Event('input'));return n})()`);assert.equal(search,1);
     const dedupe=await evaluate(`(()=>{const sample=norm({groups:[{id:1,name:'Профили'}],products:[{id:11,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:100,updatedAt:1},{id:22,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:110,updatedAt:2},{id:33,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:120,updatedAt:3}],ops:[{id:1,type:'sale',items:[{productId:22,name:'Багет Premium стеновой'}]}]});const result=window.__dataFix8941.repairProductsInState(sample);return {count:sample.products.length,linked:sample.ops[0].items[0].productId===sample.products[0].id,removed:result.duplicatesRemoved,tombstones:Object.keys(sample.deletedProducts||{}).length}})()`);
     assert.deepEqual(dedupe,{count:1,linked:true,removed:2,tombstones:2});
