@@ -66,21 +66,22 @@ window.addEventListener('DOMContentLoaded',()=>{
       './group-backup-8941.js',
       './runtime-fixes-8942.js',
       './next-8948.js',
-      './release-8951.js'
+      './release-8951.js',
+      './release-8953.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8952';
+        s.src=src+'?runtime=8953';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.52';
+    document.documentElement.dataset.uchetRuntime='8.9.53';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.52 runtime loader error',e))}
-  catch(e){console.error('8.9.52 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.53 runtime loader error',e))}
+  catch(e){console.error('8.9.53 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
