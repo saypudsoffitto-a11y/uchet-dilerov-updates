@@ -91,3 +91,12 @@
   @media(max-width:1200px){html nav{width:220px!important;padding-left:10px!important;padding-right:10px!important}html header{padding-left:244px!important}html main{margin-left:220px!important;padding-left:18px!important;padding-right:18px!important}html .debtStats8951{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media(max-width:980px){html .debtToolbar8951{grid-template-columns:1fr}html .debtToolbar8951 .sortBar{justify-content:flex-start!important}}
 }
+
+@media screen {
+  html .dealerLineMenu8951{position:fixed;z-index:780;background:#fff;border:1px solid #cfd9e4;border-radius:10px;box-shadow:0 14px 40px #0003;padding:6px;min-width:220px}
+  html .dealerLineMenu8951 button{display:block;width:100%;text-align:left;background:#fff;color:#183153;padding:8px 10px;border:0;border-radius:7px;min-height:32px!important}
+  html .dealerLineMenu8951 button:hover:not(:disabled){background:#edf5ff}
+  html .dealerLineMenu8951 .dangerMenuItem{color:#b42335}
+  html .dealerLineMenu8951 .dangerMenuItem:hover:not(:disabled){background:#fff0f2}
+  html .dealerLineMenu8951 button:disabled{opacity:.4;cursor:not-allowed}
+}
