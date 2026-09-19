@@ -68,18 +68,19 @@ window.addEventListener('DOMContentLoaded',()=>{
       './next-8948.js',
       './release-8951.js',
       './release-8953.js',
-      './release-8954.js'
+      './release-8954.js',
+      './release-8955.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8954';
+        s.src=src+'?runtime=8955';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.54';
+    document.documentElement.dataset.uchetRuntime='8.9.55';
   })()`;
   try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.54 runtime loader error',e))}
   catch(e){console.error('8.9.54 preload loader error',e)}
