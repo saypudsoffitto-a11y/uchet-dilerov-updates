@@ -91,10 +91,23 @@ function spawnCmdHelper(info){
   return helper;
 }
 function spawnPowerShellFallback(info,target,args){
-  const env={...process.env,UCHET_UPDATE_EXE:String(target),UCHET_UPDATE_PID:String(process.pid),UCHET_UPDATE_ARGS:(args||[]).map(a=>'"'+String(a).replace(/"/g,'\\"')+'"').join(' '),UCHET_UPDATE_LOG:info.logPath,UCHET_UPDATE_LOCK:info.lockPath};
-  const script=`$ErrorActionPreference='SilentlyContinue'; Add-Content -Path $env:UCHET_UPDATE_LOG -Value 'PS_READY'; $p=[int]$env:UCHET_UPDATE_PID; Wait-Process -Id $p -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 300; try { New-Item -ItemType Directory -Path $env:UCHET_UPDATE_LOCK -ErrorAction Stop | Out-Null } catch { exit 0 }; if($env:UCHET_UPDATE_ARGS){ Start-Process -FilePath $env:UCHET_UPDATE_EXE -ArgumentList $env:UCHET_UPDATE_ARGS } else { Start-Process -FilePath $env:UCHET_UPDATE_EXE }`;
+  const psPath=info.helperPath+'.ps1';
+  const env={...process.env,UCHET_UPDATE_EXE:String(target),UCHET_UPDATE_PID:String(process.pid),UCHET_UPDATE_ARGS_JSON:JSON.stringify(args||[]),UCHET_UPDATE_LOG:info.logPath,UCHET_UPDATE_LOCK:info.lockPath};
+  const script=[
+    "$ErrorActionPreference='SilentlyContinue'",
+    "Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value 'PS_READY'",
+    "$p=[int]$env:UCHET_UPDATE_PID",
+    "while(Get-Process -Id $p -ErrorAction SilentlyContinue){ Start-Sleep -Milliseconds 200 }",
+    "Start-Sleep -Milliseconds 350",
+    "try { New-Item -ItemType Directory -Path $env:UCHET_UPDATE_LOCK -ErrorAction Stop | Out-Null } catch { exit 0 }",
+    "Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value 'LAUNCHING_INSTALLER'",
+    "$a=@(); if($env:UCHET_UPDATE_ARGS_JSON){ try { $a=@(ConvertFrom-Json $env:UCHET_UPDATE_ARGS_JSON) } catch { $a=@() } }",
+    "try { if($a.Count -gt 0){ Start-Process -FilePath $env:UCHET_UPDATE_EXE -ArgumentList $a } else { Start-Process -FilePath $env:UCHET_UPDATE_EXE }; Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value 'INSTALLER_STARTED' } catch { Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value ('ERROR '+$_.Exception.Message); exit 1 }",
+    "Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue"
+  ].join("\r\n");
+  fs.writeFileSync(psPath,script,'utf8');
   const errorFd=fs.openSync(info.logPath+'.stderr','a');
-  const helper=spawn('powershell.exe',['-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-Command',script],{detached:true,stdio:['ignore','ignore',errorFd],windowsHide:true,env});
+  const helper=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',psPath],{detached:true,stdio:['ignore','ignore',errorFd],windowsHide:true,env});
   fs.closeSync(errorFd);
   helper.on('error',()=>{});
   helper.unref();
