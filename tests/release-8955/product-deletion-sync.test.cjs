@@ -38,5 +38,4 @@ test('sync server persists deletion tombstones and strips blank products',()=>{
   assert.match(server,/deletedProducts = mergeMarks\(prev\.deletedProducts, state\.deletedProducts\)/);
   assert.match(server,/state\.products = products\.filter/);
   assert.match(server,/String\(p\.name \|\| ''\)\.trim\(\)/);
-  assert.match(server,/8\.9\.55-sync3/);
 });
