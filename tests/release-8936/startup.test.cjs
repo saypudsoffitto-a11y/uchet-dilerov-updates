@@ -27,8 +27,9 @@ test('real package entry registers update handlers without a startup exception',
   const pkg=JSON.parse(fs.readFileSync(path.join(appDir,'package.json')));
   load(path.join(appDir,pkg.main));
   assert.equal(ready.length,1);
-  assert.equal(owners.get('update:checkAndInstall'),'updater-8931.js');
-  assert.equal(owners.get('update:installFromFile'),'updater-8931.js');
+  const expectedUpdaterOwner=process.platform==='win32'?'updater-8931.js':'main.js';
+  assert.equal(owners.get('update:checkAndInstall'),expectedUpdaterOwner);
+  assert.equal(owners.get('update:installFromFile'),expectedUpdaterOwner);
   assert.ok(handlers.has('update:saveBackup'));
   assert.ok(handlers.has('sync:request'));
 });
