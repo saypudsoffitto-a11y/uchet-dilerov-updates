@@ -9,7 +9,7 @@ test('8.9.50 product table keeps group article and product text in separate colu
   const pkg=JSON.parse(read('app/package.json'));
   const html=read('app/index.html');
   const css=read('app/interface-8950.css');
-  assert.match(pkg.version,/^8\.9\.(50|51|52|53|54|55|56|57|58|58)$/);
+  assert.match(pkg.version,/^8\.9\.(50|51|52|53|54|55|56|57|58)$/);
   assert.ok(pkg.build.files.includes('interface-8950.css'));
   assert.match(html,/interface-8949\.css[\s\S]*interface-8950\.css/);
   assert.match(css,/data-col-key="Группа_0"/);
