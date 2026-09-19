@@ -62,7 +62,8 @@
       "interface-8951.css",
       "release-8951.js",
       "release-8953.js",
-      "release-8954.js"
+      "release-8954.js",
+      "release-8955.js"
     ],
     "nsis": {
       "allowToChangeInstallationDirectory": true,
@@ -120,7 +121,7 @@
       ]
     }
   },
-  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.54",
+  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.55",
   "devDependencies": {
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
@@ -135,9 +136,9 @@
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
     "test:electron": "electron --version",
-    "prebuild:win": "node --test ../tests/regressions/*.test.cjs && node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs && node --test ../tests/release-8939/*.test.cjs && node --test ../tests/release-8940/*.test.cjs && node --test ../tests/release-8941/*.test.cjs && node --test ../tests/release-8942/*.test.cjs && node --test ../tests/release-8946/*.test.cjs && node --test ../tests/release-8947/*.test.cjs && node --test ../tests/release-8948/*.test.cjs && node --test ../tests/release-8949/*.test.cjs && node --test ../tests/release-8950/*.test.cjs && node --test ../tests/release-8951/*.test.cjs && node --test ../tests/release-8952/*.test.cjs && node --test ../tests/release-8953/*.test.cjs && node --test ../tests/release-8954/*.test.cjs",
+    "prebuild:win": "node --test ../tests/regressions/*.test.cjs && node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs && node --test ../tests/release-8939/*.test.cjs && node --test ../tests/release-8940/*.test.cjs && node --test ../tests/release-8941/*.test.cjs && node --test ../tests/release-8942/*.test.cjs && node --test ../tests/release-8946/*.test.cjs && node --test ../tests/release-8947/*.test.cjs && node --test ../tests/release-8948/*.test.cjs && node --test ../tests/release-8949/*.test.cjs && node --test ../tests/release-8950/*.test.cjs && node --test ../tests/release-8951/*.test.cjs && node --test ../tests/release-8952/*.test.cjs && node --test ../tests/release-8953/*.test.cjs && node --test ../tests/release-8954/*.test.cjs && node --test ../tests/release-8955/*.test.cjs",
     "build:mac": "electron-builder --mac dmg zip --arm64",
-    "prebuild:mac": "node --test ../tests/regressions/*.test.cjs && node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs && node --test ../tests/release-8939/*.test.cjs && node --test ../tests/release-8940/*.test.cjs && node --test ../tests/release-8941/*.test.cjs && node --test ../tests/release-8942/*.test.cjs && node --test ../tests/release-8946/*.test.cjs && node --test ../tests/release-8947/*.test.cjs && node --test ../tests/release-8948/*.test.cjs && node --test ../tests/release-8949/*.test.cjs && node --test ../tests/release-8950/*.test.cjs && node --test ../tests/release-8951/*.test.cjs && node --test ../tests/release-8952/*.test.cjs && node --test ../tests/release-8953/*.test.cjs && node --test ../tests/release-8954/*.test.cjs"
+    "prebuild:mac": "node --test ../tests/regressions/*.test.cjs && node --test ../tests/release-8929/*.test.cjs && node --test ../tests/release-8930/*.test.cjs && node --test ../tests/release-8931/*.test.cjs && node --test ../tests/release-8932/*.test.cjs && node --test ../tests/release-8934/*.test.cjs && node --test ../tests/release-8935/*.test.cjs && node --test ../tests/release-8936/*.test.cjs && node --test ../tests/release-8937/*.test.cjs && node --test ../tests/release-8938/*.test.cjs && node --test ../tests/release-8939/*.test.cjs && node --test ../tests/release-8940/*.test.cjs && node --test ../tests/release-8941/*.test.cjs && node --test ../tests/release-8942/*.test.cjs && node --test ../tests/release-8946/*.test.cjs && node --test ../tests/release-8947/*.test.cjs && node --test ../tests/release-8948/*.test.cjs && node --test ../tests/release-8949/*.test.cjs && node --test ../tests/release-8950/*.test.cjs && node --test ../tests/release-8951/*.test.cjs && node --test ../tests/release-8952/*.test.cjs && node --test ../tests/release-8953/*.test.cjs && node --test ../tests/release-8954/*.test.cjs && node --test ../tests/release-8955/*.test.cjs"
   },
-  "version": "8.9.54"
+  "version": "8.9.55"
 }
