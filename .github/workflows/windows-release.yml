@@ -41,7 +41,9 @@ jobs:
           $setupName = "Uchet-dilerov-Setup-$version-x64.exe"
           $hasSetup = $false
           $assetNames = @(gh release view "$version" --repo "$env:GITHUB_REPOSITORY" --json assets --jq '.assets[].name' 2>$null)
-          if ($LASTEXITCODE -eq 0 -and ($assetNames -contains $setupName)) { $hasSetup = $true }
+          $releaseViewExit = $LASTEXITCODE
+          $global:LASTEXITCODE = 0
+          if ($releaseViewExit -eq 0 -and ($assetNames -contains $setupName)) { $hasSetup = $true }
           if ($hasSetup) {
             "exists=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
             Write-Host "Windows Setup for $version already exists."
