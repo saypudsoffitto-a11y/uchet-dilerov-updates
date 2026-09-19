@@ -63,7 +63,7 @@ function helperFiles(target,args){
     'set "UCHET_UPDATE_PID='+process.pid+'"',
     'set "UCHET_UPDATE_LOG='+cmdValue(logPath)+'"',
     'set "UCHET_UPDATE_LOCK='+cmdValue(lockPath)+'"',
-    '> "%UCHET_UPDATE_LOG%" echo CMD_READY',
+    '>> "%UCHET_UPDATE_LOG%" echo CMD_READY',
     ':waitloop',
     'tasklist /FI "PID eq %UCHET_UPDATE_PID%" /NH 2>nul | findstr /R /C:"[ ]%UCHET_UPDATE_PID%[ ]" >nul',
     'if not errorlevel 1 (',
@@ -119,7 +119,7 @@ function spawnNodeHelper(info,target,args){
   const code=`'use strict';
 const fs=require('fs'),{spawn}=require('child_process');
 const config=${JSON.stringify(config)};
-fs.writeFileSync(config.logPath,'NODE_READY\\n');
+fs.appendFileSync(config.logPath,'NODE_READY\\n');
 const timer=setInterval(()=>{
   try{process.kill(config.parentPid,0);return}catch(e){if(e.code!=='ESRCH')return}
   clearInterval(timer);
@@ -139,14 +139,26 @@ async function launchInstallerAfterAppExit(target,args){
   if(!fs.existsSync(target))throw new Error('Скачанный установщик не найден');
   const st=fs.statSync(target);if(!st.isFile()||st.size<1024*1024)throw new Error('Скачанный установщик повреждён или слишком мал');
   const info=helperFiles(target,args);
-  // На Windows в Parallels надежнее сначала использовать системный PowerShell/CMD,
-  // а не отдельный Electron-as-Node процесс, который виртуальная среда может завершить вместе с приложением.
-  let ps=null;try{ps=spawnPowerShellFallback(info,target,args)}catch(_){}
-  if(ps&&ps.pid&&await waitForMarker(info.logPath,'PS_READY',8000))return {ok:true,mode:'powershell',logPath:info.logPath};
-  let cmd=null;try{cmd=spawnCmdHelper(info)}catch(_){}
-  if(cmd&&cmd.pid&&await waitForMarker(info.logPath,'CMD_READY',8000))return {ok:true,mode:'cmd',logPath:info.logPath};
-  const nodeHelper=spawnNodeHelper(info,target,args);
-  if(nodeHelper.pid&&await waitForMarker(info.logPath,'NODE_READY',8000))return {ok:true,mode:'node',logPath:info.logPath};
+
+  // Запускаем сразу три независимых helper-а. Они используют общий lock:
+  // после закрытия программы только один реально стартует установщик.
+  // Это важно для Parallels/VPN/виртуальной Windows: если один механизм
+  // завершится вместе с Electron, второй или третий продолжит обновление.
+  let nodeHelper=null,ps=null,cmd=null;
+  try{nodeHelper=spawnNodeHelper(info,target,args)}catch(_){}
+  try{ps=spawnPowerShellFallback(info,target,args)}catch(_){}
+  try{cmd=spawnCmdHelper(info)}catch(_){}
+
+  const until=Date.now()+8000;
+  let marker='';
+  while(Date.now()<until&&!marker){
+    try{
+      const log=fs.existsSync(info.logPath)?fs.readFileSync(info.logPath,'utf8').replace(/\x00/g,''):'';
+      for(const m of ['NODE_READY','PS_READY','CMD_READY'])if(log.includes(m)){marker=m;break}
+    }catch(_){}
+    if(!marker)await sleep(75);
+  }
+  if(marker)return {ok:true,mode:'multi',ready:marker,logPath:info.logPath};
   throw new Error('Не удалось запустить службу обновления. Программа останется открытой.');
 }
 async function closeForUpdateAndLaunch(target,args){
