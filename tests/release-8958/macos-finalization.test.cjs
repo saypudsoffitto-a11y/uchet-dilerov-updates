@@ -60,10 +60,10 @@ test('published macOS workflow verifies arm64, app version, and code signature b
   assert.match(yml,/codesign --verify --deep --strict "\$app_path"/);
 });
 
-test('renderer reports 8.9.58 runtime',()=>{
+test('renderer reports current 8.9.59 runtime',()=>{
   const preload=read('app/preload.js');
   const productFix=read('app/release-8955.js');
-  assert.match(preload,/\?runtime=8958/);
-  assert.match(preload,/dataset\.uchetRuntime='8\.9\.58'/);
-  assert.match(productFix,/dataset\.interfaceVersion='8\.9\.58'/);
+  assert.match(preload,/\?runtime=8959/);
+  assert.match(preload,/dataset\.uchetRuntime='8\.9\.59'/);
+  assert.match(productFix,/dataset\.interfaceVersion='8\.9\.59'/);
 });
