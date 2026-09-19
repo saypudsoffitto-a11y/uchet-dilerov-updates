@@ -17,7 +17,29 @@ function cmpVersion(a,b){
   const A=String(a||'0').split('.').map(n=>parseInt(n,10)||0),B=String(b||'0').split('.').map(n=>parseInt(n,10)||0);
   for(let i=0;i<Math.max(A.length,B.length);i++){const x=A[i]||0,y=B[i]||0;if(x!==y)return x>y?1:-1}return 0;
 }
-async function fetchBuffer(url){const r=await fetch(url,{redirect:'follow'});if(!r.ok)throw new Error('HTTP '+r.status);return Buffer.from(await r.arrayBuffer())}
+async function fetchBuffer(url){const r=await fetch(url,{redirect:'follow',cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);return Buffer.from(await r.arrayBuffer())}
+async function fetchJson(url){const r=await fetch(url,{redirect:'follow',cache:'no-store',headers:{'Accept':'application/json'}});if(!r.ok)throw new Error('HTTP '+r.status);return await r.json()}
+function manifestUrls(requested){
+  const urls=[];
+  const add=u=>{if(u&&!urls.includes(u))urls.push(u)};
+  try{const u=new URL(String(requested||''));if(/^https?:$/.test(u.protocol))add(u.toString())}catch(_){}
+  add(DEFAULT_MANIFEST_URL);
+  add('https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/latest/download/latest.json');
+  return urls;
+}
+async function fetchUpdateManifest(requested){
+  const errors=[];
+  for(const url of manifestUrls(requested)){
+    try{const m=await fetchJson(url);if(m&&m.version&&m.url)return {manifest:m,source:url};errors.push(url+': неверный формат')}
+    catch(e){errors.push(url+': '+String(e&&e.message||e))}
+  }
+  try{
+    const rel=await fetchJson('https://api.github.com/repos/saypudsoffitto-a11y/uchet-dilerov-updates/releases/latest');
+    const asset=(rel.assets||[]).find(a=>a&&a.name==='latest.json'&&a.browser_download_url);
+    if(asset){const m=await fetchJson(asset.browser_download_url);if(m&&m.version&&m.url)return {manifest:m,source:asset.browser_download_url}}
+  }catch(e){errors.push('GitHub API: '+String(e&&e.message||e))}
+  throw new Error('Не удалось получить файл обновления. '+errors.join(' | '));
+}
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
 function cmdValue(v){return String(v==null?'':v).replace(/%/g,'%%').replace(/[\r\n]/g,' ')}
 async function waitForMarker(logPath,marker,timeoutMs){
@@ -41,7 +63,7 @@ function helperFiles(target,args){
     'set "UCHET_UPDATE_PID='+process.pid+'"',
     'set "UCHET_UPDATE_LOG='+cmdValue(logPath)+'"',
     'set "UCHET_UPDATE_LOCK='+cmdValue(lockPath)+'"',
-    '> "%UCHET_UPDATE_LOG%" echo CMD_READY',
+    '>> "%UCHET_UPDATE_LOG%" echo CMD_READY',
     ':waitloop',
     'tasklist /FI "PID eq %UCHET_UPDATE_PID%" /NH 2>nul | findstr /R /C:"[ ]%UCHET_UPDATE_PID%[ ]" >nul',
     'if not errorlevel 1 (',
@@ -69,10 +91,23 @@ function spawnCmdHelper(info){
   return helper;
 }
 function spawnPowerShellFallback(info,target,args){
-  const env={...process.env,UCHET_UPDATE_EXE:String(target),UCHET_UPDATE_PID:String(process.pid),UCHET_UPDATE_ARGS:(args||[]).map(a=>'"'+String(a).replace(/"/g,'\\"')+'"').join(' '),UCHET_UPDATE_LOG:info.logPath,UCHET_UPDATE_LOCK:info.lockPath};
-  const script=`$ErrorActionPreference='SilentlyContinue'; Add-Content -Path $env:UCHET_UPDATE_LOG -Value 'PS_READY'; $p=[int]$env:UCHET_UPDATE_PID; Wait-Process -Id $p -ErrorAction SilentlyContinue; Start-Sleep -Milliseconds 300; try { New-Item -ItemType Directory -Path $env:UCHET_UPDATE_LOCK -ErrorAction Stop | Out-Null } catch { exit 0 }; if($env:UCHET_UPDATE_ARGS){ Start-Process -FilePath $env:UCHET_UPDATE_EXE -ArgumentList $env:UCHET_UPDATE_ARGS } else { Start-Process -FilePath $env:UCHET_UPDATE_EXE }`;
+  const psPath=info.helperPath+'.ps1';
+  const env={...process.env,UCHET_UPDATE_EXE:String(target),UCHET_UPDATE_PID:String(process.pid),UCHET_UPDATE_ARGS_JSON:JSON.stringify(args||[]),UCHET_UPDATE_LOG:info.logPath,UCHET_UPDATE_LOCK:info.lockPath};
+  const script=[
+    "$ErrorActionPreference='SilentlyContinue'",
+    "Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value 'PS_READY'",
+    "$p=[int]$env:UCHET_UPDATE_PID",
+    "Wait-Process -Id $p -ErrorAction SilentlyContinue",
+    "Start-Sleep -Milliseconds 350",
+    "try { New-Item -ItemType Directory -Path $env:UCHET_UPDATE_LOCK -ErrorAction Stop | Out-Null } catch { exit 0 }",
+    "Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value 'LAUNCHING_INSTALLER'",
+    "$a=@(); if($env:UCHET_UPDATE_ARGS_JSON){ try { $a=@(ConvertFrom-Json $env:UCHET_UPDATE_ARGS_JSON) } catch { $a=@() } }",
+    "try { if($a.Count -gt 0){ Start-Process -FilePath $env:UCHET_UPDATE_EXE -ArgumentList $a } else { Start-Process -FilePath $env:UCHET_UPDATE_EXE }; Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value 'INSTALLER_STARTED' } catch { Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value ('ERROR '+$_.Exception.Message); exit 1 }",
+    "Remove-Item -LiteralPath $PSCommandPath -Force -ErrorAction SilentlyContinue"
+  ].join("\r\n");
+  fs.writeFileSync(psPath,script,'utf8');
   const errorFd=fs.openSync(info.logPath+'.stderr','a');
-  const helper=spawn('powershell.exe',['-NoProfile','-NonInteractive','-WindowStyle','Hidden','-ExecutionPolicy','Bypass','-Command',script],{detached:true,stdio:['ignore','ignore',errorFd],windowsHide:true,env});
+  const helper=spawn('powershell.exe',['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',psPath],{detached:true,stdio:['ignore','ignore',errorFd],windowsHide:true,env});
   fs.closeSync(errorFd);
   helper.on('error',()=>{});
   helper.unref();
@@ -84,7 +119,7 @@ function spawnNodeHelper(info,target,args){
   const code=`'use strict';
 const fs=require('fs'),{spawn}=require('child_process');
 const config=${JSON.stringify(config)};
-fs.writeFileSync(config.logPath,'NODE_READY\\n');
+fs.appendFileSync(config.logPath,'NODE_READY\\n');
 const timer=setInterval(()=>{
   try{process.kill(config.parentPid,0);return}catch(e){if(e.code!=='ESRCH')return}
   clearInterval(timer);
@@ -104,12 +139,26 @@ async function launchInstallerAfterAppExit(target,args){
   if(!fs.existsSync(target))throw new Error('Скачанный установщик не найден');
   const st=fs.statSync(target);if(!st.isFile()||st.size<1024*1024)throw new Error('Скачанный установщик повреждён или слишком мал');
   const info=helperFiles(target,args);
-  const nodeHelper=spawnNodeHelper(info,target,args);
-  if(nodeHelper.pid&&await waitForMarker(info.logPath,'NODE_READY',5000))return {ok:true,mode:'node',logPath:info.logPath};
-  let ps=null;try{ps=spawnPowerShellFallback(info,target,args)}catch(_){}
-  if(ps&&ps.pid&&await waitForMarker(info.logPath,'PS_READY',5000))return {ok:true,mode:'powershell',logPath:info.logPath};
-  let cmd=null;try{cmd=spawnCmdHelper(info)}catch(_){}
-  if(cmd&&cmd.pid&&await waitForMarker(info.logPath,'CMD_READY',5000))return {ok:true,mode:'cmd',logPath:info.logPath};
+
+  // Запускаем сразу три независимых helper-а. Они используют общий lock:
+  // после закрытия программы только один реально стартует установщик.
+  // Это важно для Parallels/VPN/виртуальной Windows: если один механизм
+  // завершится вместе с Electron, второй или третий продолжит обновление.
+  let nodeHelper=null,ps=null,cmd=null;
+  try{nodeHelper=spawnNodeHelper(info,target,args)}catch(_){}
+  try{ps=spawnPowerShellFallback(info,target,args)}catch(_){}
+  try{cmd=spawnCmdHelper(info)}catch(_){}
+
+  const until=Date.now()+8000;
+  let marker='';
+  while(Date.now()<until&&!marker){
+    try{
+      const log=fs.existsSync(info.logPath)?fs.readFileSync(info.logPath,'utf8').replace(/\x00/g,''):'';
+      for(const m of ['NODE_READY','PS_READY','CMD_READY'])if(log.includes(m)){marker=m;break}
+    }catch(_){}
+    if(!marker)await sleep(75);
+  }
+  if(marker)return {ok:true,mode:'multi',ready:marker,logPath:info.logPath};
   throw new Error('Не удалось запустить службу обновления. Программа останется открытой.');
 }
 async function closeForUpdateAndLaunch(target,args){
@@ -129,11 +178,10 @@ ipMainSafeHandle('update:checkAndInstall',async(_e,manifestUrl)=>{
   try{
     const isMac=process.platform==='darwin';
     const requested=isMac?DEFAULT_MAC_MANIFEST_URL:(String(manifestUrl||'').trim()||DEFAULT_MANIFEST_URL);
-    const u=new URL(requested);if(!/^https?:$/.test(u.protocol))return {ok:false,message:'Адрес обновлений должен начинаться с http:// или https://'};
-    const r=await fetch(u,{cache:'no-store'});if(!r.ok)return {ok:false,message:'Сервер обновлений ответил HTTP '+r.status};
-    const m=await r.json();if(!m||!m.version||!m.url)return {ok:false,message:'Неверный файл обновления на сервере'};
+    const found=isMac?{manifest:await fetchJson(requested),source:requested}:await fetchUpdateManifest(requested);
+    const m=found.manifest;if(!m||!m.version||!m.url)return {ok:false,message:'Неверный файл обновления на сервере'};
     if(cmpVersion(m.version,app.getVersion())<=0)return {ok:true,message:'Установлена актуальная версия '+app.getVersion()};
-    const fileUrl=new URL(m.url,u).toString(),buf=await fetchBuffer(fileUrl);
+    const fileUrl=new URL(m.url,found.source).toString(),buf=await fetchBuffer(fileUrl);
     if(m.sha256){const got=crypto.createHash('sha256').update(buf).digest('hex');if(got.toLowerCase()!==String(m.sha256).toLowerCase())return {ok:false,message:'Контрольная сумма обновления не совпала'}}
     if(isMac){
       const target=path.join(os.tmpdir(),'Uchet-dilerov-macOS-'+m.version+'-arm64.dmg');
@@ -142,7 +190,8 @@ ipMainSafeHandle('update:checkAndInstall',async(_e,manifestUrl)=>{
       if(openError)return {ok:false,message:'DMG скачан, но macOS не смогла открыть его: '+openError};
       return {ok:true,message:'Версия '+m.version+' для macOS скачана и открыта. Перетащи «Учёт дилеров» в Applications, затем открой новую версию.'};
     }
-    const target=path.join(os.tmpdir(),'Uchet-dilerov-Setup-'+m.version+'.exe');fs.writeFileSync(target,buf);
+    const updateDir=path.join(app.getPath('userData'),'updates');fs.mkdirSync(updateDir,{recursive:true});
+    const target=path.join(updateDir,'Uchet-dilerov-Setup-'+m.version+'.exe');fs.writeFileSync(target,buf);
     await closeForUpdateAndLaunch(target,['/S']);
     return {ok:true,message:'Версия '+m.version+' скачана. Программа закроется автоматически, затем установка продолжится.'};
   }catch(e){return {ok:false,message:'Ошибка обновления: '+String(e&&e.message||e)}}

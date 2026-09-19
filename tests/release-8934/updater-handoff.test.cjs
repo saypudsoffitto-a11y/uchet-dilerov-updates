@@ -8,15 +8,17 @@ test('8.9.34 updater parses',()=>{
   new vm.Script(fs.readFileSync('app/updater-8931.js','utf8'));
 });
 
-test('update helper is verified before app is allowed to close',()=>{
+test('at least one redundant update helper is verified before app is allowed to close',()=>{
   const s=fs.readFileSync('app/updater-8931.js','utf8');
   assert.ok(s.includes('CMD_READY'));
+  assert.ok(s.includes('NODE_READY'));
+  assert.ok(s.includes('PS_READY'));
   assert.ok(s.includes('tasklist /FI "PID eq %UCHET_UPDATE_PID%"'));
-  assert.ok(s.includes("await waitForMarker(info.logPath,'CMD_READY'"));
+  assert.ok(s.includes("for(const m of ['NODE_READY','PS_READY','CMD_READY'])"));
   assert.ok(s.indexOf('await launchInstallerAfterAppExit(target,args)') < s.indexOf('windowSafety.allowClose(win)'));
 });
 
-test('PowerShell remains only as guarded fallback and duplicate launch is locked',()=>{
+test('PowerShell CMD and Node helpers share duplicate-launch locking',()=>{
   const s=fs.readFileSync('app/updater-8931.js','utf8');
   assert.ok(s.includes('spawnCmdHelper(info)'));
   assert.ok(s.includes('spawnPowerShellFallback(info,target,args)'));

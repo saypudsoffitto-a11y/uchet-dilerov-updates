@@ -10,7 +10,7 @@ test('8.9.52 updater has built-in manifest URL and needs no user input',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const html=read('app/index.html');
   const updater=read('app/updater-8931.js');
-  assert.match(pkg.version,/^8\.9\.(52|53|54|55|56|57|58)$/);
+  assert.match(pkg.version,/^8\.9\.(52|53|54|55|56|57|58|59)$/);
   assert.match(updater,/const DEFAULT_MANIFEST_URL=/);
   assert.ok(updater.includes(manifest));
   assert.match(updater,/String\(manifestUrl\|\|''\)\.trim\(\)\|\|DEFAULT_MANIFEST_URL/);
