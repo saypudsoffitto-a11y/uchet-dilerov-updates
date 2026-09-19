@@ -101,7 +101,7 @@ async function createWindow() {
 
 ipcMain.handle('newmatros:chooseIni', async () => {
   try {
-    const r = await dialog.showOpenDialog(mainWindow,{title:'Выбери файл NewMatRos',defaultPath:nmFolder,properties:['openFile'],filters:[{name:'NewMatRos INI',extensions:['ini']},{name:'Все файлы',extensions:['*']} ]});
+    const r = await dialog.showOpenDialog(mainWindow,{title:'Выбери файл NewMatRos',defaultPath:process.platform==='win32'?nmFolder:app.getPath('documents'),properties:['openFile'],filters:[{name:'NewMatRos INI',extensions:['ini']},{name:'Все файлы',extensions:['*']} ]});
     if(r.canceled||!r.filePaths[0]) return {canceled:true};
     const filePath=r.filePaths[0];
     return {canceled:false,name:path.basename(filePath),path:filePath,text:decodeIni(fs.readFileSync(filePath))};
@@ -161,7 +161,7 @@ ipcMain.handle('whatsapp:send', async (_e, payload) => {
     await shell.openExternal(url);
     return {ok:true};
   } catch(e) {
-    return {ok:false,message:'Не удалось открыть WhatsApp Desktop. Установи приложение WhatsApp для Windows и повтори попытку.'};
+    return {ok:false,message:'Не удалось открыть WhatsApp Desktop. Установи WhatsApp Desktop и повтори попытку.'};
   }
 });
 

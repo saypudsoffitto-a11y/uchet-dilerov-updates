@@ -128,7 +128,7 @@
     const op=(state.ops||[]).find(x=>String(x.id)===String(id)&&x.type==='sale');
     const d=op&&(state.dealers||[]).find(x=>String(x.id)===String(op.dealerId));
     if(!op)return;
-    if(!window.receiptAPI?.sendJpeg)return alert('Отправка JPEG доступна только в установленном приложении Windows.');
+    if(!window.receiptAPI?.sendJpeg)return alert('Отправка JPEG доступна только в установленном приложении «Учёт дилеров».');
     const r=await window.receiptAPI.sendJpeg({
       phone:d?.phone||'',
       fileName:'Товарная_накладная_'+op.receiptNo+'.jpg',
