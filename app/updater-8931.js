@@ -97,7 +97,7 @@ function spawnPowerShellFallback(info,target,args){
     "$ErrorActionPreference='SilentlyContinue'",
     "Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value 'PS_READY'",
     "$p=[int]$env:UCHET_UPDATE_PID",
-    "while(Get-Process -Id $p -ErrorAction SilentlyContinue){ Start-Sleep -Milliseconds 200 }",
+    "Wait-Process -Id $p -ErrorAction SilentlyContinue",
     "Start-Sleep -Milliseconds 350",
     "try { New-Item -ItemType Directory -Path $env:UCHET_UPDATE_LOCK -ErrorAction Stop | Out-Null } catch { exit 0 }",
     "Add-Content -LiteralPath $env:UCHET_UPDATE_LOG -Value 'LAUNCHING_INSTALLER'",
