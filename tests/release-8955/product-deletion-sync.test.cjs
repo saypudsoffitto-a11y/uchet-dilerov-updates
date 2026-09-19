@@ -24,10 +24,10 @@ test('8.9.55 permanently removes blank product cards instead of rendering dash r
   assert.match(src,/dataset\.productDeletionFix='8\.9\.55'/);
 });
 
-test('8.9.55 deletion fix remains shipped in 8.9.58 runtime',()=>{
+test('8.9.55 deletion fix remains shipped in 8.9.59 package',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(appDir,'package.json'),'utf8'));
   const preload=fs.readFileSync(path.join(appDir,'preload.js'),'utf8');
-  assert.equal(pkg.version,'8.9.58');
+  assert.equal(pkg.version,'8.9.59');
   assert.ok(pkg.build.files.includes('release-8955.js'));
   assert.match(preload,/release-8955\.js/);
   assert.match(preload,/uchetRuntime='8\.9\.58'/);
