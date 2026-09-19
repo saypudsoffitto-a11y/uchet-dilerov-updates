@@ -374,3 +374,111 @@
     html th,html td{padding:6px 8px!important;font-size:12px!important}
   }
 }
+
+
+/* 8.9.48 debt dashboard details */
+@media screen {
+  html .debtHead8948{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:18px;
+    margin-bottom:12px;
+  }
+  html .debtHead8948 .sectionHint{margin-bottom:0!important}
+  html .debtRefresh8948{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    color:#70819b;
+    font-size:11px;
+    white-space:nowrap;
+    padding-top:4px;
+  }
+  html .debtRefreshBtn8948{
+    width:30px;
+    min-width:30px!important;
+    height:30px;
+    min-height:30px!important;
+    padding:0!important;
+    border:1px solid #d9e5f2!important;
+    background:#edf5ff!important;
+    color:#2466b3!important;
+    border-radius:8px!important;
+    font-size:18px!important;
+  }
+  html .debtStats8948{
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:10px;
+    margin-bottom:10px;
+  }
+  html .debtStat8948{
+    display:flex;
+    align-items:center;
+    gap:11px;
+    min-height:74px;
+    padding:12px 14px!important;
+  }
+  html .debtStat8948 .muted{font-size:11.5px!important}
+  html .debtStat8948 .big{
+    margin-top:2px!important;
+    font-size:20px!important;
+    line-height:1.15!important;
+  }
+  html .debtStatIcon8948{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    flex:0 0 36px;
+    font-size:17px;
+    font-weight:800;
+  }
+  html .debtStatIcon8948.blue{background:#e4f0ff;color:#0f6efb}
+  html .debtStatIcon8948.red{background:#ffe8ec;color:#d92d3f}
+  html .debtStatIcon8948.violet{background:#ece9ff;color:#5847d8}
+  html .debtStatIcon8948.green{background:#e3f7ef;color:#16815b}
+
+  html .debtToolbar8948{
+    display:grid;
+    grid-template-columns:minmax(320px,1fr) auto;
+    align-items:center;
+    gap:18px;
+    margin:0 0 10px;
+  }
+  html .debtSearchWrap8948{min-width:0}
+  html #debtSearch{
+    margin:0!important;
+    max-width:560px!important;
+    width:100%!important;
+  }
+  html .debtToolbar8948 .sortBar{
+    margin:0!important;
+    justify-content:flex-end!important;
+    white-space:nowrap;
+  }
+  html .debtTable8948 th:nth-child(1){width:28%}
+  html .debtTable8948 th:nth-child(2){width:14%}
+  html .debtTable8948 th:nth-child(3){width:13%}
+  html .debtTable8948 th:nth-child(4){width:13%}
+  html .debtTable8948 th:nth-child(5){width:16%}
+  html .debtTable8948 th:nth-child(6){width:16%}
+  html .debtTable8948 td:nth-child(2),
+  html .debtTable8948 td:nth-child(3),
+  html .debtTable8948 td:nth-child(4),
+  html .debtTable8948 td:nth-child(5){white-space:nowrap}
+  html .debtPayBtn8948{
+    min-width:105px!important;
+    padding:6px 10px!important;
+    min-height:31px!important;
+    white-space:nowrap;
+  }
+
+  @media(max-width:1100px){
+    html .debtStats8948{grid-template-columns:repeat(2,minmax(0,1fr))}
+    html .debtToolbar8948{grid-template-columns:1fr}
+    html .debtToolbar8948 .sortBar{justify-content:flex-start!important}
+  }
+}
