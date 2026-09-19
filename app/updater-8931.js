@@ -6,6 +6,7 @@ const os=require('os');
 const crypto=require('crypto');
 const {spawn}=require('child_process');
 const windowSafety=require('./window-safety.js');
+const DEFAULT_MANIFEST_URL='https://raw.githubusercontent.com/saypudsoffitto-a11y/uchet-dilerov-updates/main/latest.json';
 
 function mainWindow(){
   const wins=BrowserWindow.getAllWindows();
@@ -125,7 +126,8 @@ async function closeForUpdateAndLaunch(target,args){
 ipcMain.removeHandler('update:checkAndInstall');
 ipMainSafeHandle('update:checkAndInstall',async(_e,manifestUrl)=>{
   try{
-    const u=new URL(String(manifestUrl||''));if(!/^https?:$/.test(u.protocol))return {ok:false,message:'Адрес обновлений должен начинаться с http:// или https://'};
+    const requested=String(manifestUrl||'').trim()||DEFAULT_MANIFEST_URL;
+    const u=new URL(requested);if(!/^https?:$/.test(u.protocol))return {ok:false,message:'Адрес обновлений должен начинаться с http:// или https://'};
     const r=await fetch(u,{cache:'no-store'});if(!r.ok)return {ok:false,message:'Сервер обновлений ответил HTTP '+r.status};
     const m=await r.json();if(!m||!m.version||!m.url)return {ok:false,message:'Неверный файл latest.json на сервере'};
     if(cmpVersion(m.version,app.getVersion())<=0)return {ok:true,message:'Установлена актуальная версия '+app.getVersion()};
@@ -154,4 +156,4 @@ ipMainSafeHandle('update:installFromFile',async()=>{
 });
 
 function ipMainSafeHandle(channel,handler){ipcMain.handle(channel,handler)}
-module.exports={cmpVersion,launchInstallerAfterAppExit,closeForUpdateAndLaunch};
+module.exports={cmpVersion,launchInstallerAfterAppExit,closeForUpdateAndLaunch,DEFAULT_MANIFEST_URL};
