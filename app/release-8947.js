@@ -228,12 +228,61 @@
     }catch(e){console.error('8.9.47 restore missing products',e)}
   }
 
+
+  function installSaleReset8948(){
+    if(typeof saveSale!=='function')return false;
+    if(saveSale.__resetAfterSave8948)return true;
+    const base=saveSale;
+    const wrapped=function(){
+      const beforeOps=Array.isArray(state?.ops)?state.ops.length:0;
+      const result=base.apply(this,arguments);
+      const created=Array.isArray(state?.ops)&&state.ops.length>beforeOps
+        ? state.ops.slice(beforeOps).find(x=>x&&x.type==='sale')
+        : null;
+      if(!created)return result;
+
+      // Only reset the input form after a sale was actually saved.
+      // The freshly created receipt stays on screen and remains in history/debt.
+      try{
+        if(window.saleDealerSearch)saleDealerSearch.value='';
+        if(window.saleDealer)saleDealer.value='';
+        if(window.saleDealerSelected)saleDealerSelected.textContent='Дилер не выбран';
+        if(window.saleDealerList)saleDealerList.innerHTML='';
+        if(typeof saleDealerCursor!=='undefined')saleDealerCursor=0;
+
+        if(window.priceType)priceType.value='retail';
+        if(window.salePrice)salePrice.value='';
+        if(window.saleProductGroup)saleProductGroup.value='';
+        if(window.saleProductSearch)saleProductSearch.value='';
+        if(window.saleProduct)saleProduct.value='';
+        if(window.saleProductList)saleProductList.innerHTML='';
+        if(window.selectedPhoto)selectedPhoto.innerHTML='';
+        if(typeof saleProductCursor!=='undefined')saleProductCursor=0;
+
+        if(Array.isArray(cart)&&cart.length){cart.length=0;try{renderCart()}catch(_){}}
+        try{renderSaleProducts()}catch(_){}
+        try{renderSaleDealers()}catch(_){}
+
+        const sales=document.getElementById('sales');
+        if(sales&&typeof sales.scrollIntoView==='function')sales.scrollIntoView({block:'start'});
+        setTimeout(()=>{try{saleDealerSearch?.focus();saleDealerSearch?.select()}catch(_){}},0);
+      }catch(e){console.error('8.9.48 reset sale form',e)}
+      return result;
+    };
+    wrapped.__resetAfterSave8948=true;
+    wrapped.__base=base;
+    window.saveSale=wrapped;
+    try{saveSale=wrapped}catch(_){}
+    return true;
+  }
+
   function install(){
     const a=installSeparateSaleLines();
     const b=installReceiptItemButtons();
     const c=installDealerItemContext();
+    const d=installSaleReset8948();
     installNewMatRosCeilingDelete();
-    if(a&&b&&c){
+    if(a&&b&&c&&d){
       window.__release8947Installed=true;
       document.documentElement.dataset.releaseFix='8.9.47';
       restoreMissingBundledProducts8947();
