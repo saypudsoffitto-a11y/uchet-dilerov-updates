@@ -158,7 +158,21 @@
     box-shadow:0 3px 12px rgba(37,78,136,.08)!important;
   }
   html nav button.active{
-    box-shadow:inset 0 0 0 1px rgba(15,110,251,.15),0 4px 14px rgba(37,78,136,.10)!important;
+    transform:translateX(2px)!important;
+    font-weight:800!important;
+    border-width:2px!important;
+    box-shadow:0 7px 18px rgba(37,78,136,.20),inset 0 0 0 1px rgba(255,255,255,.18)!important;
+  }
+  html nav button.active::before{
+    content:'';
+    position:absolute;
+    left:-7px;
+    top:7px;
+    bottom:7px;
+    width:4px;
+    border-radius:999px;
+    background:currentColor;
+    box-shadow:0 0 0 2px rgba(255,255,255,.92),0 0 12px currentColor;
   }
   html nav .navIcon{
     width:20px!important;
@@ -177,7 +191,7 @@
     stroke-linejoin:round!important;
   }
 
-  html nav button[data-section="home"]{background:#0f6efb!important;color:#fff!important}
+  html nav button[data-section="home"]{background:#edf5ff!important;color:#174a92!important;border-color:#d8e8fb!important}
   html nav button[data-section="dealers"]{background:#edf5ff!important;color:#193b78!important;border-color:#d7e8ff!important}
   html nav button[data-section="sales"]{background:#e5f7ef!important;color:#11724f!important;border-color:#cdeede!important}
   html nav button[data-section="payments"]{background:#eaf4ff!important;color:#145ca8!important;border-color:#d6e9ff!important}
@@ -193,8 +207,24 @@
     color:#17315d!important;
     border-color:#dfe8f4!important;
   }
-  html nav button[data-section="home"].active{background:#0b63e8!important}
-  html nav button[data-section="debts"].active{background:#ffdfe4!important;border-color:#ffbdc8!important}
+
+  /* The open section must be unmistakable at a glance. */
+  html nav button[data-section="home"].active{background:#0f6efb!important;color:#fff!important;border-color:#075dd8!important}
+  html nav button[data-section="dealers"].active{background:#246ed8!important;color:#fff!important;border-color:#1758b7!important}
+  html nav button[data-section="sales"].active{background:#159463!important;color:#fff!important;border-color:#0e7950!important}
+  html nav button[data-section="payments"].active{background:#177cc5!important;color:#fff!important;border-color:#0f65a4!important}
+  html nav button[data-section="debts"].active{background:#df3b50!important;color:#fff!important;border-color:#c6293d!important;box-shadow:0 8px 20px rgba(223,59,80,.28),inset 0 0 0 1px rgba(255,255,255,.20)!important}
+  html nav button[data-section="history"].active{background:#6552d6!important;color:#fff!important;border-color:#5140ba!important}
+  html nav button[data-section="products"].active,
+  html nav button[data-section="groups"].active,
+  html nav button[data-section="newmatros"].active,
+  html nav button[data-section="sync"].active,
+  html nav button[data-section="backup"].active,
+  html nav button[data-section="updates"].active{
+    background:#315f9f!important;
+    color:#fff!important;
+    border-color:#254d85!important;
+  }
 
   html header{
     padding-left:268px!important;
@@ -293,11 +323,14 @@
   html td{
     padding:7px 10px!important;
     border:0!important;
-    border-bottom:1px solid #e7edf5!important;
+    border-right:1px solid #dce5f0!important;
+    border-bottom:1px solid #dce5f0!important;
     font-size:12.5px!important;
     line-height:1.25!important;
     vertical-align:middle!important;
   }
+  html th:last-child,
+  html td:last-child{border-right:0!important}
   html th{
     height:34px!important;
     background:#f3f7fc!important;
@@ -360,7 +393,12 @@
   html .homeTable{padding:14px!important}
   html .homeTableHead{margin-bottom:9px!important}
   html .homeFilters{margin-bottom:9px!important}
-  html .homeTable th,html .homeTable td{padding:7px 10px!important}
+  html .homeTable th,html .homeTable td{
+    padding:7px 10px!important;
+    border-right:1px solid #dce5f0!important;
+    border-bottom:1px solid #dce5f0!important;
+  }
+  html .homeTable th:last-child,html .homeTable td:last-child{border-right:0!important}
 
   html .form{gap:10px!important}
   html .actions{gap:7px!important}
