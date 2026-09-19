@@ -46,6 +46,56 @@
     return q+' '+String(unit||'шт');
   };
 
+  const decl=(n,one,few,many)=>{
+    const a=Math.abs(n)%100,b=a%10;
+    if(a>10&&a<20)return many;
+    if(b===1)return one;
+    if(b>=2&&b<=4)return few;
+    return many;
+  };
+  const intWordsRu=value=>{
+    let n=Math.max(0,Math.floor(Math.abs(Number(value)||0)));
+    if(n===0)return 'ноль';
+    const onesM=['','один','два','три','четыре','пять','шесть','семь','восемь','девять'];
+    const onesF=['','одна','две','три','четыре','пять','шесть','семь','восемь','девять'];
+    const teens=['десять','одиннадцать','двенадцать','тринадцать','четырнадцать','пятнадцать','шестнадцать','семнадцать','восемнадцать','девятнадцать'];
+    const tens=['','','двадцать','тридцать','сорок','пятьдесят','шестьдесят','семьдесят','восемьдесят','девяносто'];
+    const hundreds=['','сто','двести','триста','четыреста','пятьсот','шестьсот','семьсот','восемьсот','девятьсот'];
+    const groups=[
+      {one:'',few:'',many:'',female:false},
+      {one:'тысяча',few:'тысячи',many:'тысяч',female:true},
+      {one:'миллион',few:'миллиона',many:'миллионов',female:false},
+      {one:'миллиард',few:'миллиарда',many:'миллиардов',female:false}
+    ];
+    const out=[];let gi=0;
+    while(n>0&&gi<groups.length){
+      const part=n%1000;n=Math.floor(n/1000);
+      if(part){
+        const words=[];
+        const h=Math.floor(part/100),last=part%100;
+        if(h)words.push(hundreds[h]);
+        if(last>=10&&last<20)words.push(teens[last-10]);
+        else{
+          const t=Math.floor(last/10),o=last%10;
+          if(t)words.push(tens[t]);
+          if(o)words.push((groups[gi].female?onesF:onesM)[o]);
+        }
+        if(gi>0)words.push(decl(part,groups[gi].one,groups[gi].few,groups[gi].many));
+        out.unshift(words.join(' '));
+      }
+      gi++;
+    }
+    return out.join(' ').replace(/\s+/g,' ').trim();
+  };
+  const moneyWordsRu=value=>{
+    const n=Math.max(0,Number(value)||0);
+    let rub=Math.floor(n+1e-9),kop=Math.round((n-rub)*100);
+    if(kop>=100){rub+=1;kop=0}
+    const rubWord=decl(rub,'рубль','рубля','рублей');
+    const kopWord=decl(kop,'копейка','копейки','копеек');
+    return intWordsRu(rub)+' '+rubWord+' '+String(kop).padStart(2,'0')+' '+kopWord;
+  };
+
   function receiptPdfHtml8938(op,d){
     const rows=(op.items||[]).map((i,n)=>`<tr>
       <td>${n+1}</td>
@@ -75,6 +125,41 @@
       <div class="total">Итого: ${h(fmtMoney(op.total))}</div>
       <div class="debt"><b>Остаток долга:</b> ${h(fmtMoney(currentDebt(op.dealerId)))}</div>
       <div class="sign"><span>Отпустил: ____________________</span><span>Получил: ____________________</span></div>
+    </div></body></html>`;
+  }
+
+  function receiptJpegHtml8948(op,d){
+    const rows=(op.items||[]).map((i,n)=>`<tr>
+      <td class="n">${n+1}</td>
+      <td class="name">${h(i.name||'')}</td>
+      <td class="price">${h(fmtMoney(i.price))}</td>
+      <td class="qty">${h(qtyText(i.qty,i.unit))}</td>
+      <td class="sum">${h(fmtMoney(Number.isFinite(+i.total)?+i.total:(+i.qty||0)*(+i.price||0)))}</td>
+    </tr>`).join('');
+    return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>
+      *{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}
+      body{display:inline-block;font-family:"Segoe UI",Arial,sans-serif;color:#172033}
+      .sheet{width:760px;padding:18px 20px 16px;background:#fff}
+      h1{text-align:center;font-size:18px;line-height:1.2;margin:0 0 10px}
+      .meta{display:flex;justify-content:space-between;gap:16px;font-size:12px;margin:0 0 9px}
+      .meta span{min-width:0}.meta b{font-weight:700}
+      table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:12px}
+      th,td{border:1px solid #cfd7e3;padding:6px 7px;line-height:1.2;vertical-align:middle}
+      th{background:#f3f6fa;text-align:center;font-weight:700;color:#33445f}
+      .n{width:42px;text-align:center}.name{width:auto;text-align:left;overflow-wrap:anywhere}
+      .price{width:112px;text-align:right;white-space:nowrap}.qty{width:105px;text-align:center;white-space:nowrap}
+      .sum{width:118px;text-align:right;white-space:nowrap}
+      .total{margin-top:9px;text-align:right;font-size:16px;font-weight:800}
+      .words{margin-top:4px;font-size:11.5px;line-height:1.25}
+      .debt{margin-top:5px;font-size:12px}.sign{margin-top:17px;font-size:12px}
+    </style></head><body><div class="sheet">
+      <h1>ТОВАРНАЯ НАКЛАДНАЯ № ${h(op.receiptNo)} от ${h(op.date)}</h1>
+      <div class="meta"><span><b>Поставщик:</b> ____________________</span><span><b>Покупатель:</b> ${h(d?.name||op.dealer||'')}</span></div>
+      <table><thead><tr><th>№</th><th>Наименование</th><th>Цена</th><th>Кол-во</th><th>Сумма</th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="total">Итого: ${h(fmtMoney(op.total))}</div>
+      <div class="words"><b>Сумма прописью:</b> ${h(moneyWordsRu(op.total))}</div>
+      <div class="debt"><b>Остаток долга:</b> ${h(fmtMoney(currentDebt(op.dealerId)))}</div>
+      <div class="sign"><b>Подпись:</b> ______________________________</div>
     </div></body></html>`;
   }
 
@@ -121,15 +206,22 @@
     if(r.message)alert(r.message);
   }
 
+  async function sendJpeg(payload,failText){
+    if(!window.receiptAPI?.sendJpeg)return alert('Отправка JPEG доступна только в установленном приложении Windows.');
+    const r=await window.receiptAPI.sendJpeg(payload);
+    if(!r?.ok)return alert(r?.message||failText);
+    if(r.message)alert(r.message);
+  }
+
   window.sendWhatsApp=async function(id){
     const op=(state.ops||[]).find(x=>x.id==id&&x.type==='sale');
     if(!op)return;
     const d=(state.dealers||[]).find(x=>x.id==op.dealerId);
-    await sendPdf({
+    await sendJpeg({
       phone:d?.phone||'',
-      fileName:`Товарная_накладная_${op.receiptNo}.pdf`,
-      html:receiptPdfHtml8938(op,d)
-    },'Не удалось подготовить накладную PDF для WhatsApp');
+      fileName:`Товарная_накладная_${op.receiptNo}.jpg`,
+      html:receiptJpegHtml8948(op,d)
+    },'Не удалось подготовить чек JPEG для WhatsApp');
   };
 
   window.downloadReceipt=async function(id){
