@@ -221,7 +221,115 @@ function cmpVersion(a,b){
   for(let i=0;i<Math.max(A.length,B.length);i++){let x=A[i]||0,y=B[i]||0;if(x!==y)return x>y?1:-1}return 0;
 }
 async function fetchBuffer(url){
-  const r=await fetch(url,{redirect:'follow'});if(!r.ok)throw new Error('HTTP '+r.status);return Buffer.from(await r.arrayBuffer());
+  const r=await fetch(url,{redirect:'follow',cache:'no-store'});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return Buffer.from(await r.arrayBuffer());
+}
+async function fetchJson(url){
+  const r=await fetch(url,{redirect:'follow',cache:'no-store',headers:{'Accept':'application/json'}});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  return await r.json();
+}
+function updaterManifestName(){
+  return process.platform==='darwin'?'latest-macos.json':'latest.json';
+}
+function updaterManifestUrls(requested){
+  const name=updaterManifestName();
+  const urls=[];
+  const add=u=>{if(u&&!urls.includes(u))urls.push(u)};
+  try{
+    if(requested){
+      const u=new URL(String(requested));
+      if(/^https?:$/.test(u.protocol)){
+        if(process.platform==='darwin'&&/latest\.json$/i.test(u.pathname))u.pathname=u.pathname.replace(/latest\.json$/i,'latest-macos.json');
+        if(process.platform==='win32'&&/latest-macos\.json$/i.test(u.pathname))u.pathname=u.pathname.replace(/latest-macos\.json$/i,'latest.json');
+        add(u.toString());
+      }
+    }
+  }catch(_){}
+  add('https://raw.githubusercontent.com/saypudsoffitto-a11y/uchet-dilerov-updates/main/'+name);
+  add('https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/latest/download/'+name);
+  return urls;
+}
+async function fetchUpdateManifest(requested){
+  const errors=[];
+  for(const url of updaterManifestUrls(requested)){
+    try{
+      const m=await fetchJson(url);
+      if(m&&m.version&&m.url)return {manifest:m,source:url};
+      errors.push(url+': неверный формат');
+    }catch(e){errors.push(url+': '+String(e&&e.message||e))}
+  }
+  try{
+    const rel=await fetchJson('https://api.github.com/repos/saypudsoffitto-a11y/uchet-dilerov-updates/releases/latest');
+    const name=updaterManifestName();
+    const asset=(rel.assets||[]).find(a=>a&&a.name===name&&a.browser_download_url);
+    if(asset){
+      const m=await fetchJson(asset.browser_download_url);
+      if(m&&m.version&&m.url)return {manifest:m,source:asset.browser_download_url};
+    }
+  }catch(e){errors.push('GitHub API: '+String(e&&e.message||e))}
+  throw new Error('Не удалось получить файл обновления. '+errors.join(' | '));
+}
+function sha256(buf){return crypto.createHash('sha256').update(buf).digest('hex').toLowerCase()}
+function runProcess(command,args,options){
+  return new Promise((resolve,reject)=>{
+    let p;
+    try{p=spawn(command,args||[],{stdio:'ignore',...(options||{})})}catch(e){reject(e);return}
+    p.once('error',reject);
+    p.once('exit',code=>code===0?resolve():reject(new Error(path.basename(command)+' завершился с кодом '+code)));
+  });
+}
+function findMacApp(dir){
+  const queue=[dir];
+  while(queue.length){
+    const cur=queue.shift();
+    let entries=[];try{entries=fs.readdirSync(cur,{withFileTypes:true})}catch(_){continue}
+    for(const e of entries){
+      const full=path.join(cur,e.name);
+      if(e.isDirectory()&&/\.app$/i.test(e.name))return full;
+      if(e.isDirectory()&&queue.length<20)queue.push(full);
+    }
+  }
+  return '';
+}
+function shellQuote(v){return "'"+String(v).replace(/'/g,"'\\''")+"'";}
+async function prepareMacZipInstall(zipPath,version){
+  const root=path.join(os.tmpdir(),'uchet-dilerov-macos-'+String(version).replace(/[^0-9A-Za-z._-]/g,'_'));
+  try{fs.rmSync(root,{recursive:true,force:true})}catch(_){}
+  fs.mkdirSync(root,{recursive:true});
+  await runProcess('/usr/bin/ditto',['-x','-k',zipPath,root]);
+  const src=findMacApp(root);
+  if(!src)throw new Error('В архиве обновления не найдено приложение .app');
+  let current=path.resolve(path.dirname(process.execPath),'../..');
+  if(!/\.app$/i.test(current))current=path.join(os.homedir(),'Applications','Учёт дилеров.app');
+  const fallback=path.join(os.homedir(),'Applications',path.basename(current));
+  const script=path.join(os.tmpdir(),'uchet-dilerov-install-'+String(version).replace(/[^0-9A-Za-z._-]/g,'_')+'.sh');
+  const scriptText=[
+    '#!/bin/sh',
+    'PID='+String(process.pid),
+    'SRC='+shellQuote(src),
+    'DST='+shellQuote(current),
+    'FALLBACK='+shellQuote(fallback),
+    'while /bin/kill -0 "$PID" 2>/dev/null; do /bin/sleep 0.3; done',
+    'PARENT=$(/usr/bin/dirname "$DST")',
+    'if [ -w "$PARENT" ]; then',
+    '  /bin/rm -rf "$DST"',
+    '  /usr/bin/ditto "$SRC" "$DST" || exit 1',
+    '  /usr/bin/xattr -dr com.apple.quarantine "$DST" 2>/dev/null || true',
+    '  /usr/bin/open "$DST"',
+    'else',
+    '  /bin/mkdir -p "$HOME/Applications"',
+    '  /bin/rm -rf "$FALLBACK"',
+    '  /usr/bin/ditto "$SRC" "$FALLBACK" || exit 1',
+    '  /usr/bin/xattr -dr com.apple.quarantine "$FALLBACK" 2>/dev/null || true',
+    '  /usr/bin/open "$FALLBACK"',
+    'fi',
+    '/bin/rm -f "$0"'
+  ].join('\n')+'\n';
+  fs.writeFileSync(script,scriptText,{mode:0o700});
+  const child=spawn('/bin/sh',[script],{detached:true,stdio:'ignore'});
+  child.unref();
 }
 ipcMain.handle('update:saveBackup', async (_e, jsonText) => {
   try {
@@ -238,17 +346,48 @@ ipcMain.handle('update:saveBackup', async (_e, jsonText) => {
 
 ipcMain.handle('update:checkAndInstall', async (_e, manifestUrl) => {
   try{
-    const u=new URL(String(manifestUrl||''));if(!/^https?:$/.test(u.protocol))return {ok:false,message:'Адрес обновлений должен начинаться с http:// или https://'};
-    const r=await fetch(u,{cache:'no-store'});if(!r.ok)return {ok:false,message:'Сервер обновлений ответил HTTP '+r.status};
-    const m=await r.json();if(!m||!m.version||!m.url)return {ok:false,message:'Неверный файл latest.json на сервере'};
+    const found=await fetchUpdateManifest(manifestUrl);
+    const m=found.manifest;
+    if(m.platform&&process.platform==='darwin'&&m.platform!=='darwin')return {ok:false,message:'Сервер вернул обновление не для macOS'};
     if(cmpVersion(m.version,app.getVersion())<=0)return {ok:true,message:'Установлена актуальная версия '+app.getVersion()};
-    const fileUrl=new URL(m.url,u).toString();const buf=await fetchBuffer(fileUrl);
-    if(m.sha256){const got=crypto.createHash('sha256').update(buf).digest('hex');if(got.toLowerCase()!==String(m.sha256).toLowerCase())return {ok:false,message:'Контрольная сумма обновления не совпала'};}
-    const target=path.join(os.tmpdir(),'Uchet-dilerov-Setup-'+m.version+'.exe');fs.writeFileSync(target,buf);
+
+    if(process.platform==='darwin'){
+      const downloadUrl=String(m.zipUrl||m.url||'');
+      if(!downloadUrl)return {ok:false,message:'В обновлении macOS не указан файл для загрузки'};
+      const buf=await fetchBuffer(downloadUrl);
+      const expected=String(m.zipSha256||(!m.zipUrl?m.sha256:'')||'').toLowerCase();
+      if(expected&&sha256(buf)!==expected)return {ok:false,message:'Контрольная сумма обновления macOS не совпала'};
+      if(m.zipUrl||/\.zip(?:\?|$)/i.test(downloadUrl)){
+        const target=path.join(os.tmpdir(),'Uchet-dilerov-macOS-'+m.version+'-'+process.arch+'.zip');
+        fs.writeFileSync(target,buf);
+        if(!(await windowSafety.confirmExit(mainWindow)))return {ok:false,message:'Обновление отменено.'};
+        await prepareMacZipInstall(target,m.version);
+        windowSafety.allowClose(mainWindow);
+        setTimeout(()=>app.quit(),500);
+        return {ok:true,message:'Версия '+m.version+' скачана. Устанавливаю и перезапускаю программу…'};
+      }
+      const target=path.join(os.tmpdir(),'Uchet-dilerov-macOS-'+m.version+'.dmg');
+      fs.writeFileSync(target,buf);
+      const openError=await shell.openPath(target);
+      if(openError)return {ok:false,message:'DMG скачан, но не удалось открыть: '+openError};
+      return {ok:true,message:'Версия '+m.version+' скачана. Открыт установочный DMG.'};
+    }
+
+    if(process.platform!=='win32')return {ok:false,message:'Автообновление для этой системы пока не поддерживается'};
+    const fileUrl=String(m.url||'');
+    const buf=await fetchBuffer(fileUrl);
+    if(m.sha256&&sha256(buf)!==String(m.sha256).toLowerCase())return {ok:false,message:'Контрольная сумма обновления не совпала'};
+    const target=path.join(os.tmpdir(),'Uchet-dilerov-Setup-'+m.version+'.exe');
+    fs.writeFileSync(target,buf);
     if(!(await windowSafety.confirmExit(mainWindow)))return {ok:false,message:'Обновление отменено.'};
-    const child=spawn(target,['/S'],{detached:true,stdio:'ignore'});child.unref();windowSafety.allowClose(mainWindow);setTimeout(()=>app.quit(),700);
+    const child=spawn(target,['/S'],{detached:true,stdio:'ignore'});
+    child.unref();
+    windowSafety.allowClose(mainWindow);
+    setTimeout(()=>app.quit(),700);
     return {ok:true,message:'Версия '+m.version+' скачана. Запускаю установку…'};
-  }catch(e){return {ok:false,message:'Ошибка обновления: '+String(e&&e.message||e)}}
+  }catch(e){
+    return {ok:false,message:'Ошибка обновления: '+String(e&&e.message||e)};
+  }
 });
 
 ipcMain.handle('sync:request', async (_e, req) => {
@@ -272,21 +411,38 @@ ipcMain.handle('sync:request', async (_e, req) => {
 
 ipcMain.handle('update:installFromFile', async () => {
   try {
-    const r = await dialog.showOpenDialog(mainWindow, {
-      title: 'Выбери установщик обновления',
-      properties: ['openFile'],
-      filters: [{ name: 'Установщик Учёт дилеров', extensions: ['exe'] }]
-    });
-    if (r.canceled || !r.filePaths[0]) return { ok:false, message:'Установка отменена' };
+    const isMac=process.platform==='darwin';
+    const filters=isMac
+      ? [{name:'Обновление Учёт дилеров',extensions:['zip','dmg']}]
+      : [{name:'Установщик Учёт дилеров',extensions:['exe']}];
+    const r=await dialog.showOpenDialog(mainWindow,{title:'Выбери файл обновления',properties:['openFile'],filters});
+    if(r.canceled||!r.filePaths[0])return {ok:false,message:'Установка отменена'};
     const target=r.filePaths[0];
-    if (!/Uchet-dilerov-Setup-.*\.exe$/i.test(path.basename(target))) {
-      const c=await dialog.showMessageBox(mainWindow,{type:'warning',buttons:['Продолжить','Отмена'],defaultId:1,cancelId:1,message:'Имя файла не похоже на установщик «Учёт дилеров».',detail:path.basename(target)});
-      if(c.response!==0)return {ok:false,message:'Установка отменена'};
+
+    if(isMac){
+      if(/\.dmg$/i.test(target)){
+        const err=await shell.openPath(target);
+        return err?{ok:false,message:'Не удалось открыть DMG: '+err}:{ok:true,message:'Установочный DMG открыт.'};
+      }
+      if(!/\.zip$/i.test(target))return {ok:false,message:'Для macOS выбери ZIP или DMG обновления'};
+      if(!(await windowSafety.confirmExit(mainWindow)))return {ok:false,message:'Обновление отменено.'};
+      await prepareMacZipInstall(target,'file');
+      windowSafety.allowClose(mainWindow);
+      setTimeout(()=>app.quit(),500);
+      return {ok:true,message:'Устанавливаю обновление и перезапускаю программу…'};
     }
+
+    if(process.platform!=='win32')return {ok:false,message:'Установка из файла для этой системы не поддерживается'};
+    if(!/\.exe$/i.test(target))return {ok:false,message:'Для Windows выбери EXE-установщик'};
     if(!(await windowSafety.confirmExit(mainWindow)))return {ok:false,message:'Обновление отменено.'};
-    const child=spawn(target,[],{detached:true,stdio:'ignore'});child.unref();windowSafety.allowClose(mainWindow);setTimeout(()=>app.quit(),700);
+    const child=spawn(target,[],{detached:true,stdio:'ignore'});
+    child.unref();
+    windowSafety.allowClose(mainWindow);
+    setTimeout(()=>app.quit(),700);
     return {ok:true,message:'Запускаю установщик обновления…'};
-  } catch(e) { return {ok:false,message:'Ошибка запуска установщика: '+String(e&&e.message||e)}; }
+  } catch(e) {
+    return {ok:false,message:'Ошибка запуска обновления: '+String(e&&e.message||e)};
+  }
 });
 
 app.on('second-instance', () => {
