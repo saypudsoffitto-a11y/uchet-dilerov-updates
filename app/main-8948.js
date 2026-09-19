@@ -12,12 +12,21 @@ function safeJpegName(name){
 }
 
 async function htmlToImage8948(html){
-  const w=new BrowserWindow({show:false,width:860,height:900,backgroundColor:'#ffffff',webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  const w=new BrowserWindow({show:false,width:760,height:900,backgroundColor:'#ffffff',webPreferences:{contextIsolation:true,nodeIntegration:false,sandbox:true}});
   try{
     await w.loadURL('data:text/html;charset=utf-8,'+encodeURIComponent(String(html||'')));
-    const dims=await w.webContents.executeJavaScript(`(()=>({w:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth,840),h:Math.max(document.documentElement.scrollHeight,document.body.scrollHeight,320)}))()`,true);
-    const width=Math.max(840,Math.min(1200,Math.ceil(Number(dims?.w)||840)));
-    const height=Math.max(320,Math.min(12000,Math.ceil(Number(dims?.h)||320)+8));
+    // Crop to the receipt itself. The old code forced an 840px canvas, which
+    // made a 700px compact receipt look almost full-screen in WhatsApp.
+    const dims=await w.webContents.executeJavaScript(`(()=>{
+      const el=document.querySelector('.sheet')||document.body;
+      const r=el.getBoundingClientRect();
+      return {
+        w:Math.ceil(Math.max(r.width,el.scrollWidth||0)),
+        h:Math.ceil(Math.max(r.height,el.scrollHeight||0))
+      };
+    })()`,true);
+    const width=Math.max(320,Math.min(1200,Math.ceil(Number(dims?.w)||700)));
+    const height=Math.max(180,Math.min(12000,Math.ceil(Number(dims?.h)||320)));
     w.setContentSize(width,height);
     await new Promise(r=>setTimeout(r,80));
     return await w.webContents.capturePage({x:0,y:0,width,height});
