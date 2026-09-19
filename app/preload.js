@@ -1,4 +1,4 @@
-// Release 8.9.57: platform-aware updater pipeline; legacy version-gate tests updated.
+// Release 8.9.58: finalized native Apple Silicon build and macOS UX.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
@@ -75,16 +75,16 @@ window.addEventListener('DOMContentLoaded',()=>{
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8957';
+        s.src=src+'?runtime=8958';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.57';
+    document.documentElement.dataset.uchetRuntime='8.9.58';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.57 runtime loader error',e))}
-  catch(e){console.error('8.9.57 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.58 runtime loader error',e))}
+  catch(e){console.error('8.9.58 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
