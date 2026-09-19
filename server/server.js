@@ -8,7 +8,7 @@ const TOKEN = String(process.env.SYNC_TOKEN || '').trim();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.48-sync2';
+const SERVER_VERSION = '8.9.55-sync3';
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -155,10 +155,14 @@ function sanitizeState(incoming, previous) {
   const prev = previous && typeof previous === 'object' ? previous : {};
   const deletedDealers = mergeMarks(prev.deletedDealers, state.deletedDealers);
   state.deletedDealers = deletedDealers;
+  const deletedProducts = mergeMarks(prev.deletedProducts, state.deletedProducts);
+  state.deletedProducts = deletedProducts;
   state.deletedDealerKeys = {};
   state.dealerAliases = mergeAliases(prev.dealerAliases, state.dealerAliases);
   const dealers = Array.isArray(state.dealers) ? state.dealers : [];
   state.dealers = dealers.filter(d => d && !Object.prototype.hasOwnProperty.call(deletedDealers, String(d.id)));
+  const products = Array.isArray(state.products) ? state.products : [];
+  state.products = products.filter(p => p && String(p.name || '').trim() && !Object.prototype.hasOwnProperty.call(deletedProducts, String(p.id)));
 
   // If an older PC uploads a state containing only an obsolete duplicate ID,
   // keep the already-known canonical card instead of letting that old client
@@ -175,6 +179,7 @@ function sanitizeState(incoming, previous) {
 
   canonicalizeDealerDuplicates(state);
   state.dealers = state.dealers.filter(d => d && !Object.prototype.hasOwnProperty.call(state.deletedDealers, String(d.id)));
+  state.products = (Array.isArray(state.products) ? state.products : []).filter(p => p && String(p.name || '').trim() && !Object.prototype.hasOwnProperty.call(state.deletedProducts || {}, String(p.id)));
   return state;
 }
 
