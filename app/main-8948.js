@@ -47,7 +47,8 @@ ipcMain.handle('receipt:sendJpegWhatsApp',async(_e,payload)=>{
     let phone=String(payload&&payload.phone||'').replace(/\D/g,'');
     if(phone.length===11&&phone[0]==='8')phone='7'+phone.slice(1);
     await shell.openExternal('whatsapp://send?'+(phone?'phone='+encodeURIComponent(phone):''));
-    return {ok:true,path:filePath,message:'Чек подготовлен как JPEG и скопирован как изображение. В открывшемся WhatsApp нажми Ctrl+V и отправь.'};
+    const pasteShortcut=process.platform==='darwin'?'Cmd+V':'Ctrl+V';
+    return {ok:true,path:filePath,message:'Чек подготовлен как JPEG и скопирован как изображение. В открывшемся WhatsApp нажми '+pasteShortcut+' и отправь.'};
   }catch(e){
     return {ok:false,message:'Не удалось подготовить JPEG для WhatsApp: '+String(e&&e.message||e)};
   }
