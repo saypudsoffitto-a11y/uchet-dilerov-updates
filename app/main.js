@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, dialog, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, dialog, ipcMain, net } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -390,6 +390,20 @@ ipcMain.handle('update:checkAndInstall', async (_e, manifestUrl) => {
   }
 });
 
+async function syncFetch(url, options) {
+  const target=String(url);
+  const errors=[];
+  if(net&&typeof net.fetch==='function'){
+    try{return await net.fetch(target,options)}
+    catch(e){errors.push('Electron net: '+String(e&&e.message||e))}
+  }
+  try{return await fetch(target,options)}
+  catch(e){
+    errors.push('Node fetch: '+String(e&&e.message||e));
+    throw new Error(errors.join(' | '));
+  }
+}
+
 ipcMain.handle('sync:request', async (_e, req) => {
   try {
     const base = String(req && req.baseUrl || '').trim().replace(/\/+$/,'');
@@ -397,11 +411,11 @@ ipcMain.handle('sync:request', async (_e, req) => {
     if (!/^https?:$/.test(u.protocol)) return {ok:false,message:'Адрес сервера должен начинаться с http:// или https://'};
     const method = String(req && req.method || 'GET').toUpperCase();
     const headers = {'Accept':'application/json'};
-    const token = String(req && req.token || '');
+    const token = String(req && req.token || '').trim();
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    let options={method,headers,cache:'no-store'};
+    let options={method,headers,cache:'no-store',redirect:'follow'};
     if(method==='PUT' || method==='POST') { headers['Content-Type']='application/json'; options.body=JSON.stringify(req.body||{}); }
-    const r=await fetch(u,options); let data=null;
+    const r=await syncFetch(u.toString(),options); let data=null;
     try{data=await r.json()}catch(_){data={message:'Сервер вернул не JSON'}}
     if(r.status===409) return {ok:false,conflict:true,revision:data&&data.revision,state:data&&data.state,message:data&&data.message||'Конфликт версии базы'};
     if(!r.ok) return {ok:false,message:(data&&data.message)||('HTTP '+r.status)};
