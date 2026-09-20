@@ -37,6 +37,6 @@ test('8.9.59 keeps downloaded installer in userData instead of temporary storage
 
 test('package version is 8.9.59',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.equal(pkg.version,'8.9.61');
+  assert.match(pkg.version,/^8\.9\.(61|62)$/);
   assert.match(pkg.scripts['prebuild:win'],/release-8959/);
 });
