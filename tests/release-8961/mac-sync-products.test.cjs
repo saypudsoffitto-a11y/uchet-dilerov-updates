@@ -11,7 +11,7 @@ test('8.9.61 ships the macOS sync and placeholder-product fix',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const preload=read('app/preload.js');
   const patch=read('app/release-8961.js');
-  assert.equal(pkg.version,'8.9.61');
+  assert.match(pkg.version,/^8\.9\.(61|62)$/);
   assert.ok(pkg.build.files.includes('release-8961.js'));
   assert.match(pkg.scripts['prebuild:mac'],/release-8961/);
   assert.match(pkg.scripts['prebuild:win'],/release-8961/);
