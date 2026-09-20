@@ -68,6 +68,7 @@ jobs:
           grep -qi 'arm64' "$RUNNER_TEMP/macos-architecture.txt"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app_path/Contents/Info.plist" | grep -Fx "$version"
           codesign --verify --deep --strict "$app_path"
+          node scripts/smoke-macos.cjs "$app_path"
 
       - name: Generate latest-macos.json
         shell: bash

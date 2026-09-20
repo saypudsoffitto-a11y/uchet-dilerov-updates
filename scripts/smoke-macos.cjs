@@ -1,0 +1,14 @@
+'use strict';
+const {execFileSync}=require('child_process');
+const fs=require('fs');
+const os=require('os');
+const path=require('path');
+const appPath=process.argv[2];
+if(process.platform!=='darwin'||process.arch!=='arm64')throw new Error('Native Apple Silicon runner required for launch validation');
+const binary=execFileSync('/usr/libexec/PlistBuddy',['-c','Print :CFBundleExecutable',path.join(appPath,'Contents/Info.plist')],{encoding:'utf8'}).trim();
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'uchet-launch-'));
+const report=path.join(dir,'report.json');
+execFileSync(path.join(appPath,'Contents/MacOS',binary),['--uchet-smoke-test'],{env:{...process.env,UCHET_SMOKE_REPORT:report},stdio:'inherit',timeout:45000});
+const state=JSON.parse(fs.readFileSync(report,'utf8'));
+if(!state.ok)throw new Error('Packaged app failed launch check');
+console.log('Native packaged macOS launch passed:',JSON.stringify(state));

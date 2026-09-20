@@ -124,5 +124,5 @@
     initial
   };
   document.documentElement.dataset.productDeletionFix='8.9.55';
-  document.documentElement.dataset.interfaceVersion='8.9.59';
+  document.documentElement.dataset.interfaceVersion='8.9.60';
 })();

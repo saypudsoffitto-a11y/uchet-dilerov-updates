@@ -1,4 +1,5 @@
 'use strict';
+if(process.platform==='darwin' && process.argv.includes('--uchet-smoke-test')) require('./macos-smoke.cjs');
 require('./main-8941.js');
 
 const {app,BrowserWindow,ipcMain,shell,clipboard}=require('electron');

@@ -11,6 +11,8 @@ module.exports=async context=>{
   if(!appName)throw new Error('macOS .app bundle not found in '+context.appOutDir);
 
   const appPath=path.join(context.appOutDir,appName);
-  execFileSync('/usr/bin/codesign',['--force','--deep','--sign','-',appPath],{stdio:'inherit'});
+  // ARM64 V8 needs MAP_JIT permission even for an ad-hoc signature.
+  const entitlements=path.join(__dirname,'entitlements-macos.plist');
+  execFileSync('/usr/bin/codesign',['--force','--deep','--sign','-','--entitlements',entitlements,appPath],{stdio:'inherit'});
   execFileSync('/usr/bin/codesign',['--verify','--deep','--strict',appPath],{stdio:'inherit'});
 };
