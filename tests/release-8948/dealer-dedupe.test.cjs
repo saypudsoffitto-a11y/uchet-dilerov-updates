@@ -44,7 +44,7 @@ test('8.9.48 sync keeps one dealer for the same normalized name and phone across
   t.after(()=>{try{child.kill()}catch(_){};try{fs.rmSync(tmp,{recursive:true,force:true})}catch(_){}});
 
   const health=await waitForHealth(base);
-  assert.equal(health.serverVersion,'8.9.48-sync2',out);
+  assert.equal(health.serverVersion,'8.9.61-sync3',out);
 
   const state={
     dealers:[
