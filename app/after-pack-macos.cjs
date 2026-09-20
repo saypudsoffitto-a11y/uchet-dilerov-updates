@@ -14,5 +14,6 @@ module.exports=async context=>{
   // ARM64 V8 needs MAP_JIT permission even for an ad-hoc signature.
   const entitlements=path.join(__dirname,'entitlements-macos.plist');
   execFileSync('/usr/bin/codesign',['--force','--deep','--sign','-','--entitlements',entitlements,appPath],{stdio:'inherit'});
+  execFileSync('/usr/bin/codesign',['--display','--entitlements','-',appPath],{stdio:'inherit'});
   execFileSync('/usr/bin/codesign',['--verify','--deep','--strict',appPath],{stdio:'inherit'});
 };
