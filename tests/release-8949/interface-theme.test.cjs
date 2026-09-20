@@ -9,7 +9,7 @@ test('8.9.49 uses approved light-blue interface instead of the old green theme',
   const pkg=JSON.parse(read('app/package.json'));
   const html=read('app/index.html');
   const css=read('app/interface-8949.css');
-  assert.match(pkg.version,/^8\.9\.(49|50|51|52|53|54|55|56|57|58|59|60)$/);
+  assert.match(pkg.version,/^8\.9\.(49|50|51|52|53|54|55|56|57|58|59|60|61)$/);
   assert.ok(pkg.build.files.includes('interface-8949.css'));
   assert.match(html,/interface-8945\.css[\s\S]*interface-8949\.css/);
   assert.match(css,/background:linear-gradient\(180deg,#e6f3ff/);
