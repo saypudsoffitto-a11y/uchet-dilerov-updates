@@ -68,6 +68,7 @@
   const baseMergeSync8962=typeof mergeSyncState==='function'?mergeSyncState:window.mergeSyncState;
   if(typeof baseMergeSync8962==='function'&&!baseMergeSync8962.__clean8962){
     const wrappedMerge8962=function(remote,local){const merged=baseMergeSync8962.apply(this,arguments);cleanStateObject8962(merged);return merged;};
+    Object.assign(wrappedMerge8962,baseMergeSync8962);
     wrappedMerge8962.__clean8962=true;
     window.mergeSyncState=wrappedMerge8962;
     try{mergeSyncState=wrappedMerge8962}catch(_){}
