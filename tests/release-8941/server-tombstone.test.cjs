@@ -68,7 +68,7 @@ test('8.9.41 server keeps exact dealer tombstones and rejects stale resurrection
 
   r=await json(base,'GET');
   assert.equal(r.status,200);
-  assert.equal(r.data.serverVersion,'8.9.48-sync2');
+  assert.equal(r.data.serverVersion,'8.9.61-sync3');
   assert.equal(r.data.state.dealers.some(d=>String(d.id)===String(deleteId)),false,'stale PC resurrected deleted dealer');
   assert.equal(r.data.state.dealers.some(d=>String(d.id)===String(keepId)),true,'surviving dealer disappeared');
   assert.ok(r.data.state.deletedDealers[String(deleteId)],'server lost exact-ID tombstone');
