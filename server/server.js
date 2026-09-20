@@ -8,7 +8,7 @@ const TOKEN = String(process.env.SYNC_TOKEN || '').trim();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.55-sync3';
+const SERVER_VERSION = '8.9.61-sync4';
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -20,6 +20,15 @@ function mergeMarks(a, b) {
     }
   }
   return out;
+}
+
+function isPlaceholderProductName(value) {
+  const name = String(value == null ? '' : value)
+    .normalize('NFKC')
+    .replace(/\u00a0/g, ' ')
+    .trim();
+  if (!name) return true;
+  return /^[\s\-‐‑‒–—―−_.,·•:;|/\\]+$/u.test(name);
 }
 
 function sanitizeState(incoming, previous) {
@@ -34,11 +43,16 @@ function sanitizeState(incoming, previous) {
   state.deletedDealerKeys = {};
   state.deletedProducts = deletedProducts;
   state.dealers = dealers.filter(d => d && !Object.prototype.hasOwnProperty.call(deletedDealers, String(d.id)));
-  state.products = products.filter(p =>
-    p &&
-    String(p.name || '').trim() &&
-    !Object.prototype.hasOwnProperty.call(deletedProducts, String(p.id))
-  );
+  const cleanupTs = Date.now();
+  state.products = products.filter(p => {
+    if (!p) return false;
+    const hasId = p.id !== undefined && p.id !== null && String(p.id) !== '';
+    if (isPlaceholderProductName(p.name)) {
+      if (hasId) state.deletedProducts[String(p.id)] = Math.max(Number(state.deletedProducts[String(p.id)] || 0), cleanupTs);
+      return false;
+    }
+    return !Object.prototype.hasOwnProperty.call(deletedProducts, String(p.id));
+  });
   return state;
 }
 
