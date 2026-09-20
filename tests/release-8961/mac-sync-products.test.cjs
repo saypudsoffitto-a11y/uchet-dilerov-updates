@@ -16,8 +16,8 @@ test('8.9.61 ships the macOS sync and placeholder-product fix',()=>{
   assert.match(pkg.scripts['prebuild:mac'],/release-8961/);
   assert.match(pkg.scripts['prebuild:win'],/release-8961/);
   assert.match(preload,/release-8961\.js/);
-  assert.match(preload,/runtime=8961/);
-  assert.match(preload,/uchetRuntime='8\.9\.61'/);
+  assert.match(preload,/runtime=89(61|62)/);
+  assert.match(preload,/uchetRuntime='8\.9\.(61|62)'/);
   assert.doesNotThrow(()=>new Function(patch));
 });
 
