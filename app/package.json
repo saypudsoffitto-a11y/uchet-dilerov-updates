@@ -9,7 +9,6 @@
     },
     "files": [
       "window-safety.js",
-      "newmatros_clients.json",
       "package.json",
       "icon.ico",
       "runtime-fixes-8922.js",

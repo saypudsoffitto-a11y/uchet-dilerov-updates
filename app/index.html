@@ -180,7 +180,7 @@ th[draggable="true"]{cursor:grab;user-select:none;position:relative}.colResize{p
 <input id="dcity" placeholder="Город"><input id="dnote" placeholder="Примечание">
 <div class="full actions"><button class="primary" onclick="addDealer()">Сохранить дилера</button><button class="secondary" onclick="toggleNewDealerForm(false)">Отмена</button></div>
 </div><div id="newDealerSpacer"></div>
-<div class="card"><h3 style="margin-top:0">Клиенты NewMatRos</h3><p class="muted">Основной список дилеров переносится из NewMatRos. Старую программу «Склад» для дилеров не используем.</p><div class="actions"><button class="primary" onclick="importBundledNewMatRosClients(true)">Загрузить / обновить клиентов NewMatRos</button><span id="newmatrosClientImportStatus" class="muted"></span></div></div><br>
+<div class="card"><h3 style="margin-top:0">Клиенты NewMatRos</h3><p class="muted">Старый встроенный список клиентов больше не загружается. Используйте актуальные карточки дилеров и выгрузку новых заказов из NewMatRos.</p><span id="newmatrosClientImportStatus" class="muted"></span></div><br>
 <input class="search" id="dealerSearch" placeholder="🔎 Поиск дилера по имени или телефону" oninput="renderDealers()"><br><br><div class="sortBar"><label>Сортировать:</label><select id="dealerSort" onchange="renderDealers()"><option value="name">По имени</option><option value="recent">По последней сделке</option><option value="debt_desc">По долгу: больше сначала</option><option value="debt_asc">По долгу: меньше сначала</option><option value="paid_desc">По оплатам: больше сначала</option></select></div>
 <table><thead><tr><th>Дилер</th><th>Телефон</th><th>Город</th><th>Долг</th></tr></thead><tbody id="dealerRows"></tbody></table>
 </section>
@@ -507,13 +507,9 @@ function importNewMatRosClientRows(clients){
   return {added,updated,skipped,total:(clients||[]).length};
 }
 async function importBundledNewMatRosClients(manual){
-  if(!window.clientsAPI||!window.clientsAPI.loadBundledNewMatRosClients){if(manual)alert('Импорт клиентов NewMatRos доступен в приложении Windows.');return}
-  try{
-    let r=await window.clientsAPI.loadBundledNewMatRosClients();if(!r||r.canceled||!Array.isArray(r.clients)){if(manual)alert(r&&r.error||'Не удалось загрузить список клиентов');return}
-    let res=importNewMatRosClientRows(r.clients);state.newmatrosClientMigrationVersion=1;save();
-    if(window.newmatrosClientImportStatus)newmatrosClientImportStatus.textContent='Обработано '+res.total+': добавлено '+res.added+', обновлено '+res.updated+'.';
-    if(manual)alert('Клиенты NewMatRos перенесены: добавлено '+res.added+', обновлено '+res.updated+'.');
-  }catch(e){console.error('NewMatRos client import',e);if(manual)alert('Ошибка импорта клиентов: '+e.message)}
+  // Compatibility guard: older hooks must never reload the historical catalog.
+  if(manual)alert('Загрузка старого встроенного списка отключена, чтобы удалённые дилеры не возвращались.');
+  return;
 }
 async function autoImportBundledNewMatRosClientsOnce(){
   if((state.newmatrosClientMigrationVersion||0)>=1)return;
@@ -821,4 +817,3 @@ if(window.newmatrosAPI&&window.newmatrosAPI.setWatch){state.newmatros.watching=t
 <script src="master-sync-8962.js"></script>
 </body>
 </html>
-

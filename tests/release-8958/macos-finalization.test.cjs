@@ -66,6 +66,5 @@ test('renderer reports current 8.9.59 runtime',()=>{
   const productFix=read('app/release-8961.js');
   assert.match(preload,/\?runtime=8962/);
   assert.match(preload,/dataset\.uchetRuntime='8\.9\.62'/);
-  assert.match(productFix,/dataset\.interfaceVersion='8\.9\.61'/);
+  assert.match(productFix,/dataset\.interfaceVersion='8\.9\.62'/);
 });
-

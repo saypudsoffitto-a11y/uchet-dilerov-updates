@@ -12,7 +12,7 @@ async function run(){
   async function open(seed){
    const context=await browser.newContext(),page=await context.newPage();page.on('dialog',d=>d.accept());page.on('pageerror',e=>console.error('PAGE ERROR',e.message));
    await page.exposeFunction('syncMock',async(method,body)=>{const response=()=>({ok:true,protocol:2,...store});if(method==='GET')return response();if(body.baseRevision!==store.revision)return {...response(),ok:false,conflict:true};try{const next=P.update(store,body);store={...next,revision:store.revision+1};return response();}catch(e){return {ok:false,message:e.message};}});
-   await page.addInitScript(seed=>{localStorage.setItem('uchet_dilerov_v8',JSON.stringify(seed));window.syncAPI={request:(_url,_token,m,b)=>window.syncMock(m,b)};window.updateAPI={saveBackup:async()=>({ok:true})};window.receiptAPI={sendJpeg:async p=>{window.lastJpeg=p.html;return {ok:true};}};},seed);
+   await page.addInitScript(seed=>{localStorage.setItem('uchet_dilerov_v8',JSON.stringify(seed));window.windowAPI={showDialog:()=>true};window.syncAPI={request:(_url,_token,m,b)=>window.syncMock(m,b)};window.updateAPI={saveBackup:async()=>({ok:true})};window.receiptAPI={sendJpeg:async p=>{window.lastJpeg=p.html;return {ok:true};}};},seed);
    await page.goto(origin+'/index.html');for(const file of files)await page.addScriptTag({url:origin+'/'+file});return page;
   }
   const seed={dealers:[{id:1,name:'Тест',phone:'79991234567'}],products:[{id:2,name:'Мат',article:'M1',unit:'м²',stock:100,initialStock:100}],groups:[],ops:[],sync:{url:'https://example.invalid',enabled:false,revision:0},receiptSeq:1};
