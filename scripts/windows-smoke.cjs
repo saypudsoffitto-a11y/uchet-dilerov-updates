@@ -37,13 +37,16 @@ async function main(){
    await sleep(200);
   }
   assert.ok(page,'Installed application did not open a renderer: '+output);
+  console.log('SMOKE: renderer page found '+page.url);
   const socket=new WebSocket(page.webSocketDebuggerUrl);
   await new Promise((resolve,reject)=>{socket.onopen=resolve;socket.onerror=reject});
+  console.log('SMOKE: debugger websocket connected');
   let requestId=0;
-  const evaluate=expression=>new Promise((resolve,reject)=>{const id=++requestId;socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
+  const evaluate=expression=>new Promise((resolve,reject)=>{const id=++requestId;const timer=setTimeout(()=>reject(Error('CDP evaluate timeout id='+id)),5000);socket.onmessage=e=>{const m=JSON.parse(e.data);if(m.id===id){clearTimeout(timer);if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));else resolve(m.result?.result?.value)}};socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}))});
   let result;
   for(let i=0;i<180;i++){
    try{result=await evaluate(`(()=>({ready:document.readyState,text:document.body?.innerText||'',runtime:document.documentElement?.dataset?.uchetRuntime||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',groupFix:document.documentElement?.dataset?.groupFix||'',finalMergeFix:document.documentElement?.dataset?.finalMergeFix||'',deleteHandler:typeof window.deleteDealerPermanent8941,finalInstalled:!!window.__dealerDelete8941Installed,dataInstalled:!!window.__dataFix8941Installed,mergeInstalled:!!window.__finalMerge8942&&!!mergeSyncState.__finalMerge8942}))()`)}catch(_){result=null}
+   if(i%30===0)console.log('SMOKE: renderer state '+JSON.stringify(result));
    if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.runtime===expectedRuntime&&result.dealerFix==='8.9.41'&&result.groupFix==='8.9.41'&&result.finalMergeFix==='8.9.42'&&result.deleteHandler==='function'&&result.finalInstalled&&result.dataInstalled&&result.mergeInstalled)break;
    await sleep(200);
   }
