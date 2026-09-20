@@ -18,7 +18,7 @@
     const material=String(z['МатериалКаталог']||z['МатериалМатериал']||'Материал').trim();
     const widthText=formatWidth8948(width);
     const film=width>0&&width<=3.60?'узкая плёнка':width>=3.80?'широкая плёнка':'плёнка';
-    return 'Полотно: '+material+(widthText?' · рулон '+widthText+' м':'')+' · '+film;
+    return material+(widthText?' · рулон '+widthText+' м':'')+' · '+film;
   }
 
   const previousNmBuildItems=typeof nmBuildItems==='function'?nmBuildItems:window.nmBuildItems;
@@ -394,3 +394,4 @@
   window.__next8948={compactMaterialName:compactMaterialName8948,enhanceProductRows:enhanceProductRows8948,canonicalizeDealerDuplicates:canonicalizeDealerDuplicates8948,dealerKey:dealerKey8948};
   document.documentElement.dataset.nextRelease='8.9.48';
 })();
+

@@ -1,0 +1,54 @@
+name: Validate 8.9.62 without publishing
+on:
+  push:
+    branches: ['codex/release-8.9.62']
+  pull_request:
+    paths: ['app/**', 'server/**', 'tests/**', 'scripts/browser-master-sync-8962.cjs', '.github/workflows/validate-8962.yml']
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run prebuild:win
+        working-directory: app
+      - run: npm install --no-save playwright@1.58.2
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/browser-master-sync-8962.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: receipt-8962-preview
+          path: qa-receipt-8962.png
+  native:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-audit --no-fund
+        working-directory: app
+      - run: npm run build:win -- --publish never
+        if: runner.os == 'Windows'
+        working-directory: app
+      - run: npm run build:mac -- --publish never
+        if: runner.os == 'macOS'
+        working-directory: app
+      - run: node scripts/windows-smoke.cjs "app/dist/win-unpacked/Учёт дилеров.exe"
+        if: runner.os == 'Windows'
+      - run: node scripts/windows-interface-smoke.cjs "app/dist/win-unpacked/Учёт дилеров.exe"
+        if: runner.os == 'Windows'
+      - run: node scripts/windows-newmatros-smoke.cjs "app/dist/win-unpacked/Учёт дилеров.exe"
+        if: runner.os == 'Windows'
+      - run: node scripts/smoke-macos.cjs app/dist/mac-arm64/UchetDilerov.app
+        if: runner.os == 'macOS'

@@ -417,7 +417,7 @@ ipcMain.handle('sync:request', async (_e, req) => {
     if(method==='PUT' || method==='POST') { headers['Content-Type']='application/json'; options.body=JSON.stringify(req.body||{}); }
     const r=await syncFetch(u.toString(),options); let data=null;
     try{data=await r.json()}catch(_){data={message:'Сервер вернул не JSON'}}
-    if(r.status===409) return {ok:false,conflict:true,revision:data&&data.revision,state:data&&data.state,message:data&&data.message||'Конфликт версии базы'};
+    if(r.status===409) return {...data,ok:false,conflict:true,revision:data&&data.revision,state:data&&data.state,message:data&&data.message||'Конфликт версии базы'};
     if(!r.ok) return {ok:false,message:(data&&data.message)||('HTTP '+r.status)};
     return data;
   } catch(e) { return {ok:false,message:'Ошибка связи с сервером: '+String(e&&e.message||e)}; }
@@ -474,3 +474,4 @@ app.whenReady().then(() => {
   createWindow();
 });
 app.on('window-all-closed', () => { stopNmWatcher(); app.quit(); });
+

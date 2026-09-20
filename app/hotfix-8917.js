@@ -48,6 +48,7 @@
 
   function patchDebtRows(){
     const body=document.getElementById('debtRows');if(!body)return false;
+    if(body.closest('.debtTable8951'))return true; // Modern table already has its payment action.
     [...body.querySelectorAll('tr')].forEach(row=>{
       if(row.querySelector('.debtPayBtn'))return;
       const on=String(row.getAttribute('onclick')||'');const m=on.match(/openDealer\((\d+)\)/);if(!m)return;
