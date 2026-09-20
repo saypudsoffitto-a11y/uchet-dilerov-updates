@@ -18,7 +18,7 @@ try {
     for(const p of files.slice(0,3))console.error('CRASH REPORT',p,fs.readFileSync(p,'utf8').slice(0,40000));
   }
   if(fs.existsSync(report))console.error(fs.readFileSync(report,'utf8'));
-  try {execFileSync('/usr/bin/lldb',['--batch','-o','run','-o','bt','--',path.join(appPath,'Contents/MacOS',binary),'--uchet-smoke-test'],{env:{...process.env,UCHET_SMOKE_REPORT:report},stdio:'inherit',timeout:45000});}catch(_){}
+  try {execFileSync('/usr/bin/lldb',['--batch','-o','run','-k','bt','--',path.join(appPath,'Contents/MacOS',binary),'--uchet-smoke-test'],{env:{...process.env,UCHET_SMOKE_REPORT:report},stdio:'inherit',timeout:45000});}catch(_){}
   throw error;
 }
 const state=JSON.parse(fs.readFileSync(report,'utf8'));
