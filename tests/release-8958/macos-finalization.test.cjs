@@ -9,7 +9,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
 test('8.9.58 is a native Apple Silicon package with ad-hoc signature',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.match(pkg.version,/^8\.9\.(58|59|60|61)$/);
+  assert.match(pkg.version,/^8\.9\.(58|59|60|61|62)$/);
   assert.equal(pkg.build.mac.identity,null);
   assert.equal(pkg.build.afterPack,'after-pack-macos.cjs');
   const targets=pkg.build.mac.target||[];
