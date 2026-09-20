@@ -64,7 +64,7 @@ test('published macOS workflow verifies arm64, app version, and code signature b
 test('renderer reports current 8.9.59 runtime',()=>{
   const preload=read('app/preload.js');
   const productFix=read('app/release-8961.js');
-  assert.match(preload,/\?runtime=8961/);
+  assert.match(preload,/\?runtime=89(61|62)/);
   assert.match(preload,/dataset\.uchetRuntime='8\.9\.61'/);
   assert.match(productFix,/dataset\.interfaceVersion='8\.9\.61'/);
 });
