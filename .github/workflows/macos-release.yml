@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'app/**'
+      - 'scripts/smoke-macos.cjs'
       - '.github/workflows/macos-release.yml'
   workflow_dispatch:
 
