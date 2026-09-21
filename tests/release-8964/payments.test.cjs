@@ -7,7 +7,7 @@ const C=require('../../app/sync-core-8962');
 const source=fs.readFileSync(require.resolve('../../app/master-sync-8962'),'utf8');
 function harness(local,remote,onBackup){
  const data=new Map(),calls=[];
- const s={state:C.clone(local),KEY:'data',crypto:require('node:crypto'),console,
+ const s={state:C.clone(local),KEY:'data',crypto:require('node:crypto'),console,setTimeout,clearTimeout,
   localStorage:{getItem:k=>data.get(k)||null,setItem:(k,v)=>data.set(k,v),removeItem:k=>data.delete(k)},
   document:{getElementById:()=>null,querySelector:()=>null,createElement:()=>({})},
   syncCfg:()=>s.state.sync,norm:x=>x,render:()=>{},go:()=>{},
