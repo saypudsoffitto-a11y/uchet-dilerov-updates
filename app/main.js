@@ -407,9 +407,17 @@ ipcMain.handle('sync:request', async (_e, req) => {
     const headers = {'Accept':'application/json'};
     const token = String(req && req.token || '').trim();
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    let options={method,headers,cache:'no-store',redirect:'follow'};
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),12000);
+    let options={method,headers,cache:'no-store',redirect:'follow',signal:controller.signal};
     if(method==='PUT' || method==='POST') { headers['Content-Type']='application/json'; options.body=JSON.stringify(req.body||{}); }
-    const r=await syncFetch(u.toString(),options); let data=null;
+    let r;
+    try{r=await syncFetch(u.toString(),options)}
+    catch(e){
+      if(e&&e.name==='AbortError')return {ok:false,message:'Сервер не ответил за 12 секунд. Проверь интернет/VPN на этом компьютере.'};
+      throw e;
+    }finally{clearTimeout(timeout)}
+    let data=null;
     try{data=await r.json()}catch(_){data={message:'Сервер вернул не JSON'}}
     if(r.status===409) return {ok:false,conflict:true,revision:data&&data.revision,state:data&&data.state,message:data&&data.message||'Конфликт версии базы'};
     if(!r.ok) return {ok:false,message:(data&&data.message)||('HTTP '+r.status)};
