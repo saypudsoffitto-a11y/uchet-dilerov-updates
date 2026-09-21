@@ -194,6 +194,6 @@
     }
   `;(document.head||document.documentElement).appendChild(style);
 
-  document.documentElement.dataset.interfaceVersion='8.9.64';
-  document.documentElement.dataset.uchetRuntime='8.9.64';
+  document.documentElement.dataset.interfaceVersion='8.9.65';
+  document.documentElement.dataset.uchetRuntime='8.9.65';
 })();
