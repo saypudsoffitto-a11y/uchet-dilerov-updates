@@ -180,7 +180,6 @@ th[draggable="true"]{cursor:grab;user-select:none;position:relative}.colResize{p
 <input id="dcity" placeholder="Город"><input id="dnote" placeholder="Примечание">
 <div class="full actions"><button class="primary" onclick="addDealer()">Сохранить дилера</button><button class="secondary" onclick="toggleNewDealerForm(false)">Отмена</button></div>
 </div><div id="newDealerSpacer"></div>
-<div class="card"><h3 style="margin-top:0">Клиенты NewMatRos</h3><p class="muted">Основной список дилеров переносится из NewMatRos. Старую программу «Склад» для дилеров не используем.</p><div class="actions"><button class="primary" onclick="importBundledNewMatRosClients(true)">Загрузить / обновить клиентов NewMatRos</button><span id="newmatrosClientImportStatus" class="muted"></span></div></div><br>
 <input class="search" id="dealerSearch" placeholder="🔎 Поиск дилера по имени или телефону" oninput="renderDealers()"><br><br><div class="sortBar"><label>Сортировать:</label><select id="dealerSort" onchange="renderDealers()"><option value="name">По имени</option><option value="recent">По последней сделке</option><option value="debt_desc">По долгу: больше сначала</option><option value="debt_asc">По долгу: меньше сначала</option><option value="paid_desc">По оплатам: больше сначала</option></select></div>
 <table><thead><tr><th>Дилер</th><th>Телефон</th><th>Город</th><th>Долг</th></tr></thead><tbody id="dealerRows"></tbody></table>
 </section>
