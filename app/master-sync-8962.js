@@ -66,8 +66,18 @@
       if(!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');return true;}
       const baseline=readBaseline();
       if(meta.masterId===device.id&&baseline&&!C.same(C.definitions(baseline.state),C.definitions(state))){status('Есть изменения справочника на главном компьютере. Нажмите «Отправить на сервер».');return true;}
+      if(!baseline){
+        // Never silently replace unsynchronized local receipts/payments on first join.
+        if(!localStorage.getItem(recoveryKey()))await backup();
+        const remoteOps=new Map((r.state?.ops||[]).map(op=>[C.id(op.id),op]));
+        const unmatched=(state.ops||[]).filter(op=>!C.same(op,remoteOps.get(C.id(op.id))));
+        if(unmatched.length){
+          status('Подключение приостановлено: '+unmatched.length+' локальных операций требуют сверки с сервером. Продажи и оплаты сохранены на этом компьютере.');
+          return false;
+        }
+      }
+      // Re-read edits after any awaited backup, immediately before accepting.
       const changes=pending(),archives=C.diffArchives(readBaseline()?.state||{},state);
-      if(!readBaseline()){await backup();localStorage.setItem(recoveryKey(),JSON.stringify(state));}
       accept(r,changes,readBaseline()?archives:{});
       if(!meta.devices?.[device.id]||meta.devices[device.id].name!==device.name){
         const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});

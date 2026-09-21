@@ -94,6 +94,35 @@ async function main(){
     const folder=path.resolve('qa-interface');fs.mkdirSync(folder,{recursive:true});
     async function screenshot(name,width,height){await command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await sleep(200);const result=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(folder,name+'.png'),Buffer.from(result.data,'base64'))}
     await screenshot('home',1440,1000);
+    // Exercise the final handler after all delayed legacy patches, not just source text.
+    assert.equal(await evaluate(`sendWhatsApp.toString().includes('receiptImage8962')`),true,'Late legacy patch replaced WhatsApp template');
+    const moneyLayout=await evaluate(`(async()=>{
+      const frame=document.createElement('iframe');frame.style='position:fixed;width:820px;height:900px;left:0;top:0';
+      const loaded=new Promise(r=>frame.onload=r);
+      frame.srcdoc=window.buildReceiptImage8962({receiptNo:42,date:'21.09.2026',dealerId:1,total:4410,items:[{name:'Светильник',qty:9,price:490,total:4410}]},state.dealers[0]);
+      document.body.appendChild(frame);await loaded;
+      const result=[...frame.contentDocument.querySelectorAll('.money8962')].map(el=>{
+        const text=el.firstChild;const a=frame.contentDocument.createRange(),b=frame.contentDocument.createRange();
+        a.setStart(text,0);a.setEnd(text,1);b.setStart(text,text.length-1);b.setEnd(text,text.length);
+        return {sameLine:Math.abs(a.getBoundingClientRect().top-b.getBoundingClientRect().top)<1, fits:el.scrollWidth<=el.clientWidth};
+      });frame.remove();return result;
+    })()`);
+    assert.deepEqual(moneyLayout,[{sameLine:true,fits:true},{sameLine:true,fits:true}]);
+    const documents=await evaluate(`(()=>{
+      const op=state.ops.find(o=>o.id===100),original=op.items;
+      op.items=[{...original[0],qty:1,total:200},{...original[0],qty:1,total:200}];
+      openDealer(1);
+      const table=dealerModalBody.querySelector('.dealerHistoryDetail');
+      const rows=[...table.tBodies[0].rows];
+      const row=table.querySelector('[data-receipt-id="100"]');
+      row.dispatchEvent(new MouseEvent('dblclick',{bubbles:true}));
+      const result={rows:rows.length,columns:rows.map(r=>r.cells.length),headers:table.tHead.rows[0].cells.length,
+        details:receiptViewBody.querySelectorAll('#receiptPrint tbody tr').length,
+        opened:!receiptViewModal.classList.contains('hidden'),debt:debtOf(1)};
+      closeReceiptView();result.returned=!dealerModal.classList.contains('hidden');
+      op.items=original;closeDealerModal();return result;
+    })()`);
+    assert.deepEqual(documents,{rows:2,columns:[5,5],headers:5,details:2,opened:true,debt:300,returned:true});
     const archived=await evaluate(`(()=>{window.__beforeArchive=JSON.parse(JSON.stringify(state));showReceiptFromHistory(100);const button=[...receiptViewBody.querySelectorAll('button')].find(b=>b.textContent==='Удалить этот чек');if(!button)throw Error('Archive button missing');button.click();return {debt:debtOf(1),stock:state.products[0].stock,archived:state.receiptStates['100'].archived,payments:state.ops.filter(o=>o.type==='payment').length}})()`);
     assert.deepEqual(archived,{debt:-100,stock:52,archived:true,payments:1});await screenshot('archive',1440,1000);
     const stale=await evaluate(`(()=>{const merged=mergeSyncState(JSON.parse(JSON.stringify(state)),JSON.parse(JSON.stringify(window.__beforeArchive)));return {sales:merged.ops.filter(o=>o.type==='sale').length,stock:merged.products[0].stock,archived:merged.receiptStates['100'].archived}})()`);assert.deepEqual(stale,{sales:0,stock:52,archived:true});

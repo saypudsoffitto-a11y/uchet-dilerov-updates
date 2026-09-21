@@ -17,6 +17,7 @@
     return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;background:#fff}body{font-family:Arial,sans-serif;color:#111;width:820px;padding:18px 20px;font-size:14px}h1{text-align:center;font-size:18px;line-height:1.15;margin:0 0 9px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;margin-bottom:8px}table{width:100%;border-collapse:collapse;margin-top:6px;table-layout:fixed}th,td{border:1px solid #222;padding:5px 6px;text-align:left;vertical-align:top}th{background:#f3f3f3;font-size:12px}th:nth-child(1){width:40px}th:nth-child(2){width:auto}th:nth-child(3){width:92px}th:nth-child(4){width:105px}th:nth-child(5){width:120px}.money8962{white-space:nowrap!important;word-break:keep-all!important}.total,.debt{white-space:nowrap}.total{text-align:right;font-size:17px;font-weight:700;margin-top:8px}.debt{text-align:right;margin-top:4px}.sign{display:flex;justify-content:space-between;margin-top:14px;padding-bottom:2px;font-size:12px}</style></head><body><h1>ТОВАРНАЯ НАКЛАДНАЯ № '+h(op.receiptNo)+' от '+h(op.date)+'</h1><div class="meta"><div><b>Поставщик:</b> ____________________</div><div><b>Покупатель:</b> '+h(d?.name||op.dealer||'')+'</div></div><table><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total">Итого: '+rubHtml(op.total)+'</div><div class="debt"><b>Остаток долга:</b> '+rubHtml(typeof debtOf==='function'?debtOf(op.dealerId):0)+'</div><div class="sign"><span>Отпустил: ____________________</span><span>Получил: ____________________</span></div></body></html>';
   }
 
+  window.buildReceiptImage8962=receiptImage8962;
   window.sendWhatsApp=async id=>{
     const op=(state.ops||[]).find(x=>String(x.id)===String(id)&&x.type==='sale');
     const d=op&&(state.dealers||[]).find(x=>String(x.id)===String(op.dealerId));
@@ -193,6 +194,6 @@
     }
   `;(document.head||document.documentElement).appendChild(style);
 
-  document.documentElement.dataset.interfaceVersion='8.9.63';
-  document.documentElement.dataset.uchetRuntime='8.9.63';
+  document.documentElement.dataset.interfaceVersion='8.9.64';
+  document.documentElement.dataset.uchetRuntime='8.9.64';
 })();

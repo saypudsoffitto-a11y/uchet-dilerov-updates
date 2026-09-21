@@ -128,19 +128,13 @@
       let rows=[];
       (ops||[]).forEach(o=>{
         if(o.type==='sale'){
-          let items=o.items||[];if(!items.length)items=[{name:'Продажа',qty:'',unit:'',price:'',total:o.total}];
-          items.forEach((i,n)=>{
-            const actions=[];
-            if(n===0)actions.push('<button class="secondary miniBtn" onclick="showReceiptFromHistory('+o.id+')">Открыть чек</button>');
-            if((o.items||[]).length>1)actions.push('<button class="dangerBtn miniBtn" onclick="deleteReceiptItem('+o.id+','+n+')">Удалить товар</button>');
-            rows.push('<tr><td>'+esc(o.date)+'</td><td>'+esc('Накладная № '+(o.receiptNo||''))+'</td><td>'+esc(i.name||'Товар')+'</td><td>'+esc(i.qty??'')+(i.unit?' '+esc(i.unit):'')+'</td><td>'+money(+i.price||0)+'</td><td>'+money(Number.isFinite(+i.total)?+i.total:(+i.qty||0)*(+i.price||0))+'</td><td>'+(n===0?money(o.total):'')+'</td><td><div class="actions">'+actions.join('')+'</div></td></tr>');
-          });
+          rows.push('<tr class="clickable" data-document-row="true" data-receipt-id="'+esc(o.id)+'" ondblclick="showReceiptFromHistory('+Number(o.id)+')"><td>'+esc(o.date)+'</td><td>'+esc('Накладная № '+(o.receiptNo||''))+'</td><td>'+esc((o.items||[]).length)+' поз.</td><td>'+money(o.total)+'</td><td><button class="secondary miniBtn" onclick="showReceiptFromHistory('+Number(o.id)+')">Открыть чек</button></td></tr>');
         }else if(o.type==='payment'){
-          rows.push('<tr><td>'+esc(o.date)+'</td><td>Оплата</td><td>'+esc(o.method||'Оплата')+(o.note?' · '+esc(o.note):'')+'</td><td>—</td><td>—</td><td>'+money(o.total)+'</td><td>'+money(o.total)+'</td><td><button class="secondary miniBtn" onclick="showDebtReport('+d.id+','+o.id+')">Отчёт по долгу</button></td></tr>');
+          rows.push('<tr><td>'+esc(o.date)+'</td><td>Оплата</td><td>'+esc(o.method||'Оплата')+(o.note?' · '+esc(o.note):'')+'</td><td>'+money(o.total)+'</td><td><button class="secondary miniBtn" onclick="showDebtReport('+d.id+','+o.id+')">Отчёт по долгу</button></td></tr>');
         }else if(o.type==='initial_debt'){
-          rows.push('<tr><td>'+esc(o.date)+'</td><td>Начальный долг</td><td>'+esc(o.note||'Перенесено из прежнего учёта')+'</td><td>—</td><td>—</td><td>'+money(o.total)+'</td><td>'+money(o.total)+'</td><td></td></tr>');
+          rows.push('<tr><td>'+esc(o.date)+'</td><td>Начальный долг</td><td>'+esc(o.note||'Перенесено из прежнего учёта')+'</td><td>'+money(o.total)+'</td><td></td></tr>');
         }else{
-          rows.push('<tr><td>'+esc(o.date)+'</td><td>'+dealerOpType(o)+'</td><td>'+dealerOpDescription(o)+'</td><td>—</td><td>—</td><td>'+money(o.total)+'</td><td>'+money(o.total)+'</td><td></td></tr>');
+          rows.push('<tr><td>'+esc(o.date)+'</td><td>'+dealerOpType(o)+'</td><td>'+dealerOpDescription(o)+'</td><td>'+money(o.total)+'</td><td></td></tr>');
         }
       });
       return rows.join('');

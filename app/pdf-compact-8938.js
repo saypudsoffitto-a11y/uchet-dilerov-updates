@@ -121,7 +121,7 @@
     if(r.message)alert(r.message);
   }
 
-  window.sendWhatsApp=async function(id){
+  if(!window.__release8962Installed)window.sendWhatsApp=async function(id){
     const op=(state.ops||[]).find(x=>x.id==id&&x.type==='sale');
     if(!op)return;
     const d=(state.dealers||[]).find(x=>x.id==op.dealerId);

@@ -91,6 +91,7 @@
   }
   function decorateDealerLines8951(){
     document.querySelectorAll('#dealerModalBody .dealerHistoryDetail tbody tr').forEach(row=>{
+      if(row.dataset.documentRow)return;
       const a=dealerLineAction8951(row);if(a.receiptId==null)return;
       row.title=a.canDelete?'Правая кнопка: удалить строку, добавить товар или скопировать':'Правая кнопка: добавить товар или скопировать';
       row.oncontextmenu=e=>showDealerLineMenu8951(e,row);

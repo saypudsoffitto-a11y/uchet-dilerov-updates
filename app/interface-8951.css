@@ -100,3 +100,8 @@
   html .dealerLineMenu8951 .dangerMenuItem:hover:not(:disabled){background:#fff0f2}
   html .dealerLineMenu8951 button:disabled{opacity:.4;cursor:not-allowed}
 }
+
+/* Document history: one compact row per receipt or payment. */
+html .dealerHistoryDetail{width:100%!important;min-width:600px!important;table-layout:auto!important}
+html .dealerHistoryDetail th,html .dealerHistoryDetail td{padding:6px 8px!important}
+html .dealerHistoryDetail td:nth-child(4){white-space:nowrap!important}
