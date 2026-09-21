@@ -49,3 +49,12 @@ test('computer roles are stable and historical bundled clients are unavailable',
   assert.match(main,/Старый встроенный список клиентов отключён/);
   assert.ok(!main.includes("path.join(__dirname,'newmatros_clients.json')"));
 });
+
+test('8.9.63 automatically moves existing PCs to the Turso sync endpoint without replacing their sync token',()=>{
+  const master=read('app/master-sync-8962.js');
+  assert.match(master,/OLD_SERVER='https:\/\/uchet-dilerov-sync\.onrender\.com'/);
+  assert.match(master,/TURSO_SERVER='https:\/\/uchet-dilerov-sync-8963-test\.onrender\.com'/);
+  assert.match(master,/state\.sync\.url=TURSO_SERVER/);
+  assert.match(master,/state\.sync\.revision=0/);
+  assert.doesNotMatch(master,/state\.sync\.token\s*=/);
+});
