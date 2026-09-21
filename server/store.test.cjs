@@ -48,18 +48,13 @@ test('file fallback persists the full master-sync store and rejects stale writes
   assert.equal(stillLoaded.computers.masterId, 'main-device-0001');
 });
 
-test('Turso URL may omit token for databases that allow it; token alone is rejected', () => {
+test('Turso configuration requires URL and token together', () => {
   const oldUrl = process.env.TURSO_DATABASE_URL;
   const oldToken = process.env.TURSO_AUTH_TOKEN;
   try {
     process.env.TURSO_DATABASE_URL = 'libsql://example.turso.io';
     delete process.env.TURSO_AUTH_TOKEN;
-    const store = createStore({ dataFile: path.join(os.tmpdir(), 'unused-state.json') });
-    assert.equal(store.kind, 'turso');
-
-    delete process.env.TURSO_DATABASE_URL;
-    process.env.TURSO_AUTH_TOKEN = 'token-only';
-    assert.throws(() => createStore({ dataFile: path.join(os.tmpdir(), 'unused-state.json') }), /без TURSO_DATABASE_URL/);
+    assert.throws(() => createStore({ dataFile: path.join(os.tmpdir(), 'unused-state.json') }), /должны быть заданы вместе/);
   } finally {
     if (oldUrl === undefined) delete process.env.TURSO_DATABASE_URL; else process.env.TURSO_DATABASE_URL = oldUrl;
     if (oldToken === undefined) delete process.env.TURSO_AUTH_TOKEN; else process.env.TURSO_AUTH_TOKEN = oldToken;
