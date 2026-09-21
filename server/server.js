@@ -15,34 +15,6 @@ const masterProtocol = require('./master-protocol-8962');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const storeBackend = createStore({ dataFile: DATA_FILE });
 
-async function logTursoPlatformDiag(){
-  const token=String(process.env.TURSO_AUTH_TOKEN||'').trim();
-  if(!token)return;
-  try{
-    const r=await fetch('https://api.turso.tech/v1/organizations',{headers:{Authorization:'Bearer '+token,Accept:'application/json'}});
-    const text=await r.text();
-    console.log('Turso platform diag:', JSON.stringify({status:r.status,body:text.slice(0,1000)}));
-  }catch(e){
-    console.log('Turso platform diag:', JSON.stringify({error:String(e&&e.message||e)}));
-  }
-}
-
-function safeTokenMeta(token){
-  try{
-    const parts=String(token||'').split('.');
-    if(parts.length<2)return {format:'non-jwt',length:String(token||'').length};
-    const raw=Buffer.from(parts[1].replace(/-/g,'+').replace(/_/g,'/'),'base64').toString('utf8');
-    const payload=JSON.parse(raw);
-    const meta={};
-    for(const key of ['iss','sub','aud','id','rid','kid','a','ns','namespace','exp','iat']){
-      if(payload[key]!==undefined)meta[key]=payload[key];
-    }
-    if(payload.p!==undefined)meta.permissions=payload.p;
-    meta.keys=Object.keys(payload);
-    return meta;
-  }catch(e){return {format:'unreadable-jwt',length:String(token||'').length,error:String(e&&e.message||e)}}
-}
-
 function mergeMarks(a, b) {
   const out = {};
   for (const src of [a || {}, b || {}]) {
@@ -385,8 +357,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  if(process.env.TURSO_AUTH_TOKEN) console.log('Turso token meta:', JSON.stringify(safeTokenMeta(process.env.TURSO_AUTH_TOKEN)));
-  logTursoPlatformDiag();
   console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT} · storage=${storeBackend.kind}`);
   console.log(TOKEN ? 'Авторизация по SYNC_TOKEN включена' : 'ВНИМАНИЕ: SYNC_TOKEN не задан');
 });
