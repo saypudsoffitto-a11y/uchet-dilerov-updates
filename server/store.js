@@ -38,7 +38,7 @@ function createFileStore(dataFile) {
 }
 
 function createTursoStore(url, authToken) {
-  const { createClient } = require('@libsql/client');
+  const { createClient } = require('@tursodatabase/serverless/compat');
   const client = createClient({ url, authToken });
   let initPromise = null;
 
