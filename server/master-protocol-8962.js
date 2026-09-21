@@ -7,7 +7,16 @@ function update(current,body){
   if(!device||!/^[a-zA-Z0-9-]{16,80}$/.test(device.id)||!String(device.name||'').trim())fail('Укажите название компьютера');
   const next=C.clone(current),meta=next.computers||{masterId:null,devices:{}};
   meta.devices=meta.devices||{};
-  meta.devices[device.id]={name:String(device.name).trim().slice(0,80),lastSeen:new Date().toISOString()};
+  const existingDevice=meta.devices[device.id];
+  const ordinal=existingDevice?.ordinal||Math.max(1,...Object.values(meta.devices).map(d=>Number(d?.ordinal)||0))+1;
+  let displayName=existingDevice?.name||String(device.name).trim().slice(0,80);
+  if(!existingDevice){
+    displayName=body.action==='claim'&&!meta.masterId?'Компьютер 1 · Главный':'Компьютер '+ordinal;
+  }else if(String(device.name||'').trim()&&String(device.name).trim()!==existingDevice.clientName){
+    const incoming=String(device.name).trim().slice(0,80);
+    if(!/^Компьютер [a-z0-9-]{4,}$/i.test(incoming)&&!/^Компьютер \d+(?: · Главный)?$/u.test(incoming))displayName=incoming;
+  }
+  meta.devices[device.id]={...existingDevice,name:displayName,clientName:String(device.name).trim().slice(0,80),ordinal,lastSeen:new Date().toISOString()};
   next.computers=meta;
   if(body.action==='register')return next;
   if(body.action==='claim'){
@@ -31,13 +40,20 @@ function update(current,body){
     C.remap(selected);
     if(selected.ops.some(op=>!selected.dealers.some(d=>C.id(d.id)===C.id(op.dealerId))))fail('На сервере есть операции дилеров, которых нет в выбранном списке. Сначала нужно сверить эти карточки.');
     next.state=C.applyCatalog(remote,selected);next.state.ops=selected.ops;next.state.receiptStates=selected.receiptStates;next.state.receiptItemStates=selected.receiptItemStates;C.remap(next.state);
-    meta.masterId=device.id;meta.epoch=1;return next;
+    meta.masterId=device.id;meta.epoch=1;
+    meta.devices[device.id].name='Компьютер 1 · Главный';
+    meta.devices[device.id].ordinal=1;
+    return next;
   }
   if(!meta.masterId)fail('Сначала выберите главный компьютер с правильным списком дилеров и товаров.');
   if(body.action==='transfer'){
     if(meta.masterId!==device.id)fail('Сменить главный компьютер можно только с текущего главного.');
     if(!meta.devices[body.targetId])fail('Сначала подключите выбранный компьютер');
-    meta.masterId=body.targetId;meta.epoch=(meta.epoch||0)+1;return next;
+    const oldMaster=meta.masterId;
+    meta.masterId=body.targetId;meta.epoch=(meta.epoch||0)+1;
+    if(meta.devices[oldMaster])meta.devices[oldMaster].name='Компьютер '+(meta.devices[oldMaster].ordinal||1);
+    if(meta.devices[body.targetId])meta.devices[body.targetId].name='Компьютер '+(meta.devices[body.targetId].ordinal||2)+' · Главный';
+    return next;
   }
   if(body.action!=='changes')fail('Неизвестная команда синхронизации');
   next.state=C.applyTransaction(current.state,body.changes||[],body.archives);
