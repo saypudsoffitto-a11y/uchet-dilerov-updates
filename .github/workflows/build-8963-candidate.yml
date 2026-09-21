@@ -1,0 +1,74 @@
+name: Build Windows 8.9.63 candidate
+
+on:
+  push:
+    branches:
+      - turso-sync-8963-from-8962
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - '.github/workflows/build-8963-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uchet-dilerov-8963-candidate
+  cancel-in-progress: true
+
+jobs:
+  build-candidate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+      - name: Build Windows candidate
+        working-directory: app
+        shell: pwsh
+        env:
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
+        run: |
+          npm run build:win -- --publish never
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install and smoke-test candidate
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          if ($version -ne '8.9.63') { throw "Unexpected version: $version" }
+          $setup = (Resolve-Path "app/dist/Uchet-dilerov-Setup-$version-x64.exe").Path
+          $destination = Join-Path $env:RUNNER_TEMP "uchet-8963-candidate"
+          $installer = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$destination") -PassThru
+          if (!$installer.WaitForExit(90000)) { Stop-Process -Id $installer.Id -Force -ErrorAction SilentlyContinue; throw 'Installer timeout' }
+          if ($installer.ExitCode -ne 0) { throw "Installer exit code $($installer.ExitCode)" }
+          $exe = Join-Path $destination 'Учёт дилеров.exe'
+          if (!(Test-Path $exe)) { throw 'Installed executable not found' }
+          for ($pass=1; $pass -le 2; $pass++) {
+            node scripts/windows-smoke.cjs "$exe"
+            if ($LASTEXITCODE -ne 0) { throw "Windows UI smoke pass $pass failed" }
+            node scripts/windows-group-filter-smoke.cjs "$exe"
+            if ($LASTEXITCODE -ne 0) { throw "Group filter smoke pass $pass failed" }
+            node scripts/windows-interface-smoke.cjs "$exe"
+            if ($LASTEXITCODE -ne 0) { throw "Interface smoke pass $pass failed" }
+            node scripts/windows-newmatros-smoke.cjs "$exe"
+            if ($LASTEXITCODE -ne 0) { throw "NewMatRos smoke pass $pass failed" }
+          }
+      - name: SHA256
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          Get-FileHash "app/dist/Uchet-dilerov-Setup-$version-x64.exe" -Algorithm SHA256 | Format-List
+      - name: Upload Windows candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: Uchet-dilerov-8.9.63-Windows-candidate
+          path: |
+            app/dist/Uchet-dilerov-Setup-8.9.63-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.63-x64.exe
+          retention-days: 7
