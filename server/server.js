@@ -8,7 +8,8 @@ const TOKEN = String(process.env.SYNC_TOKEN || '').trim();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.61-sync3';
+const SERVER_VERSION = '8.9.62-sync4';
+const masterProtocol = require('./master-protocol-8962');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -205,7 +206,7 @@ function readStore() {
   try {
     const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
     const rawState = parsed.state && typeof parsed.state === 'object' ? parsed.state : {};
-    return { revision: Number(parsed.revision || 0), state: sanitizeState(rawState, rawState) };
+    return { ...parsed, revision: Number(parsed.revision || 0), state: parsed.computers?.masterId ? rawState : sanitizeState(rawState, rawState) };
   } catch (_) {
     return { revision: 0, state: {} };
   }
@@ -269,14 +270,26 @@ const server = http.createServer(async (req, res) => {
     if (!authorized(req)) return send(res, 401, { ok: false, message: 'Неверный секретный ключ' });
     if (req.method === 'GET') {
       const store = readStore();
-      return send(res, 200, { ok: true, revision: store.revision, state: store.state, serverVersion: SERVER_VERSION });
+      return send(res, 200, { ok: true, revision: store.revision, state: store.state, computers: store.computers || null, protocol: 2, serverVersion: SERVER_VERSION });
     }
     if (req.method === 'PUT') {
       const body = await readJsonBody(req);
       const current = readStore();
       const baseRevision = Number(body.baseRevision || 0);
       if (baseRevision !== current.revision) {
-        return send(res, 409, { ok: false, conflict: true, revision: current.revision, state: current.state, serverVersion: SERVER_VERSION, message: 'База уже изменилась на другом компьютере' });
+        return send(res, 409, { ok: false, conflict: true, revision: current.revision, state: current.state, computers: current.computers || null, protocol: 2, serverVersion: SERVER_VERSION, message: 'База уже изменилась на другом компьютере' });
+      }
+      if (body.protocol === 2 || current.computers?.masterId) {
+        try {
+          const next = masterProtocol.update(current, body);
+          next.revision = current.revision + 1;
+          next.serverVersion = SERVER_VERSION;
+          next.updatedAt = new Date().toISOString();
+          // Retain the pre-migration snapshot on the server for recovery.
+          if (body.action === 'claim') fs.writeFileSync(path.join(DATA_DIR, 'before-master-' + Date.now() + '.json'), JSON.stringify(current), {flag:'wx'});
+          writeStore(next);
+          return send(res, 200, {ok:true, revision:next.revision, state:next.state, computers:next.computers, protocol:2, serverVersion:SERVER_VERSION});
+        } catch (e) { return send(res, 422, {ok:false, message:e.message, serverVersion:SERVER_VERSION}); }
       }
       if (!body.state || typeof body.state !== 'object') return send(res, 400, { ok: false, message: 'Не передано состояние базы' });
       const nextState = sanitizeState(body.state, current.state);
@@ -294,3 +307,4 @@ server.listen(PORT, HOST, () => {
   console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT}`);
   console.log(TOKEN ? 'Авторизация по SYNC_TOKEN включена' : 'ВНИМАНИЕ: SYNC_TOKEN не задан');
 });
+

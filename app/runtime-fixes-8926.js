@@ -206,7 +206,7 @@
       if(!dealer){const p=digits(d.dealerPhone),n=norm(d.dealerName);dealer=(state.dealers||[]).find(x=>(p&&digits(x.phone)===p)||(n&&norm(x.name)===n))||null}
       if(!dealer){dealer={id:Date.now(),name:d.dealerName||'Дилер NewMatRos',phone:d.dealerPhone||'',city:'',note:'Создан автоматически из NewMatRos'};state.dealers.push(dealer)}
       const total=draftTotal(d),numReceipt=state.receiptSeq++,now=Date.now(),date=new Date().toLocaleString('ru-RU');
-      const flat=[];d.ceilings.forEach((c,idx)=>(c.items||[]).forEach(i=>flat.push({...i,name:'Потолок '+(idx+1)+' · '+String(i.name||''),ceilingNo:idx+1,ceilingIndex:c.ceilingIndex,newmatrosKey:c.key})));
+      const flat=[];d.ceilings.forEach((c,idx)=>(c.items||[]).forEach(i=>flat.push({...i,name:String(i.name||''),ceilingNo:idx+1,ceilingIndex:c.ceilingIndex,newmatrosKey:c.key})));
       const first=d.ceilings[0]||{};
       const op={id:now+1,ts:now,type:'sale',date,dealerId:dealer.id,dealer:dealer.name,receiptNo:numReceipt,items:flat,total,profit:0,source:'NewMatRos',newmatrosKey:first.key||'',newmatrosKeys:d.ceilings.map(c=>c.key),newmatrosCeilings:d.ceilings.map((c,idx)=>({key:c.key,no:idx+1,number:c.number,ceilingIndex:c.ceilingIndex,material:c.material,color:c.color,width:c.width,area:c.area,perimeter:c.perimeter,total:c.total,plannedDate:c.plannedDate,drawing:c.drawing})),newmatros:{number:first.number||'',ceilingIndex:first.ceilingIndex||'',material:first.material||'',color:first.color||'',area:d.ceilings.reduce((s,c)=>s+(+c.area||0),0),perimeter:d.ceilings.reduce((s,c)=>s+(+c.perimeter||0),0),ceilingCount:d.ceilings.length}};
       state.ops.push(op);save();saveDraft(null);clearOldPending();try{if(typeof clearNewMatRosNotification==='function')clearNewMatRosNotification()}catch(_){ }renderDraft(false);
@@ -222,3 +222,4 @@
   const old=document.getElementById('runtime8921Badge');if(old)old.textContent='исправления 8.9.26 активны';
   document.documentElement.dataset.uchetRuntime='8.9.26';
 })();
+

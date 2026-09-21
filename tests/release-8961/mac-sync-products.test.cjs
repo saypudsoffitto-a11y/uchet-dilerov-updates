@@ -11,13 +11,13 @@ test('8.9.61 ships the macOS sync and placeholder-product fix',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const preload=read('app/preload.js');
   const patch=read('app/release-8961.js');
-  assert.equal(pkg.version,'8.9.61');
+  assert.equal(pkg.version,'8.9.62');
   assert.ok(pkg.build.files.includes('release-8961.js'));
   assert.match(pkg.scripts['prebuild:mac'],/release-8961/);
   assert.match(pkg.scripts['prebuild:win'],/release-8961/);
   assert.match(preload,/release-8961\.js/);
-  assert.match(preload,/runtime=8961/);
-  assert.match(preload,/uchetRuntime='8\.9\.61'/);
+  assert.match(preload,/runtime=8962/);
+  assert.match(preload,/uchetRuntime='8\.9\.62'/);
   assert.doesNotThrow(()=>new Function(patch));
 });
 
@@ -54,8 +54,9 @@ test('dash-only and punctuation-only product cards are tombstoned and blocked fr
 
 test('sync server permanently rejects placeholder product rows and carries tombstones',()=>{
   const server=read('server/server.js');
-  assert.match(server,/SERVER_VERSION = '8\.9\.61-sync3'/);
+  assert.match(server,/SERVER_VERSION = '8\.9\.62-sync4'/);
   assert.match(server,/function isPlaceholderProductName/);
   assert.match(server,/state\.deletedProducts\[String\(p\.id\)\]/);
   assert.match(server,/!isPlaceholderProductName\(p\.name\)/);
 });
+

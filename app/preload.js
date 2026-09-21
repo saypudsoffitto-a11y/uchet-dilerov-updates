@@ -1,4 +1,4 @@
-// Release 8.9.61: Parallels-safe Windows updater with redundant helper handoff.
+// Release 8.9.62: Parallels-safe Windows updater with redundant helper handoff.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
@@ -76,19 +76,20 @@ window.addEventListener('DOMContentLoaded',()=>{
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8961';
+        s.src=src+'?runtime=8962';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.61';
+    document.documentElement.dataset.uchetRuntime='8.9.62';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.61 runtime loader error',e))}
-  catch(e){console.error('8.9.61 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.62 runtime loader error',e))}
+  catch(e){console.error('8.9.62 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
  showDialog:(kind,message)=>ipcRenderer.sendSync('window:dialog',{kind,message}),
  onRestoreInput:callback=>{if(typeof callback==='function')ipcRenderer.on('window:restore-input',()=>callback())}
 });
+

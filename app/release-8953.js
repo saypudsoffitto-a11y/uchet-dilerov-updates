@@ -5,7 +5,7 @@
   window.__release8953Installed=true;
 
   const h=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const rub=v=>typeof money==='function'?money(v):(Number(v||0).toLocaleString('ru-RU')+' ₽');
+  const rub=v=>'<span style="display:inline-block;white-space:nowrap">'+h((Number(v)||0).toLocaleString('ru-RU',{maximumFractionDigits:2})).replace(/ /g,'&nbsp;')+'&nbsp;₽</span>';
 
   /* 8.9.53 — утверждённая заметная активная кнопка и полноценная сетка таблиц. */
   const style=document.createElement('style');
