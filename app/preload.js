@@ -1,4 +1,4 @@
-// Release 8.9.63: Turso central database bootstrap on top of 8.9.62.
+// Release 8.9.63: 8.9.62 UI fixes + protected master sync + Turso storage.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
@@ -72,8 +72,7 @@ window.addEventListener('DOMContentLoaded',()=>{
       './release-8954.js',
       './release-8955.js',
       './release-8961.js',
-      './release-8962.js',
-      './release-8963.js'
+      './release-8962.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
