@@ -36,13 +36,16 @@ test('master sync refuses non-Turso storage and server rejects legacy full-state
   assert.match(server,/masterProtocol\.update/);
   assert.match(store,/CREATE TABLE IF NOT EXISTS uchet_store/);
   assert.match(store,/store_json/);
-  assert.match(store,/store_json/);\n  assert.match(server,/computers/);\n  assert.match(server,/beforeMaster/);\n});
+  assert.match(store,/store_json/);
+  assert.match(server,/computers/);
+  assert.match(server,/beforeMaster/);
+});
 
 test('computer roles are stable and historical bundled clients are unavailable',()=>{
   const protocol=read('server/master-protocol-8962.js');
   const main=read('app/main.js');
   assert.match(protocol,/Компьютер 1 · Главный/);
-  assert.match(protocol,/Компьютер '\+ordinal/);
+  assert.ok(protocol.includes("'Компьютер '+ordinal"));
   assert.match(main,/Старый встроенный список клиентов отключён/);
   assert.ok(!main.includes("path.join(__dirname,'newmatros_clients.json')"));
 });
