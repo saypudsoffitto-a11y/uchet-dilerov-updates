@@ -66,18 +66,47 @@
       if(!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');return true;}
       const baseline=readBaseline();
       if(meta.masterId===device.id&&baseline&&!C.same(C.definitions(baseline.state),C.definitions(state))){status('Есть изменения справочника на главном компьютере. Нажмите «Отправить на сервер».');return true;}
+      let firstJoinChanges=null,firstJoinDuplicates=0;
       if(!baseline){
-        // Never silently replace unsynchronized local receipts/payments on first join.
+        // First join must load the shared server state, but must never destroy
+        // local receipts/payments. Save a full recovery copy first, then layer
+        // genuinely local-only operations on top of the server snapshot.
         if(!localStorage.getItem(recoveryKey()))await backup();
+
+        const stableValue=v=>{
+          if(v===null||v===undefined)return v??null;
+          if(Array.isArray(v))return v.map(stableValue);
+          if(typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,stableValue(v[k])]));
+          return v;
+        };
+        const opSignature=op=>{
+          const copy=C.clone(op||{});
+          delete copy.id;
+          return JSON.stringify(stableValue(copy));
+        };
         const remoteOps=new Map((r.state?.ops||[]).map(op=>[C.id(op.id),op]));
-        const unmatched=(state.ops||[]).filter(op=>!C.same(op,remoteOps.get(C.id(op.id))));
-        if(unmatched.length){
-          status('Подключение приостановлено: '+unmatched.length+' локальных операций требуют сверки с сервером. Продажи и оплаты сохранены на этом компьютере.');
+        const remoteSignatures=new Set((r.state?.ops||[]).map(opSignature));
+        const additions=[],conflicts=[];
+        for(const op of state.ops||[]){
+          const opId=C.id(op.id),remote=remoteOps.get(opId);
+          if(remote){
+            if(!C.same(op,remote))conflicts.push(op);
+            continue;
+          }
+          if(remoteSignatures.has(opSignature(op))){
+            firstJoinDuplicates++;
+            continue;
+          }
+          additions.push({id:opId,before:null,after:C.clone(op)});
+        }
+        if(conflicts.length){
+          status('Подключение приостановлено: '+conflicts.length+' операций имеют одинаковый номер, но разные данные. Локальная база сохранена отдельно; серверные данные не перезаписаны.');
           return false;
         }
+        firstJoinChanges=additions;
       }
       // Re-read edits after any awaited backup, immediately before accepting.
-      const changes=pending(),archives=C.diffArchives(readBaseline()?.state||{},state);
+      const changes=firstJoinChanges||pending(),archives=C.diffArchives(readBaseline()?.state||{},state);
       accept(r,changes,readBaseline()?archives:{});
       if(!meta.devices?.[device.id]||meta.devices[device.id].name!==device.name){
         const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});
@@ -147,4 +176,8 @@
   }
   const badge=document.createElement('button');badge.id='computerBadge8962';badge.className='secondary';badge.onclick=()=>go('sync');document.querySelector('header .actions')?.prepend(badge);
   window.masterSync8962={pull,push,claim,transfer,device};paint();
+  // The legacy timer is initialized before this module loads. Run one guaranteed
+  // refresh here as well so a third computer does not stay on its old local debt
+  // merely because the first timer fired before masterSync8962 was ready.
+  setTimeout(()=>{try{if(syncCfg().enabled&&syncCfg().url)pull(false)}catch(_){}},500);
 })();
