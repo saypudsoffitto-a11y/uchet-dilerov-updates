@@ -9,7 +9,6 @@
     },
     "files": [
       "window-safety.js",
-      "newmatros_clients.json",
       "package.json",
       "icon.ico",
       "runtime-fixes-8922.js",
@@ -67,8 +66,9 @@
       "release-8955.js",
       "release-8961.js",
       "release-8962.js",
-      "release-8963.js",
-      "macos-smoke.cjs"
+      "macos-smoke.cjs",
+      "sync-core-8962.js",
+      "master-sync-8962.js"
     ],
     "nsis": {
       "allowToChangeInstallationDirectory": true,
