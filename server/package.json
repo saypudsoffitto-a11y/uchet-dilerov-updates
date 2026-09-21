@@ -1,13 +1,16 @@
 {
   "name": "uchet-dilerov-sync-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Общий сервер базы для приложения Учёт дилеров",
+  "description": "Общий сервер базы для приложения Учёт дилеров с постоянным хранилищем Turso",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.15.15"
   }
 }
