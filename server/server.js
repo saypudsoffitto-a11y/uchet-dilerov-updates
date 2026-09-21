@@ -164,6 +164,12 @@ function canonicalizeDealerDuplicates(state) {
 function sanitizeState(incoming, previous) {
   const state = incoming && typeof incoming === 'object' ? { ...incoming } : {};
   const prev = previous && typeof previous === 'object' ? previous : {};
+  state.sync = state.sync && typeof state.sync === 'object' ? { ...state.sync } : {};
+  if (prev.sync && typeof prev.sync === 'object') {
+    for (const key of ['primaryDeviceId','primaryDeviceName','primaryInitializedAt']) {
+      if (!String(state.sync[key] || '').trim() && String(prev.sync[key] || '').trim()) state.sync[key] = prev.sync[key];
+    }
+  }
   const deletedDealers = mergeMarks(prev.deletedDealers, state.deletedDealers);
   state.deletedDealers = deletedDealers;
   const deletedProducts = mergeMarks(prev.deletedProducts, state.deletedProducts);
