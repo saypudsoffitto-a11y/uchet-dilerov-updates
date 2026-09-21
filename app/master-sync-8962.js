@@ -19,7 +19,18 @@
     const select=document.getElementById('computerTarget8962');if(select){const selected=select.value;select.innerHTML='';for(const [id,d] of Object.entries(meta?.devices||{})){if(id===device.id)continue;const option=document.createElement('option');option.value=id;option.textContent=d.name;select.appendChild(option);}select.value=selected||select.options[0]?.value||'';select.hidden=meta?.masterId!==device.id;}
     const recovery=document.getElementById('recovery8962');if(recovery)recovery.hidden=!localStorage.getItem(recoveryKey());
   }
-  async function request(method,body){const r=await syncRequest(method,body);if(r?.conflict)return r;if(!r?.ok)throw new Error(r?.message||'Нет ответа сервера');if(r.protocol!==2)throw new Error('Сервер ещё не обновлён для главного компьютера. Данные сохранены локально.');meta=r.computers;online=true;return r;}
+  async function request(method,body){
+    const r=await syncRequest(method,body);
+    if(r?.conflict)return r;
+    if(!r?.ok)throw new Error(r?.message||'Нет ответа сервера');
+    if(r.protocol!==2)throw new Error('Сервер ещё не обновлён для главного компьютера. Данные сохранены локально.');
+    if(r.storage!=='turso')throw new Error('Сервер ещё не подключён к постоянной базе Turso. Локальные данные не отправлены.');
+    meta=r.computers;
+    const serverName=meta?.devices?.[device.id]?.name;
+    if(serverName&&serverName!==device.name){device.name=serverName;localStorage.setItem(DEVICE,JSON.stringify(device));const input=document.getElementById('computerName8962');if(input)input.value=device.name;}
+    online=true;
+    return r;
+  }
   function pending(){const base=readBaseline();return base?C.diffOps(base.state.ops,state.ops):[];}
   function accept(r,changes,archives){
     const local=state;
