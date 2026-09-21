@@ -2,7 +2,7 @@
 const C=require('./sync-core-8962');
 const fail=message=>{throw new Error(message);};
 function update(current,body){
-  if(body.protocol!==2)fail('Обновите этот компьютер до 8.9.62. Старые списки не приняты.');
+  if(body.protocol!==2)fail('Обновите этот компьютер до 8.9.63. Старые списки не приняты.');
   const device=body.device;
   if(!device||!/^[a-zA-Z0-9-]{16,80}$/.test(device.id)||!String(device.name||'').trim())fail('Укажите название компьютера');
   const next=C.clone(current),meta=next.computers||{masterId:null,devices:{}};
