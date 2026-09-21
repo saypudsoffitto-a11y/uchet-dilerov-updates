@@ -1,0 +1,40 @@
+name: Test next dealer release fixes
+
+on:
+  push:
+    branches:
+      - fix-8965-backup-gate
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - '.github/workflows/test-next-dealer-fixes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uchet-dilerov-next-fixes
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+      - name: Run complete Windows prebuild regression suite
+        working-directory: app
+        run: npm run prebuild:win
+      - name: Verify updater source has no visible CMD wait loop
+        shell: pwsh
+        run: |
+          $src = Get-Content 'app/updater-8931.js' -Raw
+          if ($src -match 'tasklist\s+/FI' -or $src -match '\|\s*findstr\b' -or $src -match 'spawnCmdHelper') {
+            throw 'Visible CMD updater helper is still present'
+          }
