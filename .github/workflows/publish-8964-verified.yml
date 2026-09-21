@@ -1,0 +1,92 @@
+name: Publish verified Windows 8.9.64
+on:
+  push:
+    branches: [fix-8964]
+    paths: ['.github/workflows/publish-8964-verified.yml']
+  workflow_dispatch:
+permissions:
+  actions: read
+  contents: write
+concurrency:
+  group: uchet-dilerov-windows-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CANDIDATE_SHA: 0b2a9e5ebf90b9c1b068c0b56cc5e868951d6492
+      CANDIDATE_RUN: '35630842751'
+      SETUP_SHA256: 059c15179decc0e083be724f51c937e9c2b236419cda19e5cc6894a1b7b07006
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 0b2a9e5ebf90b9c1b068c0b56cc5e868951d6492
+      - name: Verify candidate and permanent sync storage
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CANDIDATE_RUN" > run.json
+          python3 - <<'PY'
+          import json, os
+          r=json.load(open('run.json'))
+          assert r['conclusion']=='success' and r['status']=='completed', r
+          assert r['head_sha']==os.environ['CANDIDATE_SHA'], r
+          assert r['head_branch']=='fix-8964', r
+          assert r['path']=='.github/workflows/build-8964-candidate.yml', r
+          PY
+          curl --fail --retry 3 --retry-delay 3 --max-time 60 https://uchet-dilerov-sync-8963-test.onrender.com/health -o health.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('health.json'))
+          assert r['ok'] and r['storage']=='turso' and r['protocol']==2, r
+          PY
+      - name: Download exact tested installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download "$CANDIDATE_RUN" --repo "$GITHUB_REPOSITORY" --name Uchet-dilerov-8.9.64-Windows-candidate --dir verified
+          echo "$SETUP_SHA256  verified/Uchet-dilerov-Setup-8.9.64-x64.exe" | sha256sum --check
+          test -s verified/Uchet-dilerov-Portable-8.9.64-x64.exe
+      - name: Prepare update manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib
+          notes='Учёт дилеров 8.9.64\n\n- В карточке дилера одна строка на накладную; двойной щелчок открывает её товары. Оплаты отображаются отдельными строками.\n- Исправлена подмена шаблона WhatsApp старым обработчиком: сумма и знак ₽ остаются на одной строке в JPEG.\n- Первое подключение приостанавливается при расхождении локальных операций с сервером: локальные оплаты и продажи не заменяются.\n\nВажно: этот релиз не восстанавливает автоматически ранее пропавшие оплаты. Для восстановления требуется сверка текущей базы с резервом.'
+          pathlib.Path('publish-notes.md').write_text(notes+'\n')
+          manifest={'version':'8.9.64','url':f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/8.9.64/Uchet-dilerov-Setup-8.9.64-x64.exe",'sha256':os.environ['SETUP_SHA256'],'notes':notes}
+          pathlib.Path('verified/latest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Publish release without rebuilding tested bytes
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view 8.9.64 --repo "$GITHUB_REPOSITORY" --json isDraft > existing-release.json 2>/dev/null; then
+            python3 - <<'PY'
+          import json
+          assert json.load(open('existing-release.json'))['isDraft'], 'Refusing to overwrite an already published release'
+          PY
+            gh release upload 8.9.64 verified/*.exe verified/latest.json --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create 8.9.64 verified/*.exe verified/latest.json --repo "$GITHUB_REPOSITORY" --draft --target "$CANDIDATE_SHA" --title 'Учёт дилеров 8.9.64' --notes-file publish-notes.md
+          fi
+          gh release edit 8.9.64 --repo "$GITHUB_REPOSITORY" --draft=false --latest --notes-file publish-notes.md
+      - name: Verify published installer then update main manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release download 8.9.64 --repo "$GITHUB_REPOSITORY" --pattern 'Uchet-dilerov-Setup-8.9.64-x64.exe' --dir published
+          echo "$SETUP_SHA256  published/Uchet-dilerov-Setup-8.9.64-x64.exe" | sha256sum --check
+          gh api "repos/$GITHUB_REPOSITORY/contents/latest.json?ref=main" > current-manifest.json
+          python3 - <<'PY'
+          import base64,json,pathlib
+          current=json.load(open('current-manifest.json'))
+          previous=json.loads(base64.b64decode(current['content']))
+          assert tuple(map(int,previous['version'].split('.'))) <= (8,9,64), 'Refusing to downgrade newer release'
+          request={'message':'Publish verified Windows 8.9.64 update manifest [skip ci]','branch':'main','sha':current['sha'],'content':base64.b64encode(pathlib.Path('verified/latest.json').read_bytes()).decode()}
+          pathlib.Path('manifest-request.json').write_text(json.dumps(request))
+          PY
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/latest.json" --input manifest-request.json --jq .commit.sha
+
