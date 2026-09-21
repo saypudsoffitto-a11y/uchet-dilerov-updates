@@ -217,6 +217,11 @@ async function writeStore(expectedRevision, state) {
   return await storeBackend.writeIfRevision(expectedRevision, state);
 }
 
+function hasMeaningfulState(value) {
+  const s = value && typeof value === 'object' ? value : {};
+  return ['dealers','products','groups','ops'].some(key => Array.isArray(s[key]) && s[key].length > 0);
+}
+
 function send(res, status, body) {
   const data = JSON.stringify(body);
   res.writeHead(status, {
@@ -274,11 +279,55 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'PUT') {
       const body = await readJsonBody(req);
       const current = await readStore();
+      if (!body.state || typeof body.state !== 'object') return send(res, 400, { ok: false, message: 'Не передано состояние базы' });
+
+      if (body.initialize === true) {
+        if (current.revision !== 0 || hasMeaningfulState(current.state)) {
+          return send(res, 409, {
+            ok: false,
+            conflict: true,
+            initializationBlocked: true,
+            revision: current.revision,
+            state: current.state,
+            serverVersion: SERVER_VERSION,
+            storage: current.storage,
+            message: 'Главная база уже инициализирована. Повторная первичная загрузка запрещена.'
+          });
+        }
+        const seeded = sanitizeState(body.state, {});
+        seeded.sync = seeded.sync && typeof seeded.sync === 'object' ? seeded.sync : {};
+        seeded.sync.primaryDeviceId = String(body.deviceId || '').trim();
+        seeded.sync.primaryDeviceName = String(body.deviceName || 'Главный компьютер').trim() || 'Главный компьютер';
+        seeded.sync.primaryInitializedAt = new Date().toISOString();
+        const savedSeed = await writeStore(0, seeded);
+        if (!savedSeed || savedSeed.conflict) {
+          const latest = await readStore();
+          return send(res, 409, {
+            ok: false,
+            conflict: true,
+            initializationBlocked: true,
+            revision: latest.revision,
+            state: latest.state,
+            serverVersion: SERVER_VERSION,
+            storage: latest.storage,
+            message: 'Главная база уже была инициализирована другим компьютером.'
+          });
+        }
+        return send(res, 200, {
+          ok: true,
+          initialized: true,
+          revision: savedSeed.revision,
+          serverVersion: SERVER_VERSION,
+          storage: storeBackend.kind,
+          primaryDeviceId: seeded.sync.primaryDeviceId,
+          primaryDeviceName: seeded.sync.primaryDeviceName
+        });
+      }
+
       const baseRevision = Number(body.baseRevision || 0);
       if (baseRevision !== current.revision) {
-        return send(res, 409, { ok: false, conflict: true, revision: current.revision, state: current.state, serverVersion: SERVER_VERSION, message: 'База уже изменилась на другом компьютере' });
+        return send(res, 409, { ok: false, conflict: true, revision: current.revision, state: current.state, serverVersion: SERVER_VERSION, storage: current.storage, message: 'База уже изменилась на другом компьютере' });
       }
-      if (!body.state || typeof body.state !== 'object') return send(res, 400, { ok: false, message: 'Не передано состояние базы' });
       const nextState = sanitizeState(body.state, current.state);
       const saved = await writeStore(current.revision, nextState);
       if (!saved || saved.conflict) {
