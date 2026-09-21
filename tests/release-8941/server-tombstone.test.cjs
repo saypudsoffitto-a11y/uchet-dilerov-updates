@@ -33,7 +33,7 @@ async function json(base,method,body){
   return {status:r.status,data};
 }
 
-test('8.9.41 server keeps exact dealer tombstones and rejects stale resurrection',async t=>{
+test('8.9.63 server blocks legacy full-state resurrection',async t=>{
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'uchet-8941-server-'));
   const port=20000+Math.floor(Math.random()*20000);
   const base='http://127.0.0.1:'+port;
@@ -46,31 +46,19 @@ test('8.9.41 server keeps exact dealer tombstones and rejects stale resurrection
 
   const health=await waitForHealth(base);
   assert.equal(health.serverVersion,'8.9.63-sync5',out);
+  assert.equal(health.protocol,2);
 
   const keepId=101,deleteId=102;
   const history={id:201,dealerId:deleteId,type:'sale',total:100,date:'test',items:[]};
-  const initial={dealers:[{id:keepId,name:'Keep'},{id:deleteId,name:'Delete'}],ops:[history],deletedDealers:{},deletedDealerKeys:{}};
-  let r=await json(base,'PUT',{baseRevision:0,state:initial});
-  assert.equal(r.status,200);
-  assert.equal(r.data.revision,1);
+  const staleLegacyState={dealers:[{id:keepId,name:'Keep'},{id:deleteId,name:'Delete from stale PC'}],ops:[history],deletedDealers:{},deletedDealerKeys:{}};
+  const r=await json(base,'PUT',{baseRevision:0,state:staleLegacyState});
+  assert.equal(r.status,422);
+  assert.equal(r.data.protocol,2);
+  assert.match(String(r.data.message||''),/Старые списки не приняты/);
 
-  const deleted={dealers:[{id:keepId,name:'Keep'}],ops:[history],deletedDealers:{[String(deleteId)]:Date.now()},deletedDealerKeys:{}};
-  r=await json(base,'PUT',{baseRevision:1,state:deleted});
-  assert.equal(r.status,200);
-  assert.equal(r.data.revision,2);
-
-  // Simulate an older second PC uploading stale state that still contains the deleted dealer
-  // and knows nothing about the tombstone.
-  const stale={dealers:[{id:keepId,name:'Keep'},{id:deleteId,name:'Delete from stale PC'}],ops:[history],deletedDealers:{},deletedDealerKeys:{}};
-  r=await json(base,'PUT',{baseRevision:2,state:stale});
-  assert.equal(r.status,200);
-  assert.equal(r.data.revision,3);
-
-  r=await json(base,'GET');
-  assert.equal(r.status,200);
-  assert.equal(r.data.serverVersion,'8.9.61-sync3');
-  assert.equal(r.data.state.dealers.some(d=>String(d.id)===String(deleteId)),false,'stale PC resurrected deleted dealer');
-  assert.equal(r.data.state.dealers.some(d=>String(d.id)===String(keepId)),true,'surviving dealer disappeared');
-  assert.ok(r.data.state.deletedDealers[String(deleteId)],'server lost exact-ID tombstone');
-  assert.equal(r.data.state.ops.some(o=>String(o.dealerId)===String(deleteId)),true,'historical operation was lost');
+  const current=await json(base,'GET');
+  assert.equal(current.status,200);
+  assert.equal(current.data.serverVersion,'8.9.63-sync5');
+  assert.equal(current.data.revision,0);
+  assert.equal((current.data.state.dealers||[]).length,0,'legacy PC changed the protected server catalog');
 });
