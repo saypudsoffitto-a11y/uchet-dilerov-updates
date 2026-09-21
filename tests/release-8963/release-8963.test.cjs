@@ -36,8 +36,7 @@ test('master sync refuses non-Turso storage and server rejects legacy full-state
   assert.match(server,/masterProtocol\.update/);
   assert.match(store,/CREATE TABLE IF NOT EXISTS uchet_store/);
   assert.match(store,/store_json/);
-  assert.match(store,/computers/);
-});
+  assert.match(store,/store_json/);\n  assert.match(server,/computers/);\n  assert.match(server,/beforeMaster/);\n});
 
 test('computer roles are stable and historical bundled clients are unavailable',()=>{
   const protocol=read('server/master-protocol-8962.js');
