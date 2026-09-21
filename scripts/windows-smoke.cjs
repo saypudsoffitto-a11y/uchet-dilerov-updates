@@ -131,6 +131,21 @@ async function main(){
   })()`);
   assert.ok(!deletion?.error,deletion?.error||'dealer deletion smoke failed');
   assert.deepEqual(deletion,{confirmations:2,removed:true,deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true});
+  // Exercise observers and the legacy 250ms patch timer after rendering debts.
+  // A duplicate-column add/remove loop must fail here, not be hidden by mocks.
+  await sleep(600);
+  const debtTable=await evaluate(`(()=>{
+    const table=document.querySelector('#debts table');
+    const heads=[...table.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+    const rows=[...table.querySelectorAll('#debtRows tr')];
+    return {heads,rows:rows.length,aligned:rows.every(row=>row.children.length===heads.length),onePayment:rows.every(row=>row.querySelectorAll('.debtPayBtn8951, .debtPayBtn').length===1)};
+  })()`);
+  assert.ok(debtTable.rows>0,'surviving dealer must remain in debts');
+  assert.equal(debtTable.heads.filter(text=>text==='Действие').length,1);
+  assert.ok(!debtTable.heads.includes('Оплата'),'legacy payment column returned');
+  assert.equal(debtTable.aligned,true,'debt cells no longer match headings');
+  assert.equal(debtTable.onePayment,true,'each dealer needs exactly one payment action');
+  console.log('PASS: debt payment observers settle after deletion with one payment action');
   socket.close();
   console.log('PASS: '+expectedRuntime+' keeps right-click dealer ID locked and blocks sync resurrection through final merge guard');
  }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F']);}
