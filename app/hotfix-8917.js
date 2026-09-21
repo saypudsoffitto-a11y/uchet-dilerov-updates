@@ -48,6 +48,10 @@
 
   function patchDebtRows(){
     const body=document.getElementById('debtRows');if(!body)return false;
+    // The modern debts renderer owns the payment action. Recreating the legacy
+    // column fights release-8962's cleanup observer and starves the UI event loop.
+    const head=body.closest('table')?.querySelector('thead tr');
+    if(head&&[...head.querySelectorAll('th')].some(th=>th.textContent.trim().toLocaleLowerCase('ru-RU')==='действие'))return true;
     [...body.querySelectorAll('tr')].forEach(row=>{
       if(row.querySelector('.debtPayBtn'))return;
       const on=String(row.getAttribute('onclick')||'');const m=on.match(/openDealer\((\d+)\)/);if(!m)return;
@@ -57,7 +61,7 @@
       btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();try{if(typeof go==='function')go('payments');if(typeof selectPayDealer==='function')setTimeout(()=>selectPayDealer(id),30)}catch(err){console.error(err)}});
       td.appendChild(btn);row.appendChild(td);
     });
-    const head=body.closest('table')?.querySelector('thead tr');if(head&&!head.querySelector('[data-pay-col="1"]')){const th=document.createElement('th');th.dataset.payCol='1';th.textContent='Оплата';head.appendChild(th)}
+    if(head&&!head.querySelector('[data-pay-col="1"]')){const th=document.createElement('th');th.dataset.payCol='1';th.textContent='Оплата';head.appendChild(th)}
     return true;
   }
   const debtBody=document.getElementById('debtRows');

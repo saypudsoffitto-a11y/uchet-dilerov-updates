@@ -16,17 +16,19 @@ test('8.9.59 Windows updater has multiple manifest routes for VPN/Parallels netw
   assert.match(src,/async function fetchUpdateManifest\(requested\)/);
 });
 
-test('8.9.59 launches redundant Windows helpers with a shared lock',()=>{
+test('8.9.59 launches redundant hidden Windows helpers with a shared lock',()=>{
   const src=read('app/updater-8931.js');
   const start=src.indexOf('async function launchInstallerAfterAppExit');
   const end=src.indexOf('async function closeForUpdateAndLaunch',start);
   const block=src.slice(start,end);
   assert.match(block,/spawnNodeHelper\(info,target,args\)/);
   assert.match(block,/spawnPowerShellFallback\(info,target,args\)/);
-  assert.match(block,/spawnCmdHelper\(info\)/);
-  assert.match(block,/\['NODE_READY','PS_READY','CMD_READY'\]/);
-  assert.match(block,/mode:'multi'/);
+  assert.doesNotMatch(block,/spawnCmdHelper\(info\)/);
+  assert.match(block,/\['NODE_READY','PS_READY'\]/);
+  assert.match(block,/mode:'hidden-dual'/);
   assert.match(src,/UCHET_UPDATE_LOCK/);
+  assert.doesNotMatch(src,/tasklist\s+\/FI/i);
+  assert.doesNotMatch(src,/\|\s*findstr\b/i);
 });
 
 test('8.9.59 keeps downloaded installer in userData instead of temporary storage',()=>{
@@ -37,6 +39,6 @@ test('8.9.59 keeps downloaded installer in userData instead of temporary storage
 
 test('package version is 8.9.59',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.equal(pkg.version,'8.9.61');
+  assert.match(pkg.version,/^8\.9\.(61|62|63|64|65)$/);
   assert.match(pkg.scripts['prebuild:win'],/release-8959/);
 });

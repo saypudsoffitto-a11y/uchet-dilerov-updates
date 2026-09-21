@@ -9,13 +9,13 @@ test('8.9.51 final UI runtime is wired after 8.9.50 layers',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const html=read('app/index.html');
   const preload=read('app/preload.js');
-  assert.match(pkg.version,/^8\.9\.(51|52|53|54|55|56|57|58|59|60|61)$/);
+  assert.match(pkg.version,/^8\.9\.(51|52|53|54|55|56|57|58|59|60|61|62|63|64|65)$/);
   assert.ok(pkg.build.files.includes('interface-8951.css'));
   assert.ok(pkg.build.files.includes('release-8951.js'));
   assert.match(html,/interface-8950\.css[\s\S]*interface-8951\.css/);
   assert.ok(preload.indexOf("'./release-8951.js'")>preload.indexOf("'./next-8948.js'"));
-  assert.match(preload,/runtime=89(51|52|53|54|55|56|57|58|59|60|61)/);
-  assert.match(preload,/dataset\.uchetRuntime='8\.9\.(51|52|53|54|55|56|57|58|59|60|61)'/);
+  assert.match(preload,/runtime=89(51|52|53|54|55|56|57|58|59|60|61|62|63|64|65)/);
+  assert.match(preload,/dataset\.uchetRuntime='8\.9\.(51|52|53|54|55|56|57|58|59|60|61|62|63|64|65)'/);
 });
 
 test('approved compact interface keeps colored sidebar and dense tables',()=>{

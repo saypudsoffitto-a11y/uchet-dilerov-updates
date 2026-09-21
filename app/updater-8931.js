@@ -41,54 +41,13 @@ async function fetchUpdateManifest(requested){
   throw new Error('Не удалось получить файл обновления. '+errors.join(' | '));
 }
 function sleep(ms){return new Promise(resolve=>setTimeout(resolve,ms))}
-function cmdValue(v){return String(v==null?'':v).replace(/%/g,'%%').replace(/[\r\n]/g,' ')}
-async function waitForMarker(logPath,marker,timeoutMs){
-  const until=Date.now()+(timeoutMs||1800);
-  while(Date.now()<until){
-    try{if(fs.existsSync(logPath)&&fs.readFileSync(logPath,'utf8').replace(/\x00/g,'').includes(marker))return true}catch(_){}
-    await sleep(75);
-  }
-  return false;
-}
 function helperFiles(target,args){
   const token=process.pid+'-'+Date.now();
-  const helperPath=path.join(os.tmpdir(),'uchet-update-'+token+'.cmd');
-  const logPath=path.join(os.tmpdir(),'uchet-update-'+token+'.log');
-  const lockPath=path.join(os.tmpdir(),'uchet-update-'+token+'.lock');
-  const argLine=(args||[]).map(a=>'"'+cmdValue(a).replace(/"/g,'""')+'"').join(' ');
-  const lines=[
-    '@echo off',
-    'setlocal DisableDelayedExpansion',
-    'set "UCHET_UPDATE_EXE='+cmdValue(target)+'"',
-    'set "UCHET_UPDATE_PID='+process.pid+'"',
-    'set "UCHET_UPDATE_LOG='+cmdValue(logPath)+'"',
-    'set "UCHET_UPDATE_LOCK='+cmdValue(lockPath)+'"',
-    '>> "%UCHET_UPDATE_LOG%" echo CMD_READY',
-    ':waitloop',
-    'tasklist /FI "PID eq %UCHET_UPDATE_PID%" /NH 2>nul | findstr /R /C:"[ ]%UCHET_UPDATE_PID%[ ]" >nul',
-    'if not errorlevel 1 (',
-    '  >nul 2>&1 ping 127.0.0.1 -n 2',
-    '  goto waitloop',
-    ')',
-    'mkdir "%UCHET_UPDATE_LOCK%" 2>nul',
-    'if errorlevel 1 exit /b 0',
-    '>> "%UCHET_UPDATE_LOG%" echo LAUNCHING_INSTALLER',
-    'start "" "%UCHET_UPDATE_EXE%" '+argLine,
-    'set "UCHET_UPDATE_EC=%errorlevel%"',
-    '>> "%UCHET_UPDATE_LOG%" echo START_RESULT=%UCHET_UPDATE_EC%',
-    'endlocal',
-    'del "%~f0" >nul 2>&1'
-  ];
-  fs.writeFileSync(helperPath,lines.join('\r\n'),'utf8');
+  const helperPath=path.join(os.tmpdir(),'uchet-update-'+token);
+  const logPath=helperPath+'.log';
+  const lockPath=helperPath+'.lock';
   try{fs.unlinkSync(logPath)}catch(_){}
   return {helperPath,logPath,lockPath};
-}
-function spawnCmdHelper(info){
-  const comspec=process.env.ComSpec||process.env.COMSPEC||'cmd.exe';
-  const helper=spawn(comspec,['/d','/s','/c','""'+info.helperPath+'""'],{detached:true,stdio:'ignore',windowsHide:true,windowsVerbatimArguments:true,env:{...process.env}});
-  helper.on('error',()=>{});
-  helper.unref();
-  return helper;
 }
 function spawnPowerShellFallback(info,target,args){
   const psPath=info.helperPath+'.ps1';
@@ -125,7 +84,7 @@ const timer=setInterval(()=>{
   clearInterval(timer);
   try{fs.mkdirSync(config.lockPath)}catch(e){process.exit(0)}
   const env={...process.env};delete env.ELECTRON_RUN_AS_NODE;
-  const child=spawn(config.target,config.args,{detached:true,stdio:'ignore',windowsHide:false,env});
+  const child=spawn(config.target,config.args,{detached:true,stdio:'ignore',windowsHide:true,env});
   child.on('error',e=>{fs.appendFileSync(config.logPath,'ERROR '+e.message);process.exit(1)});
   child.on('spawn',()=>{fs.appendFileSync(config.logPath,'INSTALLER_STARTED');child.unref();try{fs.unlinkSync(__filename)}catch{}});
 },200);
@@ -140,25 +99,23 @@ async function launchInstallerAfterAppExit(target,args){
   const st=fs.statSync(target);if(!st.isFile()||st.size<1024*1024)throw new Error('Скачанный установщик повреждён или слишком мал');
   const info=helperFiles(target,args);
 
-  // Запускаем сразу три независимых helper-а. Они используют общий lock:
-  // после закрытия программы только один реально стартует установщик.
-  // Это важно для Parallels/VPN/виртуальной Windows: если один механизм
-  // завершится вместе с Electron, второй или третий продолжит обновление.
-  let nodeHelper=null,ps=null,cmd=null;
+  // Два независимых скрытых helper-а используют общий lock: Node и PowerShell.
+  // Старый CMD/tasklist/findstr helper удалён: на некоторых Windows/Parallels
+  // он показывал пользователю чёрные консольные окна и мог оставаться висеть.
+  let nodeHelper=null,ps=null;
   try{nodeHelper=spawnNodeHelper(info,target,args)}catch(_){}
   try{ps=spawnPowerShellFallback(info,target,args)}catch(_){}
-  try{cmd=spawnCmdHelper(info)}catch(_){}
 
   const until=Date.now()+8000;
   let marker='';
   while(Date.now()<until&&!marker){
     try{
       const log=fs.existsSync(info.logPath)?fs.readFileSync(info.logPath,'utf8').replace(/\x00/g,''):'';
-      for(const m of ['NODE_READY','PS_READY','CMD_READY'])if(log.includes(m)){marker=m;break}
+      for(const m of ['NODE_READY','PS_READY'])if(log.includes(m)){marker=m;break}
     }catch(_){}
     if(!marker)await sleep(75);
   }
-  if(marker)return {ok:true,mode:'multi',ready:marker,logPath:info.logPath};
+  if(marker)return {ok:true,mode:'hidden-dual',ready:marker,logPath:info.logPath};
   throw new Error('Не удалось запустить службу обновления. Программа останется открытой.');
 }
 async function closeForUpdateAndLaunch(target,args){

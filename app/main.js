@@ -142,14 +142,8 @@ ipcMain.handle('stock:loadBundledProducts', async () => {
 });
 
 ipcMain.handle('clients:loadBundledNewMatRos', async () => {
-  try {
-    const candidates=[path.join(__dirname,'newmatros_clients.json'),path.join(process.resourcesPath,'app.asar.unpacked','newmatros_clients.json')];
-    const filePath=candidates.find(fs.existsSync);
-    if(!filePath)return {canceled:true,error:'Встроенный список клиентов NewMatRos не найден'};
-    return {canceled:false,name:'newmatros_clients.json',path:filePath,clients:JSON.parse(fs.readFileSync(filePath,'utf8'))};
-  } catch(e) { return {canceled:true,error:e.message}; }
+  return {canceled:true,error:'Старый встроенный список клиентов отключён. Используйте актуальные карточки дилеров.'};
 });
-
 ipcMain.handle('app:info',()=>({version:app.getVersion(),platform:process.platform,arch:process.arch,userData:app.getPath('userData')}));
 
 ipcMain.handle('whatsapp:send', async (_e, payload) => {
@@ -413,9 +407,17 @@ ipcMain.handle('sync:request', async (_e, req) => {
     const headers = {'Accept':'application/json'};
     const token = String(req && req.token || '').trim();
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    let options={method,headers,cache:'no-store',redirect:'follow'};
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),12000);
+    let options={method,headers,cache:'no-store',redirect:'follow',signal:controller.signal};
     if(method==='PUT' || method==='POST') { headers['Content-Type']='application/json'; options.body=JSON.stringify(req.body||{}); }
-    const r=await syncFetch(u.toString(),options); let data=null;
+    let r;
+    try{r=await syncFetch(u.toString(),options)}
+    catch(e){
+      if(e&&e.name==='AbortError')return {ok:false,message:'Сервер не ответил за 12 секунд. Проверь интернет/VPN на этом компьютере.'};
+      throw e;
+    }finally{clearTimeout(timeout)}
+    let data=null;
     try{data=await r.json()}catch(_){data={message:'Сервер вернул не JSON'}}
     if(r.status===409) return {ok:false,conflict:true,revision:data&&data.revision,state:data&&data.state,message:data&&data.message||'Конфликт версии базы'};
     if(!r.ok) return {ok:false,message:(data&&data.message)||('HTTP '+r.status)};

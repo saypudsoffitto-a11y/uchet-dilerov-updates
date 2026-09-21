@@ -1,0 +1,87 @@
+name: Build Windows 8.9.64 candidate
+
+on:
+  push:
+    branches:
+      - fix-8964
+    paths:
+      - 'app/**'
+      - 'tests/**'
+      - 'scripts/**'
+      - '.github/workflows/build-8964-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uchet-dilerov-8964-candidate-v2
+  cancel-in-progress: true
+
+jobs:
+  build-candidate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+      - name: Build Windows candidate
+        working-directory: app
+        shell: pwsh
+        env:
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
+        run: |
+          npm run build:win -- --publish never
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Install and smoke-test candidate
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          if ($version -ne '8.9.64') { throw "Unexpected version: $version" }
+          $setup = (Resolve-Path "app/dist/Uchet-dilerov-Setup-$version-x64.exe").Path
+          $exe = $null
+          $lastExitCode = $null
+          for ($attempt=1; $attempt -le 3; $attempt++) {
+            $destination = Join-Path $env:RUNNER_TEMP "uchet-8964-candidate-$attempt"
+            if (Test-Path $destination) { Remove-Item $destination -Recurse -Force -ErrorAction SilentlyContinue }
+            Write-Host "Starting silent installation attempt $attempt"
+            $installer = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$destination") -PassThru
+            if (!$installer.WaitForExit(90000)) {
+              Stop-Process -Id $installer.Id -Force -ErrorAction SilentlyContinue
+              $lastExitCode = 'timeout'
+            } else {
+              $lastExitCode = $installer.ExitCode
+              $candidate = Join-Path $destination 'Учёт дилеров.exe'
+              if ($lastExitCode -eq 0 -and (Test-Path $candidate)) { $exe = $candidate; break }
+            }
+            Start-Sleep -Seconds 3
+          }
+          if (!$exe) { throw "Installer failed after 3 attempts. Last exit code: $lastExitCode" }
+          for ($pass=1; $pass -le 2; $pass++) {
+            node scripts/windows-smoke.cjs "$exe"
+            if ($LASTEXITCODE -ne 0) { throw "Windows UI smoke pass $pass failed" }
+            node scripts/windows-group-filter-smoke.cjs "$exe"
+            if ($LASTEXITCODE -ne 0) { throw "Group filter smoke pass $pass failed" }
+            node scripts/windows-interface-smoke.cjs "$exe"
+            if ($LASTEXITCODE -ne 0) { throw "Interface smoke pass $pass failed" }
+            node scripts/windows-newmatros-smoke.cjs "$exe"
+            if ($LASTEXITCODE -ne 0) { throw "NewMatRos smoke pass $pass failed" }
+          }
+      - name: SHA256
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          Get-FileHash "app/dist/Uchet-dilerov-Setup-$version-x64.exe" -Algorithm SHA256 | Format-List
+      - name: Upload Windows candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: Uchet-dilerov-8.9.64-Windows-candidate
+          path: |
+            app/dist/Uchet-dilerov-Setup-8.9.64-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.64-x64.exe
+          retention-days: 7

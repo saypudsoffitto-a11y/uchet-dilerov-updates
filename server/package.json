@@ -1,13 +1,18 @@
 {
   "name": "uchet-dilerov-sync-server",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
-  "description": "Общий сервер базы для приложения Учёт дилеров",
+  "description": "Общий сервер Учёт дилеров: главный компьютер + постоянное хранилище Turso",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --check server.js && node --check store.js && node --check master-protocol-8962.js && node --check sync-core-8962.js && node --test store.test.cjs server.integration.test.cjs ../tests/release-8962/master-sync.test.cjs ../tests/release-8962/no-bundled-clients.test.cjs ../tests/release-8963/release-8963.test.cjs",
+    "prestart": "npm test"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@tursodatabase/serverless": "^1.4.0"
   }
 }

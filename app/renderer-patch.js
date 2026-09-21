@@ -163,7 +163,7 @@
   }
 
   if(window.receiptAPI){
-    window.sendWhatsApp=async function(id){
+    if(!window.__release8962Installed)window.sendWhatsApp=async function(id){
       const op=(state.ops||[]).find(x=>x.id==id),d=op&&(state.dealers||[]).find(x=>x.id==op.dealerId);if(!op)return;
       if(!window.receiptAPI?.sendJpeg)return alert('Отправка JPEG доступна только в установленном приложении Windows.');
       const r=await window.receiptAPI.sendJpeg({phone:d?.phone||'',fileName:`Товарная_накладная_${op.receiptNo}.jpg`,html:receiptPdfHtml(op,d)});
