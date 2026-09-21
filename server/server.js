@@ -15,6 +15,18 @@ const masterProtocol = require('./master-protocol-8962');
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const storeBackend = createStore({ dataFile: DATA_FILE });
 
+async function logTursoPlatformDiag(){
+  const token=String(process.env.TURSO_AUTH_TOKEN||'').trim();
+  if(!token)return;
+  try{
+    const r=await fetch('https://api.turso.tech/v1/organizations',{headers:{Authorization:'Bearer '+token,Accept:'application/json'}});
+    const text=await r.text();
+    console.log('Turso platform diag:', JSON.stringify({status:r.status,body:text.slice(0,1000)}));
+  }catch(e){
+    console.log('Turso platform diag:', JSON.stringify({error:String(e&&e.message||e)}));
+  }
+}
+
 function safeTokenMeta(token){
   try{
     const parts=String(token||'').split('.');
@@ -374,6 +386,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   if(process.env.TURSO_AUTH_TOKEN) console.log('Turso token meta:', JSON.stringify(safeTokenMeta(process.env.TURSO_AUTH_TOKEN)));
+  logTursoPlatformDiag();
   console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT} · storage=${storeBackend.kind}`);
   console.log(TOKEN ? 'Авторизация по SYNC_TOKEN включена' : 'ВНИМАНИЕ: SYNC_TOKEN не задан');
 });
