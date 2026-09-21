@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - turso-sync-8963
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
