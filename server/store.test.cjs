@@ -10,7 +10,7 @@ delete process.env.TURSO_AUTH_TOKEN;
 
 const { createStore } = require('./store');
 
-test('file fallback persists state and rejects stale revision writes', async (t) => {
+test('file fallback persists the full master-sync store and rejects stale writes', async (t) => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'uchet-store-'));
   const file = path.join(dir, 'state.json');
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
@@ -22,20 +22,30 @@ test('file fallback persists state and rejects stale revision writes', async (t)
   assert.equal(initial.revision, 0);
   assert.deepEqual(initial.state, {});
 
-  const first = await store.writeIfRevision(0, { dealers: [{ id: 1, name: 'Тест' }] });
-  assert.deepEqual(first, { ok: true, revision: 1 });
+  const payload = {
+    revision: 1,
+    state: { dealers: [{ id: 1, name: 'Тест' }], products: [], groups: [], ops: [] },
+    computers: { masterId: 'main-device-0001', devices: { 'main-device-0001': { name: 'Компьютер 1 · Главный', ordinal: 1 } } },
+    beforeMaster: { revision: 0, state: {} }
+  };
+  const first = await store.writeIfRevision(0, payload);
+  assert.equal(first.ok, true);
+  assert.equal(first.revision, 1);
 
   const loaded = await store.read();
   assert.equal(loaded.revision, 1);
   assert.equal(loaded.state.dealers[0].name, 'Тест');
+  assert.equal(loaded.computers.masterId, 'main-device-0001');
+  assert.equal(loaded.beforeMaster.revision, 0);
 
-  const stale = await store.writeIfRevision(0, { dealers: [] });
+  const stale = await store.writeIfRevision(0, { revision: 1, state: { dealers: [] } });
   assert.equal(stale.ok, false);
   assert.equal(stale.conflict, true);
   assert.equal(stale.revision, 1);
 
   const stillLoaded = await store.read();
   assert.equal(stillLoaded.state.dealers[0].name, 'Тест');
+  assert.equal(stillLoaded.computers.masterId, 'main-device-0001');
 });
 
 test('Turso configuration requires URL and token together', () => {
