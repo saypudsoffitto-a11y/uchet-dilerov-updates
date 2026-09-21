@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: uchet-dilerov-8963-candidate
+  group: uchet-dilerov-8963-candidate-v2
   cancel-in-progress: true
 
 jobs:
