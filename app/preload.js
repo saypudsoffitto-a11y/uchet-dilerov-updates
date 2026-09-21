@@ -1,4 +1,4 @@
-// Release 8.9.62: price list and receipt/debt/NewMatRos UI fixes.
+// Release 8.9.63: Turso central database bootstrap on top of 8.9.62.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
@@ -72,21 +72,22 @@ window.addEventListener('DOMContentLoaded',()=>{
       './release-8954.js',
       './release-8955.js',
       './release-8961.js',
-      './release-8962.js'
+      './release-8962.js',
+      './release-8963.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8962';
+        s.src=src+'?runtime=8963';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.62';
+    document.documentElement.dataset.uchetRuntime='8.9.63';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.62 runtime loader error',e))}
-  catch(e){console.error('8.9.62 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.63 runtime loader error',e))}
+  catch(e){console.error('8.9.63 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
