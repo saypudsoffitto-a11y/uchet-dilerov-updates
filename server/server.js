@@ -22,7 +22,7 @@ function safeTokenMeta(token){
     const raw=Buffer.from(parts[1].replace(/-/g,'+').replace(/_/g,'/'),'base64').toString('utf8');
     const payload=JSON.parse(raw);
     const meta={};
-    for(const key of ['iss','sub','aud','id','ns','namespace','exp','iat']){
+    for(const key of ['iss','sub','aud','id','rid','kid','a','ns','namespace','exp','iat']){
       if(payload[key]!==undefined)meta[key]=payload[key];
     }
     if(payload.p!==undefined)meta.permissions=payload.p;
