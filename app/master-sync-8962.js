@@ -2,6 +2,16 @@
   'use strict';
   const C=window.SyncCore8962;
   const DEVICE='uchet_device_8962';
+  const OLD_SERVER='https://uchet-dilerov-sync.onrender.com';
+  const TURSO_SERVER='https://uchet-dilerov-sync-8963-test.onrender.com';
+  try{
+    const current=String(state?.sync?.url||'').trim().replace(/\/+$/,'');
+    if(current===OLD_SERVER){
+      state.sync.url=TURSO_SERVER;
+      state.sync.revision=0;
+      localStorage.setItem(KEY,JSON.stringify(state));
+    }
+  }catch(_){}
   let device;
   try{device=JSON.parse(localStorage.getItem(DEVICE)||'null')}catch(_){}
   if(!device?.id){device={id:crypto.randomUUID(),name:'Компьютер '+crypto.randomUUID().slice(0,4)};localStorage.setItem(DEVICE,JSON.stringify(device));}
