@@ -5,7 +5,8 @@
   "description": "Общий сервер базы для приложения Учёт дилеров с постоянным хранилищем Turso",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --check server.js && node --check store.js && node --test store.test.cjs"
   },
   "engines": {
     "node": ">=20"
