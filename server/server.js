@@ -9,7 +9,8 @@ const TOKEN = String(process.env.SYNC_TOKEN || '').trim();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.63-sync4';
+const SERVER_VERSION = '8.9.63-sync5';
+const masterProtocol = require('./master-protocol-8962');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const storeBackend = createStore({ dataFile: DATA_FILE });
@@ -164,12 +165,6 @@ function canonicalizeDealerDuplicates(state) {
 function sanitizeState(incoming, previous) {
   const state = incoming && typeof incoming === 'object' ? { ...incoming } : {};
   const prev = previous && typeof previous === 'object' ? previous : {};
-  state.sync = state.sync && typeof state.sync === 'object' ? { ...state.sync } : {};
-  if (prev.sync && typeof prev.sync === 'object') {
-    for (const key of ['primaryDeviceId','primaryDeviceName','primaryInitializedAt']) {
-      if (!String(state.sync[key] || '').trim() && String(prev.sync[key] || '').trim()) state.sync[key] = prev.sync[key];
-    }
-  }
   const deletedDealers = mergeMarks(prev.deletedDealers, state.deletedDealers);
   state.deletedDealers = deletedDealers;
   const deletedProducts = mergeMarks(prev.deletedProducts, state.deletedProducts);
@@ -213,19 +208,15 @@ async function readStore() {
   const parsed = await storeBackend.read();
   const rawState = parsed.state && typeof parsed.state === 'object' ? parsed.state : {};
   return {
+    ...parsed,
     revision: Number(parsed.revision || 0),
-    state: sanitizeState(rawState, rawState),
+    state: parsed.computers?.masterId ? rawState : sanitizeState(rawState, rawState),
     storage: storeBackend.kind
   };
 }
 
-async function writeStore(expectedRevision, state) {
-  return await storeBackend.writeIfRevision(expectedRevision, state);
-}
-
-function hasMeaningfulState(value) {
-  const s = value && typeof value === 'object' ? value : {};
-  return ['dealers','products','groups','ops'].some(key => Array.isArray(s[key]) && s[key].length > 0);
+async function writeStore(expectedRevision, nextStore) {
+  return await storeBackend.writeIfRevision(expectedRevision, nextStore);
 }
 
 function send(res, status, body) {
@@ -274,81 +265,90 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') return send(res, 204, {});
     if (req.url === '/health' && req.method === 'GET') {
       const store = await readStore();
-      return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION, storage: store.storage });
+      return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION, storage: store.storage, protocol: 2 });
     }
     if (req.url !== '/api/state') return send(res, 404, { ok: false, message: 'Маршрут не найден' });
     if (!authorized(req)) return send(res, 401, { ok: false, message: 'Неверный секретный ключ' });
     if (req.method === 'GET') {
       const store = await readStore();
-      return send(res, 200, { ok: true, revision: store.revision, state: store.state, serverVersion: SERVER_VERSION, storage: store.storage });
+      return send(res, 200, { ok: true, revision: store.revision, state: store.state, computers: store.computers || null, protocol: 2, serverVersion: SERVER_VERSION, storage: store.storage });
     }
     if (req.method === 'PUT') {
       const body = await readJsonBody(req);
       const current = await readStore();
-      if (!body.state || typeof body.state !== 'object') return send(res, 400, { ok: false, message: 'Не передано состояние базы' });
-
-      if (body.initialize === true) {
-        if (current.revision !== 0 || hasMeaningfulState(current.state)) {
-          return send(res, 409, {
-            ok: false,
-            conflict: true,
-            initializationBlocked: true,
-            revision: current.revision,
-            state: current.state,
-            serverVersion: SERVER_VERSION,
-            storage: current.storage,
-            message: 'Главная база уже инициализирована. Повторная первичная загрузка запрещена.'
-          });
-        }
-        const seeded = sanitizeState(body.state, {});
-        seeded.sync = seeded.sync && typeof seeded.sync === 'object' ? seeded.sync : {};
-        seeded.sync.primaryDeviceId = String(body.deviceId || '').trim();
-        seeded.sync.primaryDeviceName = String(body.deviceName || 'Главный компьютер').trim() || 'Главный компьютер';
-        seeded.sync.primaryInitializedAt = new Date().toISOString();
-        const savedSeed = await writeStore(0, seeded);
-        if (!savedSeed || savedSeed.conflict) {
-          const latest = await readStore();
-          return send(res, 409, {
-            ok: false,
-            conflict: true,
-            initializationBlocked: true,
-            revision: latest.revision,
-            state: latest.state,
-            serverVersion: SERVER_VERSION,
-            storage: latest.storage,
-            message: 'Главная база уже была инициализирована другим компьютером.'
-          });
-        }
-        return send(res, 200, {
-          ok: true,
-          initialized: true,
-          revision: savedSeed.revision,
-          serverVersion: SERVER_VERSION,
-          storage: storeBackend.kind,
-          primaryDeviceId: seeded.sync.primaryDeviceId,
-          primaryDeviceName: seeded.sync.primaryDeviceName
-        });
-      }
-
       const baseRevision = Number(body.baseRevision || 0);
       if (baseRevision !== current.revision) {
-        return send(res, 409, { ok: false, conflict: true, revision: current.revision, state: current.state, serverVersion: SERVER_VERSION, storage: current.storage, message: 'База уже изменилась на другом компьютере' });
-      }
-      const nextState = sanitizeState(body.state, current.state);
-      const saved = await writeStore(current.revision, nextState);
-      if (!saved || saved.conflict) {
-        const latest = await readStore();
         return send(res, 409, {
           ok: false,
           conflict: true,
-          revision: latest.revision,
-          state: latest.state,
+          revision: current.revision,
+          state: current.state,
+          computers: current.computers || null,
+          protocol: 2,
           serverVersion: SERVER_VERSION,
-          storage: latest.storage,
+          storage: current.storage,
           message: 'База уже изменилась на другом компьютере'
         });
       }
-      return send(res, 200, { ok: true, revision: saved.revision, serverVersion: SERVER_VERSION, storage: storeBackend.kind });
+
+      // 8.9.63 deliberately blocks legacy full-state uploads. They were the
+      // path by which old computers could resurrect deleted catalog records.
+      if (body.protocol !== 2) {
+        return send(res, 422, {
+          ok: false,
+          protocol: 2,
+          serverVersion: SERVER_VERSION,
+          storage: current.storage,
+          message: 'Обновите этот компьютер до 8.9.63. Старые списки не приняты.'
+        });
+      }
+
+      try {
+        const next = masterProtocol.update(current, body);
+        next.serverVersion = SERVER_VERSION;
+        next.updatedAt = new Date().toISOString();
+        if (body.action === 'claim' && !next.beforeMaster) {
+          next.beforeMaster = {
+            savedAt: new Date().toISOString(),
+            revision: current.revision,
+            state: current.state,
+            computers: current.computers || null
+          };
+        }
+        const saved = await writeStore(current.revision, next);
+        if (!saved || saved.conflict) {
+          const latest = saved && saved.store ? { ...saved.store, storage: storeBackend.kind } : await readStore();
+          return send(res, 409, {
+            ok: false,
+            conflict: true,
+            revision: latest.revision,
+            state: latest.state,
+            computers: latest.computers || null,
+            protocol: 2,
+            serverVersion: SERVER_VERSION,
+            storage: latest.storage || storeBackend.kind,
+            message: 'База изменилась во время отправки. Повторите синхронизацию.'
+          });
+        }
+        const persisted = saved.store || next;
+        return send(res, 200, {
+          ok: true,
+          revision: saved.revision,
+          state: persisted.state,
+          computers: persisted.computers || null,
+          protocol: 2,
+          serverVersion: SERVER_VERSION,
+          storage: storeBackend.kind
+        });
+      } catch (e) {
+        return send(res, 422, {
+          ok: false,
+          message: e.message,
+          protocol: 2,
+          serverVersion: SERVER_VERSION,
+          storage: current.storage
+        });
+      }
     }
     return send(res, 405, { ok: false, message: 'Метод не поддерживается' });
   } catch (e) {
@@ -360,3 +360,4 @@ server.listen(PORT, HOST, () => {
   console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT} · storage=${storeBackend.kind}`);
   console.log(TOKEN ? 'Авторизация по SYNC_TOKEN включена' : 'ВНИМАНИЕ: SYNC_TOKEN не задан');
 });
+
