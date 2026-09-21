@@ -105,10 +105,10 @@ function createStore({ dataFile }) {
   const url = String(process.env.TURSO_DATABASE_URL || '').trim();
   const authToken = String(process.env.TURSO_AUTH_TOKEN || '').trim();
 
-  if (authToken && !url) {
-    throw new Error('TURSO_AUTH_TOKEN задан без TURSO_DATABASE_URL');
+  if (Boolean(url) !== Boolean(authToken)) {
+    throw new Error('TURSO_DATABASE_URL и TURSO_AUTH_TOKEN должны быть заданы вместе');
   }
-  if (url) return createTursoStore(url, authToken || undefined);
+  if (url && authToken) return createTursoStore(url, authToken);
   return createFileStore(dataFile);
 }
 
