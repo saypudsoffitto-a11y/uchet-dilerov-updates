@@ -48,7 +48,7 @@ test('role transfer requires current master and preserves all data',()=>{
  const s=store();s.computers.devices[worker.id]={name:worker.name};assert.throws(()=>P.update(s,{protocol:2,action:'transfer',device:worker,targetId:worker.id}),/текущего главного/);
  const result=P.update(s,{protocol:2,action:'transfer',device:main,targetId:worker.id});assert.equal(result.computers.masterId,worker.id);assert.deepEqual(result.state,s.state);
 });
-test('first master selection keeps server payments',()=>{
- const s={revision:1,state:state()};s.state.ops=[{id:50,type:'payment',dealerId:1,total:20}];const r=P.update(s,{protocol:2,action:'claim',device:main,state:state()});assert.equal(r.state.ops.length,1);assert.equal(r.computers.masterId,main.id);
+test('first master selection is authoritative over pre-master server operations',()=>{
+ const s={revision:1,state:state()};s.state.ops=[{id:50,type:'payment',dealerId:1,total:20}];const r=P.update(s,{protocol:2,action:'claim',device:main,state:state()});assert.equal(r.state.ops.length,0);assert.equal(r.computers.masterId,main.id);
 });
 test('server and browser run identical sync rules',()=>assert.equal(require('node:fs').readFileSync(require.resolve('../../server/sync-core-8962'),'utf8'),require('node:fs').readFileSync(require.resolve('../../app/sync-core-8962'),'utf8')));
