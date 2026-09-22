@@ -93,3 +93,26 @@ test('server accepts legacy client key through SHA-256 verifier without storing 
   const bad=await api(base,'GET',undefined,'wrong-key');
   assert.equal(bad.status,401);
 });
+
+
+test('first master is authoritative and orphan dealer operations are quarantined', async t=>{
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'uchet-server-claim-quarantine-'));
+  const port=await freePort(),base='http://127.0.0.1:'+port;
+  const env={...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:tmp,SYNC_TOKEN:'test-sync-key'};
+  delete env.TURSO_DATABASE_URL;delete env.TURSO_AUTH_TOKEN;
+  const child=spawn(process.execPath,['server.js'],{cwd:__dirname,env,stdio:'ignore'});
+  t.after(()=>{try{child.kill()}catch(_){};fs.rmSync(tmp,{recursive:true,force:true});});
+  await waitHealth(base,child);
+  const state=localState();
+  state.ops=[
+    {id:10,type:'initial_debt',dealerId:1,dealer:'Иван',total:100},
+    {id:11,type:'sale',dealerId:999,dealer:'Удалённый дубль',total:50,receiptNo:7,items:[]}
+  ];
+  const claim=await api(base,'PUT',{protocol:2,action:'claim',device:main,baseRevision:0,state});
+  assert.equal(claim.status,200);
+  assert.equal(claim.data.computers.masterId,main.id);
+  assert.deepEqual(claim.data.state.ops.map(x=>x.id),[10]);
+  const disk=JSON.parse(fs.readFileSync(path.join(tmp,'state.json'),'utf8'));
+  assert.equal(disk.claimQuarantine.orphanOps.length,1);
+  assert.equal(disk.claimQuarantine.orphanOps[0].id,11);
+});
