@@ -57,7 +57,8 @@ test('WhatsApp JPEG has no remaining-debt line and keeps ruble with amount',()=>
   const segment=src.slice(a,b);
   assert.ok(a>=0&&b>a);
   assert.doesNotMatch(segment,/Остаток долга/);
-  assert.match(segment,/&nbsp;₽/);
+  assert.match(segment,/rubHtml8967/);
+  assert.match(src,/&nbsp;₽/);
   assert.match(src,/receiptAPI\.sendJpeg/);
   assert.ok(src.includes('Отправить текущий долг'));
 });
