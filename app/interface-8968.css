@@ -1,0 +1,182 @@
+/* 8.9.68 — единый компактный интерфейс списков и утверждённые кнопки. */
+@media screen {
+  html body main table{
+    font-size:11px!important;
+    line-height:1.08!important;
+  }
+  html body main table th,
+  html body main table td{
+    padding:4px 6px!important;
+    font-size:11px!important;
+    line-height:1.08!important;
+    vertical-align:middle!important;
+  }
+  html body main table th{
+    height:27px!important;
+    min-height:27px!important;
+    font-size:10.5px!important;
+    font-weight:700!important;
+    white-space:nowrap!important;
+  }
+  html body main table tbody tr{
+    height:27px!important;
+    min-height:27px!important;
+  }
+  html body main table td b{
+    font-size:inherit!important;
+  }
+  html body main table td .muted,
+  html body main table td small{
+    font-size:9.5px!important;
+    line-height:1.05!important;
+  }
+  html body main table input,
+  html body main table select,
+  html body main table textarea{
+    min-height:24px!important;
+    padding:2px 4px!important;
+    font-size:10.5px!important;
+    border-radius:6px!important;
+  }
+  html body main .miniBtn,
+  html body main table button{
+    min-height:25px!important;
+    padding:3px 7px!important;
+    font-size:10.5px!important;
+    border-radius:6px!important;
+  }
+
+  /* Все списки и карточки документов держим одинаково плотными. */
+  html body #dealers table,
+  html body #products table,
+  html body #sales table,
+  html body #payments table,
+  html body #debts table,
+  html body #history table,
+  html body #groups table,
+  html body #newmatros table,
+  html body #dealerModalBody table{
+    font-size:11px!important;
+  }
+  html body .choiceRow{
+    min-height:27px!important;
+    padding:4px 7px!important;
+    font-size:11px!important;
+    line-height:1.08!important;
+  }
+  html body .dealerHistoryDetail th,
+  html body .dealerHistoryDetail td,
+  html body #debts .debtTable8951 th,
+  html body #debts .debtTable8951 td,
+  html body #history .historyGrid th,
+  html body #history .historyGrid td{
+    padding:3px 6px!important;
+    font-size:10.75px!important;
+    line-height:1.05!important;
+  }
+  html body .dealerHistoryDetail tbody tr,
+  html body #debts .debtTable8951 tbody tr,
+  html body #history .historyGrid tbody tr{
+    height:26px!important;
+  }
+
+  /* Название товара остаётся самым широким; остальные колонки компактные. */
+  html body #products table.productTable{
+    table-layout:fixed!important;
+    min-width:1040px!important;
+  }
+  html body #products table.productTable th:nth-child(1),
+  html body #products table.productTable td:nth-child(1){width:150px!important;min-width:150px!important}
+  html body #products table.productTable th:nth-child(2),
+  html body #products table.productTable td:nth-child(2){width:90px!important;min-width:90px!important}
+  html body #products table.productTable th:nth-child(3),
+  html body #products table.productTable td:nth-child(3){width:330px!important;min-width:330px!important;white-space:normal!important}
+  html body #products table.productTable th:nth-child(4),
+  html body #products table.productTable td:nth-child(4){width:72px!important}
+  html body #products table.productTable th:nth-child(5),
+  html body #products table.productTable td:nth-child(5){width:65px!important}
+  html body #products table.productTable th:nth-child(6),
+  html body #products table.productTable td:nth-child(6),
+  html body #products table.productTable th:nth-child(7),
+  html body #products table.productTable td:nth-child(7),
+  html body #products table.productTable th:nth-child(8),
+  html body #products table.productTable td:nth-child(8){width:92px!important}
+  html body #products table.productTable th:nth-child(9),
+  html body #products table.productTable td:nth-child(9){width:126px!important}
+
+  /* Утверждённая светлая панель: полноценные кнопки-блоки. */
+  html body nav{
+    width:244px!important;
+    padding:18px 14px 22px!important;
+    background:#f7faff!important;
+    color:#17315d!important;
+    border-right:1px solid #dbe5f2!important;
+    box-shadow:4px 0 18px rgba(24,49,83,.04)!important;
+  }
+  html body nav .brand{display:none!important}
+  html body nav .navLabel{
+    margin:10px 8px 5px!important;
+    color:#526a8d!important;
+    font-size:10px!important;
+    font-weight:800!important;
+  }
+  html body nav button{
+    position:relative!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:8px!important;
+    width:100%!important;
+    min-height:39px!important;
+    margin:3px 0!important;
+    padding:8px 30px 8px 11px!important;
+    border-radius:9px!important;
+    border:1px solid transparent!important;
+    box-shadow:none!important;
+    font-size:13px!important;
+    font-weight:650!important;
+    text-align:left!important;
+  }
+  html body nav button::after{
+    content:'›'!important;
+    position:absolute!important;
+    right:11px!important;
+    top:50%!important;
+    transform:translateY(-52%)!important;
+    font-size:20px!important;
+    line-height:1!important;
+  }
+  html body nav button[data-section="home"]{background:#0f6efb!important;color:#fff!important}
+  html body nav button[data-section="dealers"]{background:#edf5ff!important;color:#193b78!important;border-color:#d7e8ff!important}
+  html body nav button[data-section="sales"]{background:#e5f7ef!important;color:#11724f!important;border-color:#cdeede!important}
+  html body nav button[data-section="payments"]{background:#eaf4ff!important;color:#145ca8!important;border-color:#d6e9ff!important}
+  html body nav button[data-section="debts"]{background:#ffe9ec!important;color:#b42335!important;border-color:#ffd1d8!important}
+  html body nav button[data-section="history"]{background:#eeeaff!important;color:#5040b9!important;border-color:#ddd7ff!important}
+  html body nav button[data-section="products"],
+  html body nav button[data-section="groups"],
+  html body nav button[data-section="newmatros"],
+  html body nav button[data-section="sync"],
+  html body nav button[data-section="backup"],
+  html body nav button[data-section="updates"]{
+    background:#fbfdff!important;
+    color:#17315d!important;
+    border-color:#dfe8f4!important;
+  }
+  html body nav button:hover{filter:none!important;box-shadow:0 3px 12px rgba(37,78,136,.10)!important}
+  html body nav button.active{box-shadow:0 4px 14px rgba(37,78,136,.12)!important}
+
+  /* Рабочие кнопки внутри разделов тоже единообразные и компактные. */
+  html body main button,
+  html body main .btn{
+    min-height:32px!important;
+    padding:6px 10px!important;
+    border-radius:8px!important;
+    font-size:11.5px!important;
+    font-weight:650!important;
+  }
+  html body main .primary{background:#0f6efb!important;border:1px solid #0f6efb!important;color:#fff!important}
+  html body main .secondary{background:#f6f9fd!important;border:1px solid #dbe5f0!important;color:#284565!important}
+  html body main .dangerBtn{background:#fff0f2!important;border:1px solid #ffd5dc!important;color:#b42335!important}
+
+  html body header{padding-left:268px!important}
+  html body main{margin-left:244px!important}
+}
