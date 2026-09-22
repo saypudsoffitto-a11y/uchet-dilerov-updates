@@ -17,43 +17,48 @@ function harness(local,remote,onBackup){
 }
 const base=()=>({dealers:[{id:1,name:'A'}],products:[],ops:[],sync:{url:'https://test.invalid',enabled:false}});
 
-test('first connection loads server state and preserves a local payment missing on server',async()=>{
+test('first worker connection mirrors master exactly and quarantines old local payment',async()=>{
  const local=base();local.ops=[{id:1,ts:1,type:'payment',dealerId:1,total:125}];
  const remote=base();remote.ops=[{id:10,ts:10,type:'sale',dealerId:1,total:300,items:[]}];
  const {s,data,calls}=harness(local,remote);
  assert.equal(await s.masterSync8962.pull(true),true);
- assert.equal(s.state.ops.some(o=>o.id===1&&o.total===125),true);
+ assert.equal(s.state.ops.some(o=>o.id===1),false);
  assert.equal(s.state.ops.some(o=>o.id===10&&o.total===300),true);
  assert.deepEqual(calls,['GET','PUT']);
- assert.equal(JSON.parse(data.get('uchet_before_master_8962:https://test.invalid')).ops[0].total,125);
+ const recovery=JSON.parse(data.get('uchet_before_master_8962:https://test.invalid'));
+ assert.equal(recovery.ops[0].total,125);
  assert.equal(data.has('uchet_sync_baseline_8962:https://test.invalid'),true);
 });
 
-test('payment entered while backup is saving is preserved while server operations load',async()=>{
+test('payment entered while backup is saving is kept in recovery but cannot alter master debt',async()=>{
  const remote=base();remote.ops=[{id:10,ts:10,type:'sale',dealerId:1,total:300,items:[]}];
- const {s}=harness(base(),remote,s=>s.state.ops.push({id:2,ts:2,type:'payment',dealerId:1,total:75}));
+ const {s,data}=harness(base(),remote,s=>s.state.ops.push({id:2,ts:2,type:'payment',dealerId:1,total:75}));
  assert.equal(await s.masterSync8962.pull(true),true);
- assert.equal(s.state.ops.some(o=>o.id===2&&o.total===75),true);
+ assert.equal(s.state.ops.some(o=>o.id===2),false);
  assert.equal(s.state.ops.some(o=>o.id===10&&o.total===300),true);
+ const recovery=JSON.parse(data.get('uchet_before_master_8962:https://test.invalid'));
+ assert.equal(recovery.ops.some(o=>o.id===2&&o.total===75),true);
 });
 
-test('same operation copied under another id is not duplicated on first join',async()=>{
+test('same operation copied under another id stays only in recovery on first join',async()=>{
  const remote=base();remote.ops=[{id:10,ts:10,type:'payment',date:'21.09.2026',dealerId:1,dealer:'A',total:125,method:'Наличные',note:''}];
  const local=base();local.ops=[{...remote.ops[0],id:99}];
- const {s}=harness(local,remote);
+ const {s,data}=harness(local,remote);
  assert.equal(await s.masterSync8962.pull(true),true);
  assert.equal(s.state.ops.length,1);
  assert.equal(s.state.ops[0].id,10);
+ assert.equal(JSON.parse(data.get('uchet_before_master_8962:https://test.invalid')).ops[0].id,99);
 });
 
-test('same operation id with different content still blocks destructive first join',async()=>{
+test('same operation id with different local content cannot override master on first join',async()=>{
  const remote=base();remote.ops=[{id:1,ts:1,type:'payment',dealerId:1,total:100}];
  const local=base();local.ops=[{id:1,ts:1,type:'payment',dealerId:1,total:125}];
  const {s,data,calls}=harness(local,remote);
- assert.equal(await s.masterSync8962.pull(true),false);
- assert.equal(s.state.ops[0].total,125);
- assert.deepEqual(calls,['GET']);
- assert.equal(data.has('uchet_sync_baseline_8962:https://test.invalid'),false);
+ assert.equal(await s.masterSync8962.pull(true),true);
+ assert.equal(s.state.ops[0].total,100);
+ assert.deepEqual(calls,['GET','PUT']);
+ assert.equal(JSON.parse(data.get('uchet_before_master_8962:https://test.invalid')).ops[0].total,125);
+ assert.equal(data.has('uchet_sync_baseline_8962:https://test.invalid'),true);
 });
 
 test('connection with matching operations preserves payment total',async()=>{
