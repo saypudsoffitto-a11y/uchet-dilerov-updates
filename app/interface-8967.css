@@ -1,0 +1,49 @@
+/* 8.9.67 — точечные правки истории, долгов и читаемости без изменения согласованной боковой панели. */
+@media screen {
+  /* Товары: обычное начертание вместо жирного. */
+  html #products .productTable tbody td,
+  html #products .productTable tbody td b,
+  html #products #productRows b{
+    font-weight:400!important;
+  }
+  html #products .productTable tbody tr:hover b{color:inherit!important}
+
+  /* Долги: заметно больше строк на одном экране. */
+  html #debts .debtTable8951 th,
+  html #debts .debtTable8951 td{
+    padding:4px 8px!important;
+    line-height:1.08!important;
+    font-size:12px!important;
+  }
+  html #debts .debtTable8951 th{height:28px!important}
+  html #debts .debtTable8951 tbody tr{height:30px!important}
+  html #debts .debtPayBtn8951{min-height:26px!important;padding:4px 8px!important;font-size:11px!important}
+  html .debtDealerName8967{font-weight:600;margin-right:7px}
+  html .debtDealerPhone8967{font-size:10.5px;color:var(--muted);white-space:nowrap}
+
+  /* Карточка дилера: документы плотнее по высоте, ширина не сжимается. */
+  html #dealerModalBody .dealerHistoryDetail th,
+  html #dealerModalBody .dealerHistoryDetail td{
+    padding:3px 6px!important;
+    line-height:1.08!important;
+    font-size:11.5px!important;
+  }
+  html #dealerModalBody .dealerHistoryDetail th{height:27px!important}
+  html #dealerModalBody .dealerHistoryDetail tbody tr{height:29px!important}
+
+  /* История: иерархия дилер -> накладные. */
+  html #history>.sortBar{display:none!important}
+  html .historyTrail8967{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:5px 0 9px;padding:8px 10px;border:1px solid #dfe7f2;border-radius:9px;background:#fff;font-size:12px}
+  html .historyTrail8967>div{display:flex;align-items:center;gap:10px}
+  html #history .historyGrid th,
+  html #history .historyGrid td{padding:5px 8px!important;line-height:1.12!important;font-size:12px!important}
+
+  /* Полное контекстное меню операций. */
+  html .dealerOpMenu8967{position:fixed;z-index:980;background:#fff;border:1px solid #cfd9e4;border-radius:10px;box-shadow:0 14px 40px #0003;padding:6px;min-width:220px}
+  html .dealerOpMenu8967 button{display:block;width:100%;min-height:31px!important;padding:7px 10px;border:0;border-radius:7px;background:#fff;color:#183153;text-align:left;font-size:12px}
+  html .dealerOpMenu8967 button:hover{background:#edf5ff}
+  html .dealerOpMenu8967 .dangerMenuItem{color:#b42335}
+  html .dealerOpMenu8967 .dangerMenuItem:hover{background:#fff0f2}
+  html .opEditBox8967{max-width:540px}
+  html .opEditBox8967>label{margin-top:10px}
+}
