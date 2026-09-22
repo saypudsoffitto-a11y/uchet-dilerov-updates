@@ -49,5 +49,7 @@
     new MutationObserver(()=>lockReceiptButtons8968(root)).observe(root,{childList:true,subtree:true});
   });
 
+  document.documentElement.dataset.interfaceVersion='8.9.68';
+  document.documentElement.dataset.uchetRuntime='8.9.68';
   document.documentElement.dataset.uchetUi='8.9.68';
 })();
