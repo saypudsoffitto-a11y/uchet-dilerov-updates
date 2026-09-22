@@ -32,7 +32,7 @@
   async function request(method,body){
     const r=await syncRequest(method,body);
     if(r?.conflict)return r;
-    if(!r?.ok)throw new Error(r?.message||'Нет ответа сервера');
+    if(!r?.ok){online=false;throw new Error(r?.message||'Нет ответа сервера');}
     if(r.protocol!==2)throw new Error('Сервер ещё не обновлён для главного компьютера. Данные сохранены локально.');
     if(r.storage!=='turso')throw new Error('Сервер ещё не подключён к постоянной базе Turso. Локальные данные не отправлены.');
     meta=r.computers;
@@ -63,56 +63,28 @@
     if(busy||!syncCfg().url)return false;busy=true;
     try{
       const r=await request('GET');
-      if(!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');return true;}
+      if(!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');if(manual)alert('Главный компьютер ещё не выбран. Нажмите «Сделать главным» на том компьютере, где данные верные.');return true;}
       const baseline=readBaseline();
       if(meta.masterId===device.id&&baseline&&!C.same(C.definitions(baseline.state),C.definitions(state))){status('Есть изменения справочника на главном компьютере. Нажмите «Отправить на сервер».');return true;}
-      let firstJoinChanges=null,firstJoinDuplicates=0;
+      let firstJoinExactMirror=false;
       if(!baseline){
-        // First join must load the shared server state, but must never destroy
-        // local receipts/payments. Save a full recovery copy first, then layer
-        // genuinely local-only operations on top of the server snapshot.
+        // A worker's first join must become an exact mirror of the already
+        // designated master. Its previous local database is preserved as a
+        // recovery copy, but stale/duplicate operations are NOT mixed into
+        // the live shared debt automatically.
         if(!localStorage.getItem(recoveryKey()))await backup();
-
-        const stableValue=v=>{
-          if(v===null||v===undefined)return v??null;
-          if(Array.isArray(v))return v.map(stableValue);
-          if(typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,stableValue(v[k])]));
-          return v;
-        };
-        const opSignature=op=>{
-          const copy=C.clone(op||{});
-          delete copy.id;
-          return JSON.stringify(stableValue(copy));
-        };
-        const remoteOps=new Map((r.state?.ops||[]).map(op=>[C.id(op.id),op]));
-        const remoteSignatures=new Set((r.state?.ops||[]).map(opSignature));
-        const additions=[],conflicts=[];
-        for(const op of state.ops||[]){
-          const opId=C.id(op.id),remote=remoteOps.get(opId);
-          if(remote){
-            if(!C.same(op,remote))conflicts.push(op);
-            continue;
-          }
-          if(remoteSignatures.has(opSignature(op))){
-            firstJoinDuplicates++;
-            continue;
-          }
-          additions.push({id:opId,before:null,after:C.clone(op)});
-        }
-        if(conflicts.length){
-          status('Подключение приостановлено: '+conflicts.length+' операций имеют одинаковый номер, но разные данные. Локальная база сохранена отдельно; серверные данные не перезаписаны.');
-          return false;
-        }
-        firstJoinChanges=additions;
+        // backup() awaits the file write; capture any operation entered while
+        // it was saving before the visible state is replaced.
+        localStorage.setItem(recoveryKey(),JSON.stringify(state));
+        firstJoinExactMirror=true;
       }
-      // Re-read edits after any awaited backup, immediately before accepting.
-      const changes=firstJoinChanges||pending(),archives=C.diffArchives(readBaseline()?.state||{},state);
-      accept(r,changes,readBaseline()?archives:{});
+      const changes=firstJoinExactMirror?[]:pending(),archives=firstJoinExactMirror?{}:C.diffArchives(readBaseline()?.state||{},state);
+      accept(r,changes,archives);
       if(!meta.devices?.[device.id]||meta.devices[device.id].name!==device.name){
         const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});
         if(!registered.conflict)accept(registered,pending(),C.diffArchives(readBaseline().state,state));
       }
-      status('Подключено · база '+state.sync.revision+(changes.length?' · есть неотправленные операции':'')+(!baseline?' · прежняя локальная база сохранена отдельно; доступна кнопка скачивания':''));return true;
+      status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · точная копия главного; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(changes.length?' · есть неотправленные операции':'')));return true;
     }catch(e){online=false;status(e.message);return false;}finally{busy=false;}
   }
   async function push(manual){
@@ -149,20 +121,27 @@
     if(busy)return;busy=true;
     try{
       const r=await request('GET');
-      if(meta?.masterId)throw new Error('Главный компьютер уже назначен.');
-      if(!confirm('Сделать «'+device.name+'» главным? Его список станет основным: '+state.dealers.length+' дилеров, '+state.products.length+' товаров. Будет создана резервная копия.'))return;
+      if(meta?.masterId){status('Главный компьютер уже назначен: '+(meta.devices?.[meta.masterId]?.name||'другой компьютер')+'.');alert('Главный компьютер уже назначен: '+(meta.devices?.[meta.masterId]?.name||'другой компьютер')+'. Если нужно назначить этот компьютер, сначала передайте роль главного с текущего главного компьютера.');return;}
+      const askText='Сделать «'+device.name+'» главным? Его список станет основным: '+state.dealers.length+' дилеров, '+state.products.length+' товаров. Будет создана резервная копия.';
+      let proceed=false;
+      try{proceed=confirm(askText);}catch(_){status('Не удалось открыть подтверждение. Действие отменено.');return;}
+      if(!proceed)return;
       await backup();
       const result=await request('PUT',{protocol:2,action:'claim',device,baseRevision:r.revision,state:C.clone(state)});
-      if(result.conflict)throw new Error('База изменилась. Повторите выбор главного компьютера.');
-      localStorage.removeItem(key());accept(result,[]);status('Этот компьютер — главный. Остальные получат его справочники.');
-    }catch(e){status(e.message);}finally{busy=false;}
+      if(result.conflict){status('База изменилась. Повторите выбор главного компьютера.');alert('База изменилась. Повторите выбор главного компьютера.');return;}
+      localStorage.removeItem(key());accept(result,[]);
+      status('Этот компьютер — главный. Остальные получат его справочники.');
+      alert('Готово. Этот компьютер назначен главным. На остальных компьютерах откройте раздел «Общий сервер» — они получат этот список автоматически.');
+    }catch(e){status(e.message);alert('Не удалось назначить главный компьютер: '+e.message);}finally{busy=false;}
   }
   async function transfer(){
     if(busy)return;const targetId=document.getElementById('computerTarget8962').value;if(!targetId)return;
     if(!await push(true))return;
-    if(!confirm('Передать роль главного компьютеру «'+meta.devices[targetId].name+'»? Текущий общий справочник сохранится.'))return;
+    let proceed=false;
+    try{proceed=confirm('Передать роль главного компьютеру «'+meta.devices[targetId].name+'»? Текущий общий справочник сохранится.');}catch(_){status('Не удалось открыть подтверждение. Действие отменено.');return;}
+    if(!proceed)return;
     busy=true;
-    try{const r=await request('GET');const result=await request('PUT',{protocol:2,action:'transfer',device,targetId,baseRevision:r.revision});if(result.conflict)throw new Error('База изменилась. Повторите передачу роли.');accept(result,pending(),C.diffArchives(readBaseline().state,state));status('Главный компьютер изменён.');}catch(e){status(e.message);}finally{busy=false;}
+    try{const r=await request('GET');const result=await request('PUT',{protocol:2,action:'transfer',device,targetId,baseRevision:r.revision});if(result.conflict){status('База изменилась. Повторите передачу роли.');alert('База изменилась. Повторите передачу роли.');return;}accept(result,pending(),C.diffArchives(readBaseline().state,state));status('Главный компьютер изменён.');alert('Готово. Роль главного передана компьютеру «'+meta.devices[targetId].name+'».');}catch(e){status(e.message);alert('Не удалось передать роль главного: '+e.message);}finally{busy=false;}
   }
   const host=document.getElementById('sync');
   if(host){

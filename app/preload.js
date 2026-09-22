@@ -1,4 +1,4 @@
-// Release 8.9.65: 8.9.62 UI fixes + protected master sync + Turso storage.
+// Release 8.9.66: 8.9.62 UI fixes + protected master sync + Turso storage.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
@@ -77,16 +77,16 @@ window.addEventListener('DOMContentLoaded',()=>{
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8965';
+        s.src=src+'?runtime=8966';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.65';
+    document.documentElement.dataset.uchetRuntime='8.9.66';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.65 runtime loader error',e))}
-  catch(e){console.error('8.9.65 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.66 runtime loader error',e))}
+  catch(e){console.error('8.9.66 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{

@@ -107,20 +107,30 @@ jobs:
           dmg="app/dist/Uchet-dilerov-macOS-$version-arm64.dmg"
           zip="app/dist/Uchet-dilerov-macOS-$version-arm64.zip"
           if ! gh release view "$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$version" --repo "$GITHUB_REPOSITORY" --title "Учёт дилеров $version" --notes "Учёт дилеров $version"
+            gh release create "$version" --repo "$GITHUB_REPOSITORY" --title "Учёт дилеров $version" --notes "Учёт дилеров $version" || true
           fi
+          gh release view "$version" --repo "$GITHUB_REPOSITORY" >/dev/null
           gh release upload "$version" "$dmg" "$zip" latest-macos.json --repo "$GITHUB_REPOSITORY" --clobber
 
       - name: Save latest-macos.json to main
         shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add latest-macos.json
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Update latest-macos.json for ${{ steps.meta.outputs.version }} [skip ci]"
-          git push
+          gh api "repos/$GITHUB_REPOSITORY/contents/latest-macos.json?ref=main" > current-macos-manifest.json
+          python3 - <<'PY'
+          import base64,json,pathlib
+          current=json.load(open('current-macos-manifest.json'))
+          request={
+            'message':'Update latest-macos.json for 8.9.66 [skip ci]',
+            'branch':'main',
+            'sha':current['sha'],
+            'content':base64.b64encode(pathlib.Path('latest-macos.json').read_bytes()).decode()
+          }
+          pathlib.Path('macos-manifest-request.json').write_text(json.dumps(request))
+          PY
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/latest-macos.json" --input macos-manifest-request.json --jq .commit.sha
 
       - name: Upload macOS build artifact
         uses: actions/upload-artifact@v4

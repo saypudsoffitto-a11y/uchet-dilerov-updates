@@ -58,16 +58,17 @@
     return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>
       @page{size:A4;margin:10mm}
       *{box-sizing:border-box}body{font-family:"Segoe UI",Arial,sans-serif;color:#111;font-size:10pt;margin:0}
-      .sheet{width:100%}h1{text-align:center;font-size:14pt;margin:0 0 10px}
-      .meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-bottom:8px}
-      table{width:100%;border-collapse:collapse;table-layout:auto}
-      th,td{border:1px solid #555;padding:4px 5px;vertical-align:top;line-height:1.15}
-      th{text-align:center;background:#f3f3f3;font-size:9.5pt;white-space:nowrap}
+      .sheet{width:100%}h1{text-align:center;font-size:14pt;margin:0 0 10px;letter-spacing:.02em}
+      .meta{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;margin-bottom:9px;font-size:9.5pt}
+      table{width:100%;border-collapse:collapse;table-layout:auto;border:2px solid #111}
+      th,td{border:1px solid #444;padding:5px 6px;vertical-align:top;line-height:1.15}
+      th{text-align:center;background:#e9edf2;font-size:9.5pt;font-weight:700;white-space:nowrap;border-bottom:2px solid #111}
       td:nth-child(1){width:5%;text-align:center}td:nth-child(2){width:11%;white-space:nowrap}
       td.name{width:43%;white-space:normal}td:nth-child(4){width:13%;white-space:nowrap}
-      td:nth-child(5),td:nth-child(6){width:14%;white-space:nowrap;text-align:right}
-      .total{text-align:right;font-size:12pt;font-weight:700;margin-top:8px}
-      .debt{margin-top:8px}.sign{display:flex;justify-content:space-between;margin-top:24px;font-size:9.5pt}
+      td:nth-child(5),td:nth-child(6){width:14%;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
+      tbody tr:nth-child(even){background:#f5f7fa}
+      .total{text-align:right;font-size:12pt;font-weight:700;margin-top:10px;padding-top:8px;border-top:2px solid #111}
+      .debt{margin-top:6px;font-size:9.5pt}.sign{display:flex;justify-content:space-between;margin-top:24px;padding-top:10px;border-top:1px solid #888;font-size:9.5pt}
     </style></head><body><div class="sheet">
       <h1>ТОВАРНАЯ НАКЛАДНАЯ № ${h(op.receiptNo)} от ${h(op.date)}</h1>
       <div class="meta"><div><b>Поставщик:</b> ____________________</div><div><b>Покупатель:</b> ${h(d?.name||op.dealer||'')}</div></div>
@@ -98,11 +99,14 @@
     return `<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>
       @page{size:A4;margin:12mm}
       *{box-sizing:border-box}body{font-family:"Segoe UI",Arial,sans-serif;color:#111;font-size:10.5pt;margin:0}
-      .sheet{max-width:760px;margin:0 auto}h1{text-align:center;font-size:15pt;margin:0 0 14px}
-      .meta{margin:5px 0}.summary{width:100%;border-collapse:collapse;margin-top:14px}
-      .summary th,.summary td{border:1px solid #555;padding:7px 8px;text-align:center}
-      .summary th{background:#f3f3f3;font-size:9.5pt}.summary td{font-size:11pt;font-weight:700}
-      .current{text-align:right;margin-top:12px;font-size:11pt;font-weight:700}.sign{margin-top:30px;display:flex;justify-content:space-between;font-size:9.5pt}
+      .sheet{max-width:760px;margin:0 auto}h1{text-align:center;font-size:15pt;margin:0 0 14px;letter-spacing:.02em}
+      .meta{margin:5px 0;font-size:10.5pt}.summary{width:100%;border-collapse:collapse;margin-top:14px;border:2px solid #111}
+      .summary th,.summary td{border:1px solid #444;padding:8px 9px;text-align:center}
+      .summary th{background:#e9edf2;font-size:9.5pt;font-weight:700;border-bottom:2px solid #111}
+      .summary td{font-size:11pt;font-weight:700;font-variant-numeric:tabular-nums}
+      .summary tbody tr:nth-child(even){background:#f5f7fa}
+      .current{text-align:right;margin-top:14px;padding-top:8px;border-top:2px solid #111;font-size:11pt;font-weight:700}
+      .sign{margin-top:30px;display:flex;justify-content:space-between;padding-top:10px;border-top:1px solid #888;font-size:9.5pt}
     </style></head><body><div class="sheet">
       <h1>ОТЧЁТ ПО ДОЛГУ</h1>
       <div class="meta"><b>Дилер:</b> ${h(r.d?.name||'')}</div>
