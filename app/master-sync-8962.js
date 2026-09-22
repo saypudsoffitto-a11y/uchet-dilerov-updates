@@ -66,53 +66,25 @@
       if(!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');if(manual)alert('Главный компьютер ещё не выбран. Нажмите «Сделать главным» на том компьютере, где данные верные.');return true;}
       const baseline=readBaseline();
       if(meta.masterId===device.id&&baseline&&!C.same(C.definitions(baseline.state),C.definitions(state))){status('Есть изменения справочника на главном компьютере. Нажмите «Отправить на сервер».');return true;}
-      let firstJoinChanges=null,firstJoinDuplicates=0;
+      let firstJoinExactMirror=false;
       if(!baseline){
-        // First join must load the shared server state, but must never destroy
-        // local receipts/payments. Save a full recovery copy first, then layer
-        // genuinely local-only operations on top of the server snapshot.
+        // A worker's first join must become an exact mirror of the already
+        // designated master. Its previous local database is preserved as a
+        // recovery copy, but stale/duplicate operations are NOT mixed into
+        // the live shared debt automatically.
         if(!localStorage.getItem(recoveryKey()))await backup();
-
-        const stableValue=v=>{
-          if(v===null||v===undefined)return v??null;
-          if(Array.isArray(v))return v.map(stableValue);
-          if(typeof v==='object')return Object.fromEntries(Object.keys(v).sort().map(k=>[k,stableValue(v[k])]));
-          return v;
-        };
-        const opSignature=op=>{
-          const copy=C.clone(op||{});
-          delete copy.id;
-          return JSON.stringify(stableValue(copy));
-        };
-        const remoteOps=new Map((r.state?.ops||[]).map(op=>[C.id(op.id),op]));
-        const remoteSignatures=new Set((r.state?.ops||[]).map(opSignature));
-        const additions=[],conflicts=[];
-        for(const op of state.ops||[]){
-          const opId=C.id(op.id),remote=remoteOps.get(opId);
-          if(remote){
-            if(!C.same(op,remote))conflicts.push(op);
-            continue;
-          }
-          if(remoteSignatures.has(opSignature(op))){
-            firstJoinDuplicates++;
-            continue;
-          }
-          additions.push({id:opId,before:null,after:C.clone(op)});
-        }
-        if(conflicts.length){
-          status('Подключение приостановлено: '+conflicts.length+' операций имеют одинаковый номер, но разные данные. Локальная база сохранена отдельно; серверные данные не перезаписаны.');
-          return false;
-        }
-        firstJoinChanges=additions;
+        // backup() awaits the file write; capture any operation entered while
+        // it was saving before the visible state is replaced.
+        localStorage.setItem(recoveryKey(),JSON.stringify(state));
+        firstJoinExactMirror=true;
       }
-      // Re-read edits after any awaited backup, immediately before accepting.
-      const changes=firstJoinChanges||pending(),archives=C.diffArchives(readBaseline()?.state||{},state);
-      accept(r,changes,readBaseline()?archives:{});
+      const changes=firstJoinExactMirror?[]:pending(),archives=firstJoinExactMirror?{}:C.diffArchives(readBaseline()?.state||{},state);
+      accept(r,changes,archives);
       if(!meta.devices?.[device.id]||meta.devices[device.id].name!==device.name){
         const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});
         if(!registered.conflict)accept(registered,pending(),C.diffArchives(readBaseline().state,state));
       }
-      status('Подключено · база '+state.sync.revision+(changes.length?' · есть неотправленные операции':'')+(!baseline?' · прежняя локальная база сохранена отдельно; доступна кнопка скачивания':''));return true;
+      status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · точная копия главного; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(changes.length?' · есть неотправленные операции':'')));return true;
     }catch(e){online=false;status(e.message);return false;}finally{busy=false;}
   }
   async function push(manual){
