@@ -22,24 +22,47 @@ function update(current,body){
   if(body.action==='claim'){
     if(meta.masterId)fail('Главный компьютер уже выбран. Сменить его можно с главного компьютера.');
     if(!body.state||!Array.isArray(body.state.dealers)||!Array.isArray(body.state.products))fail('Не передан выбранный справочник');
-    const selected=C.canonicalize(body.state),remote=C.clone(current.state||{});
-    selected.ops=C.applyOps(remote,C.diffOps([],selected.ops).filter(change=>!remote.ops?.some(o=>C.id(o.id)===change.id))).ops||[];
-    // Equal IDs with unequal contents cannot be silently overwritten at migration.
-    for(const op of body.state.ops||[]){const old=(remote.ops||[]).find(x=>C.id(x.id)===C.id(op.id));if(old&&!C.same(old,op))fail('Перед выбором главного компьютера нужно сверить операцию '+op.id);}
-    for(const field of ['receiptStates','receiptItemStates']){
-      const local=selected[field]||{},other=remote[field]||{};
-      for(const key of Object.keys(local))if(other[key]&&!C.same(other[key],local[key]))fail('Архив чека требует сверки перед назначением главного компьютера');
-      selected[field]={...other,...local};
-    }
-    selected.dealerAliases={...(remote.dealerAliases||{}),...(selected.dealerAliases||{})};
-    for(const old of remote.dealers||[]){
-      if(selected.dealers.some(d=>C.id(d.id)===C.id(old.id)))continue;
-      const matches=selected.dealers.filter(d=>C.dealerKey(d)&&C.dealerKey(d)===C.dealerKey(old));
-      if(matches.length===1)selected.dealerAliases[C.id(old.id)]=C.id(matches[0].id);
-    }
+    const selected=C.canonicalize(body.state);
+    // The first designated master is authoritative. Do not mix any pre-master
+    // server state into it: old workers/test migrations may contain stale ops,
+    // aliases or deletion marks. server.js keeps the whole pre-master store in
+    // beforeMaster so nothing is destroyed.
     C.remap(selected);
-    if(selected.ops.some(op=>!selected.dealers.some(d=>C.id(d.id)===C.id(op.dealerId))))fail('На сервере есть операции дилеров, которых нет в выбранном списке. Сначала нужно сверить эти карточки.');
-    next.state=C.applyCatalog(remote,selected);next.state.ops=selected.ops;next.state.receiptStates=selected.receiptStates;next.state.receiptItemStates=selected.receiptItemStates;C.remap(next.state);
+    const dealerIds=new Set((selected.dealers||[]).map(d=>C.id(d.id)));
+    const orphanOps=(selected.ops||[]).filter(op=>!dealerIds.has(C.id(op.dealerId)));
+    selected.ops=(selected.ops||[]).filter(op=>dealerIds.has(C.id(op.dealerId)));
+
+    const orphanReceiptStates={},activeReceiptStates={};
+    for(const [key,entry] of Object.entries(selected.receiptStates||{})){
+      const receipt=entry&&entry.receipt;
+      if(receipt&&receipt.dealerId!=null&&!dealerIds.has(C.id(receipt.dealerId)))orphanReceiptStates[key]=entry;
+      else activeReceiptStates[key]=entry;
+    }
+    const orphanReceiptItemStates={},activeReceiptItemStates={};
+    for(const [key,entry] of Object.entries(selected.receiptItemStates||{})){
+      if(entry&&entry.dealerId!=null&&!dealerIds.has(C.id(entry.dealerId)))orphanReceiptItemStates[key]=entry;
+      else activeReceiptItemStates[key]=entry;
+    }
+    selected.receiptStates=activeReceiptStates;
+    selected.receiptItemStates=activeReceiptItemStates;
+
+    if(orphanOps.length||Object.keys(orphanReceiptStates).length||Object.keys(orphanReceiptItemStates).length){
+      next.claimQuarantine={
+        savedAt:new Date().toISOString(),
+        orphanOps:C.clone(orphanOps),
+        receiptStates:C.clone(orphanReceiptStates),
+        receiptItemStates:C.clone(orphanReceiptItemStates)
+      };
+    }
+
+    // Build the live shared state from the selected master only. In particular,
+    // do not inherit stale remote tombstones that could delete a current card.
+    next.state=C.applyCatalog({ops:[],receiptStates:{},receiptItemStates:{}},selected);
+    next.state.ops=C.clone(selected.ops||[]);
+    next.state.receiptStates=C.clone(selected.receiptStates||{});
+    next.state.receiptItemStates=C.clone(selected.receiptItemStates||{});
+    next.state.receiptSeq=Math.max(Number(selected.receiptSeq)||1,...next.state.ops.map(o=>(Number(o.receiptNo)||0)+1));
+    C.remap(next.state);
     meta.masterId=device.id;meta.epoch=1;
     meta.devices[device.id].name='Компьютер 1 · Главный';
     meta.devices[device.id].ordinal=1;
