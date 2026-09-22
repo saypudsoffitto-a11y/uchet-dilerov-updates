@@ -12,7 +12,7 @@ header b{font-size:21px}header small{color:var(--muted);font-weight:600}
 nav{position:fixed;left:0;top:0;bottom:0;width:226px;background:linear-gradient(180deg,var(--sidebar),#101b2c);padding:18px 12px;display:flex;flex-direction:column;gap:5px;z-index:40;overflow:auto}
 .brand{color:#fff;padding:5px 10px 18px;font-weight:800;font-size:20px}.brand span{display:block;font-size:12px;font-weight:500;color:#aebbd0;margin-top:4px}.navLabel{color:#8392aa;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:13px 10px 5px}
 button,.btn{border:0;border-radius:10px;padding:10px 13px;font:inherit;font-weight:650;cursor:pointer;transition:.15s}button:hover,.btn:hover{filter:brightness(.98)}button:disabled{opacity:.45;cursor:not-allowed}
-nav button{width:100%;text-align:left;background:transparent;color:#dce5f4;padding:11px 12px;font-weight:650;position:relative}nav button:hover{background:var(--sidebar2)}nav button.active{background:#2a4771;color:#fff;box-shadow:inset 3px 0 0 #64a1ff}.primary{background:var(--blue);color:white}.secondary{background:#eef2f6;color:#283548}.dangerBtn{background:#fff0f0;color:var(--red)}
+nav button{width:100%;text-align:left;background:transparent;color:#dce5f4;padding:11px 12px;font-weight:650;position:relative;border:1px solid transparent;transition:transform .12s ease,background .12s ease,box-shadow .12s ease,border-color .12s ease}nav button:hover{background:linear-gradient(180deg,#2c4a76,#22395c);border-color:#3b5c8c;box-shadow:0 3px 0 #0c1526,0 5px 10px rgba(0,0,0,.35);transform:translateY(-1px)}nav button:active{transform:translateY(1px);box-shadow:0 1px 0 #0c1526,0 2px 4px rgba(0,0,0,.35)}nav button.active{background:linear-gradient(180deg,#3a63a0,#2a4771);color:#fff;border-color:#6ea3f2;box-shadow:inset 3px 0 0 #64a1ff,0 2px 0 #0c1526,0 4px 10px rgba(0,0,0,.3)}nav button.active:hover{transform:none}.primary{background:var(--blue);color:white}.secondary{background:#eef2f6;color:#283548}.dangerBtn{background:#fff0f0;color:var(--red)}
 main{margin-left:226px;padding:92px 28px 36px;max-width:1600px}section>h2{margin:0 0 18px;font-size:26px}.hidden{display:none!important}
 .card{background:var(--card);border:1px solid #edf0f4;border-radius:15px;padding:18px;box-shadow:var(--shadow)}
 .grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}.big{font-size:25px;font-weight:780;margin-top:8px}.danger{color:var(--red)}.ok{color:var(--green)}.muted{color:var(--muted)}
@@ -45,11 +45,9 @@ th[draggable="true"]{cursor:grab;user-select:none;position:relative}.colResize{p
 #products .productTable td:not(:nth-child(4)){white-space:nowrap}#products .productTable{width:max-content;min-width:100%}#products{overflow-x:auto}.historyGrid th,.historyGrid td{border:1px solid #d8dee7}.historyGrid{border-collapse:collapse}.serverOk{color:#17833b;font-weight:700}.serverBad{color:#c62828;font-weight:700}
 #products .productTable .actions{gap:5px;flex-wrap:nowrap}
 #products .productTable .actions button{padding:6px 8px;font-size:12px;border-radius:7px}
-/* 8.9.10: таблицы, ресайз и компактная новая продажа */
-#products .productTable{table-layout:fixed;width:100%;min-width:0}
-#products .productTable th,#products .productTable td{min-width:0!important;max-width:none;overflow:hidden;text-overflow:ellipsis}
+/* 8.9.10: таблицы, ресайз и компактная новая продажа (исправлено: убран конфликт table-layout, ломавший ручной ресайз колонок) */
+#products .productTable th,#products .productTable td{overflow:hidden;text-overflow:ellipsis}
 #products .productTable td:nth-child(3){white-space:normal}
-#products .productTable td:not(:nth-child(3)){white-space:nowrap}
 #sales .saleProductFilters{display:grid;grid-template-columns:minmax(220px,.8fr) minmax(320px,1.6fr);gap:10px;grid-column:1/-1}
 #sales #saleProductList{max-height:430px;min-height:300px;border-radius:6px;font-size:13px}
 #sales #saleProductList .choiceRow{display:grid;grid-template-columns:minmax(0,1fr) 120px;align-items:center;padding:5px 8px;line-height:1.15;border-bottom:1px solid #d8dee7}

@@ -11,13 +11,13 @@ test('8.9.63 preserves all four requested 8.9.62 changes',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const preload=read('app/preload.js');
   const patch=read('app/release-8962.js');
-  assert.equal(pkg.version,'8.9.65');
+  assert.equal(pkg.version,'8.9.66');
   assert.ok(pkg.build.files.includes('release-8962.js'));
   assert.match(pkg.scripts['prebuild:mac'],/release-8962/);
   assert.match(pkg.scripts['prebuild:win'],/release-8962/);
   assert.match(preload,/release-8962\.js/);
-  assert.match(preload,/runtime=8965/);
-  assert.match(preload,/uchetRuntime='8\.9\.(64|65)'/);
+  assert.match(preload,/runtime=8966/);
+  assert.match(preload,/uchetRuntime='8\.9\.(64|65|66)'/);
   assert.doesNotThrow(()=>new Function(patch));
 });
 

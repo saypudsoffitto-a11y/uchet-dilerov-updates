@@ -420,7 +420,11 @@ ipcMain.handle('sync:request', async (_e, req) => {
     let data=null;
     try{data=await r.json()}catch(_){data={message:'Сервер вернул не JSON'}}
     if(r.status===409) return {ok:false,conflict:true,revision:data&&data.revision,state:data&&data.state,message:data&&data.message||'Конфликт версии базы'};
-    if(!r.ok) return {ok:false,message:(data&&data.message)||('HTTP '+r.status)};
+    if(r.status===401 || r.status===403) return {
+      ok:false,code:'SYNC_AUTH_FAILED',status:r.status,
+      message:'Сервер '+u.host+' отклонил ключ доступа. Синхронизация не выполнена; локальные данные сохранены. Проверьте, что на компьютерах сохранены одинаковые адрес сервера и ключ. Суммы долга могут различаться до успешной синхронизации.'
+    };
+    if(!r.ok) return {ok:false,status:r.status,message:(data&&data.message)||('HTTP '+r.status)};
     return data;
   } catch(e) { return {ok:false,message:'Ошибка связи с сервером: '+String(e&&e.message||e)}; }
 });
