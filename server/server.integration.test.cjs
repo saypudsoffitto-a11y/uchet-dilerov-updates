@@ -17,10 +17,10 @@ function freePort() {
     });
   });
 }
-async function api(base, method, body) {
+async function api(base, method, body, token='test-sync-key') {
   const r = await fetch(base + '/api/state', {
     method,
-    headers: {'Authorization':'Bearer test-sync-key','Content-Type':'application/json','Accept':'application/json'},
+    headers: {'Authorization':'Bearer '+token,'Content-Type':'application/json','Accept':'application/json'},
     body: body === undefined ? undefined : JSON.stringify(body)
   });
   return { status:r.status, data:await r.json() };
@@ -75,4 +75,21 @@ test('8.9.63 server blocks legacy uploads and keeps master/device metadata', asy
   assert.equal(loaded.data.state.dealers.length,1);
   assert.equal(loaded.data.computers.masterId,main.id);
   assert.equal(loaded.data.computers.devices[worker.id].ordinal,2);
+});
+
+
+test('server accepts legacy client key through SHA-256 verifier without storing raw secret', async t=>{
+  const crypto=require('node:crypto');
+  const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'uchet-server-hash-'));
+  const port=await freePort(),base='http://127.0.0.1:'+port;
+  const legacy='legacy-test-key';
+  const env={...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:tmp,SYNC_TOKEN:'different-current-key',SYNC_TOKEN_SHA256:crypto.createHash('sha256').update(legacy).digest('hex')};
+  delete env.TURSO_DATABASE_URL;delete env.TURSO_AUTH_TOKEN;
+  const child=spawn(process.execPath,['server.js'],{cwd:__dirname,env,stdio:'ignore'});
+  t.after(()=>{try{child.kill()}catch(_){};fs.rmSync(tmp,{recursive:true,force:true});});
+  await waitHealth(base,child);
+  const ok=await api(base,'GET',undefined,legacy);
+  assert.equal(ok.status,200);
+  const bad=await api(base,'GET',undefined,'wrong-key');
+  assert.equal(bad.status,401);
 });
