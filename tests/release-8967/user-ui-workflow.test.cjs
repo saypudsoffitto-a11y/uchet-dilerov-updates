@@ -61,6 +61,12 @@ test('WhatsApp JPEG has no remaining-debt line and keeps ruble with amount',()=>
   assert.match(src,/&nbsp;₽/);
   assert.match(src,/receiptAPI\.sendJpeg/);
   assert.ok(src.includes('Отправить текущий долг'));
+  const debtStart=src.indexOf('window.sendCurrentDebt8967=');
+  const debtEnd=src.indexOf('function decorateReceiptActions8967',debtStart);
+  const debtSegment=src.slice(debtStart,debtEnd);
+  assert.match(debtSegment,/debtOf\(dealerId\)/);
+  assert.match(debtSegment,/whatsappAPI\.send/);
+  assert.doesNotMatch(debtSegment,/sendDebtReportWhatsApp/);
 });
 
 test('approved navigation interface remains present',()=>{
