@@ -224,9 +224,14 @@
   try{sendWhatsApp=window.sendWhatsApp}catch(_){}
 
   /* Согласованная кнопка: вместо скачивания накладной отправляем текущий долг. */
-  window.sendCurrentDebt8967=dealerId=>{
-    if(typeof sendDebtReportWhatsApp==='function')return sendDebtReportWhatsApp(dealerId,null);
-    alert('Отправка текущего долга недоступна.');
+  window.sendCurrentDebt8967=async dealerId=>{
+    const d=dealerById(dealerId);if(!d)return;
+    if(!d.phone)return alert('У дилера не указан телефон WhatsApp');
+    if(!window.whatsappAPI?.send)return alert('Отправка через WhatsApp Desktop доступна только в установленном приложении Windows.');
+    const currentDebt=typeof debtOf==='function'?debtOf(dealerId):0;
+    const text='Текущий долг\nДилер: '+(d.name||'')+'\nСумма: '+rub(currentDebt);
+    const r=await window.whatsappAPI.send({phone:d.phone,text});
+    if(!r?.ok)alert(r?.message||'Не удалось открыть WhatsApp Desktop.');
   };
   function decorateReceiptActions8967(root){
     if(!root)return;
