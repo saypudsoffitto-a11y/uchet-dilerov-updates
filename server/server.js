@@ -6,6 +6,7 @@ const { createStore } = require('./store');
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || '0.0.0.0';
 const TOKEN = String(process.env.SYNC_TOKEN || '').trim();
+const TOKEN_SHA256 = String(process.env.SYNC_TOKEN_SHA256 || '').trim().toLowerCase();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
@@ -232,8 +233,13 @@ function send(res, status, body) {
 }
 
 function authorized(req) {
-  if (!TOKEN) return true;
-  return String(req.headers.authorization || '') === 'Bearer ' + TOKEN;
+  const auth = String(req.headers.authorization || '');
+  if (!TOKEN && !TOKEN_SHA256) return true;
+  if (TOKEN && auth === 'Bearer ' + TOKEN) return true;
+  const match = auth.match(/^Bearer\s+(.+)$/);
+  if (!match || !TOKEN_SHA256) return false;
+  const digest = require('crypto').createHash('sha256').update(match[1]).digest('hex');
+  return digest === TOKEN_SHA256;
 }
 
 function readJsonBody(req) {
@@ -358,6 +364,6 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT} · storage=${storeBackend.kind}`);
-  console.log(TOKEN ? 'Авторизация по SYNC_TOKEN включена' : 'ВНИМАНИЕ: SYNC_TOKEN не задан');
+  console.log(TOKEN || TOKEN_SHA256 ? 'Авторизация по ключу синхронизации включена' : 'ВНИМАНИЕ: ключ синхронизации не задан');
 });
 
