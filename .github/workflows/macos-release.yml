@@ -123,7 +123,7 @@ jobs:
           import base64,json,pathlib
           current=json.load(open('current-macos-manifest.json'))
           request={
-            'message':'Update latest-macos.json for 8.9.66 [skip ci]',
+            'message':'Update latest-macos.json for 8.9.67 [skip ci]',
             'branch':'main',
             'sha':current['sha'],
             'content':base64.b64encode(pathlib.Path('latest-macos.json').read_bytes()).decode()
