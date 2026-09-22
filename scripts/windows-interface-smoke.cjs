@@ -94,14 +94,25 @@ async function main(){
     const folder=path.resolve('qa-interface');fs.mkdirSync(folder,{recursive:true});
     async function screenshot(name,width,height){await command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await sleep(200);const result=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(folder,name+'.png'),Buffer.from(result.data,'base64'))}
     await screenshot('home',1440,1000);
-    // Exercise the final handler after all delayed legacy patches, not just source text.
-    assert.equal(await evaluate(`sendWhatsApp.toString().includes('receiptImage8962')`),true,'Late legacy patch replaced WhatsApp template');
+    // Exercise the final 8.9.67 handler after every legacy layer has finished loading.
+    const whatsappTemplate=await evaluate(`(()=>{
+      const handler=sendWhatsApp.toString();
+      const html=window.buildReceiptImage8967({receiptNo:42,date:'21.09.2026',dealerId:1,total:4410,items:[{name:'Светильник',qty:9,price:490,total:4410}]},state.dealers[0]);
+      return {
+        builder:typeof window.buildReceiptImage8967==='function',
+        finalHandler:handler.includes('whatsappReceipt8967'),
+        legacyHandler:handler.includes('receiptImage8962'),
+        hasTotal:html.includes('Итого:'),
+        hasDebt:html.includes('Остаток долга')
+      };
+    })()`);
+    assert.deepEqual(whatsappTemplate,{builder:true,finalHandler:true,legacyHandler:false,hasTotal:true,hasDebt:false},'8.9.67 WhatsApp JPEG template must stay final and must not contain current debt');
     const moneyLayout=await evaluate(`(async()=>{
       const frame=document.createElement('iframe');frame.style='position:fixed;width:820px;height:900px;left:0;top:0';
       const loaded=new Promise(r=>frame.onload=r);
-      frame.srcdoc=window.buildReceiptImage8962({receiptNo:42,date:'21.09.2026',dealerId:1,total:4410,items:[{name:'Светильник',qty:9,price:490,total:4410}]},state.dealers[0]);
+      frame.srcdoc=window.buildReceiptImage8967({receiptNo:42,date:'21.09.2026',dealerId:1,total:4410,items:[{name:'Светильник',qty:9,price:490,total:4410}]},state.dealers[0]);
       document.body.appendChild(frame);await loaded;
-      const result=[...frame.contentDocument.querySelectorAll('.money8962')].map(el=>{
+      const result=[...frame.contentDocument.querySelectorAll('.m')].map(el=>{
         const text=el.firstChild;const a=frame.contentDocument.createRange(),b=frame.contentDocument.createRange();
         a.setStart(text,0);a.setEnd(text,1);b.setStart(text,text.length-1);b.setEnd(text,text.length);
         return {sameLine:Math.abs(a.getBoundingClientRect().top-b.getBoundingClientRect().top)<1, fits:el.scrollWidth<=el.clientWidth};
