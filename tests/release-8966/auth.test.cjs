@@ -1,3 +1,4 @@
+// Final 8.9.66 candidate trigger: auth regression coverage.
 const {test}=require('node:test');
 const assert=require('node:assert/strict');
 const vm=require('node:vm');
