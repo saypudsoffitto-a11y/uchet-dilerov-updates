@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: uchet-dilerov-8968-windows-release
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   release:
