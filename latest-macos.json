@@ -3,8 +3,8 @@
   "platform": "darwin",
   "arch": "arm64",
   "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.68/Uchet-dilerov-macOS-8.9.68-arm64.dmg",
-  "sha256": "fc774c31e35db331fe964ee28eec19ed5208d8494d83bb3c079d7043ff8ca99c",
+  "sha256": "478dbedb5467d7825506c23d20cbded9ddab9490936c8b450d59db9c2cb4da36",
   "zipUrl": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.68/Uchet-dilerov-macOS-8.9.68-arm64.zip",
-  "zipSha256": "58c6f2d2af96f6f0cb2e6759acf4f8aea60942f72f70c06bb86e371eb87a4ac9",
+  "zipSha256": "42456f0ffd29927bd85f29bd2a9ae890d5738ad3f51772e9925065a3ae69a0da",
   "notes": "Сборка «Учёт дилеров» для macOS Apple Silicon (M1/M2/M3)."
 }
