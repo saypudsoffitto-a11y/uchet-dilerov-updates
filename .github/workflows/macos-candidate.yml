@@ -1,4 +1,4 @@
-name: Verify macOS 8.9.66 candidate
+name: Verify macOS candidate
 on:
   pull_request:
     paths: ['app/**', 'tests/**', 'scripts/**', '.github/workflows/macos-candidate.yml']

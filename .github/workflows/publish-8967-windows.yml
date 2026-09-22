@@ -1,4 +1,4 @@
-name: Build and publish Windows 8.9.66
+name: Build and publish Windows 8.9.67
 
 on:
   push:
@@ -8,14 +8,14 @@ on:
       - 'tests/**'
       - 'scripts/**'
       - 'RELEASE_NOTES.md'
-      - '.github/workflows/publish-8966-windows.yml'
+      - '.github/workflows/publish-8967-windows.yml'
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: uchet-dilerov-8966-windows-release
+  group: uchet-dilerov-8967-windows-release
   cancel-in-progress: false
 
 jobs:
@@ -31,7 +31,7 @@ jobs:
         shell: pwsh
         run: |
           $version = node -p "require('./app/package.json').version"
-          if ($version -ne '8.9.66') { throw "Unexpected version: $version" }
+          if ($version -ne '8.9.67') { throw "Unexpected version: $version" }
 
       - name: Install dependencies
         working-directory: app
@@ -62,12 +62,12 @@ jobs:
       - name: Install and smoke-test verified Windows build
         shell: pwsh
         run: |
-          $version = '8.9.66'
+          $version = '8.9.67'
           $setup = (Resolve-Path "app/dist/Uchet-dilerov-Setup-$version-x64.exe").Path
           $exe = $null
           $lastExitCode = $null
           for ($attempt=1; $attempt -le 3; $attempt++) {
-            $destination = Join-Path $env:RUNNER_TEMP "uchet-8966-install-$attempt"
+            $destination = Join-Path $env:RUNNER_TEMP "uchet-8967-install-$attempt"
             if (Test-Path $destination) { Remove-Item $destination -Recurse -Force -ErrorAction SilentlyContinue }
             $installer = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$destination") -PassThru
             if (!$installer.WaitForExit(90000)) {
@@ -95,7 +95,7 @@ jobs:
       - name: Generate latest.json
         shell: pwsh
         run: |
-          $version = '8.9.66'
+          $version = '8.9.67'
           $setup = "app/dist/Uchet-dilerov-Setup-$version-x64.exe"
           $sha = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
           $notes = (Get-Content 'RELEASE_NOTES.md' -Raw).Trim()
@@ -112,7 +112,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $version = '8.9.66'
+          $version = '8.9.67'
           gh release view "$version" --repo "$env:GITHUB_REPOSITORY" *> $null
           if ($LASTEXITCODE -ne 0) {
             gh release create "$version" --repo "$env:GITHUB_REPOSITORY" --title "Учёт дилеров $version" --notes-file 'RELEASE_NOTES.md'
@@ -135,7 +135,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $version = '8.9.66'
+          $version = '8.9.67'
           New-Item -ItemType Directory -Force -Path published | Out-Null
           gh release download "$version" --repo "$env:GITHUB_REPOSITORY" --pattern "Uchet-dilerov-Setup-$version-x64.exe" --dir published
           if ($LASTEXITCODE -ne 0) { throw 'Published installer download failed' }
@@ -152,7 +152,7 @@ jobs:
           $current = Get-Content current-manifest.json -Raw | ConvertFrom-Json
           $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path 'latest.json'))
           $request = @{
-            message = 'Publish verified Windows 8.9.66 update manifest [skip ci]'
+            message = 'Publish verified Windows 8.9.67 update manifest [skip ci]'
             branch = 'main'
             sha = $current.sha
             content = [Convert]::ToBase64String($bytes)
@@ -164,9 +164,9 @@ jobs:
       - name: Upload verified Windows artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: Uchet-dilerov-8.9.66-Windows-verified
+          name: Uchet-dilerov-8.9.67-Windows-verified
           path: |
-            app/dist/Uchet-dilerov-Setup-8.9.66-x64.exe
-            app/dist/Uchet-dilerov-Portable-8.9.66-x64.exe
+            app/dist/Uchet-dilerov-Setup-8.9.67-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.67-x64.exe
             latest.json
           retention-days: 14
