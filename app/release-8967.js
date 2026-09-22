@@ -246,5 +246,6 @@
   ensureOpEditModal8967();
   renderHistoryDealers8967();
   try{window.renderDebts()}catch(_){}
+  document.documentElement.dataset.interfaceVersion='8.9.67';
   document.documentElement.dataset.uchetRuntime='8.9.67';
 })();
