@@ -10,12 +10,12 @@ test('8.9.67 runtime is wired after approved 8.9.51/8.9.62 layers',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const preload=read('app/preload.js');
   const html=read('app/index.html');
-  assert.equal(pkg.version,'8.9.67');
+  assert.equal(pkg.version,'8.9.68');
   assert.ok(pkg.build.files.includes('release-8967.js'));
   assert.ok(pkg.build.files.includes('interface-8967.css'));
   assert.match(preload,/release-8962\.js[\s\S]*release-8967\.js/);
-  assert.match(preload,/runtime=8967/);
-  assert.match(preload,/uchetRuntime='8\.9\.67'/);
+  assert.match(preload,/runtime=8968/);
+  assert.match(preload,/uchetRuntime='8\\.9\\.68'/);
   assert.match(html,/interface-8951\.css[\s\S]*interface-8967\.css/);
 });
 
