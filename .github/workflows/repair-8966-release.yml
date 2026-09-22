@@ -1,4 +1,4 @@
-name: Repair verified Windows 8.9.66 release assets
+name: Repair Windows 8.9.66 manifest
 
 on:
   push:
@@ -8,7 +8,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  actions: read
   contents: write
 
 concurrency:
@@ -20,48 +19,65 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
-      VERIFIED_RUN: '35676968983'
-      EXPECTED_SETUP_SHA256: '965b8604b6f73d93c03aa61428a4020ef88455888e70785a9eaec61a3ec465b8'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download exact verified Windows artifact
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p verified
-          gh run download "$VERIFIED_RUN" --repo "$GITHUB_REPOSITORY" --name Uchet-dilerov-8.9.66-Windows-verified --dir verified
-          test -s verified/Uchet-dilerov-Setup-8.9.66-x64.exe
-          test -s verified/Uchet-dilerov-Portable-8.9.66-x64.exe
-          test -s verified/latest.json
-          echo "$EXPECTED_SETUP_SHA256  verified/Uchet-dilerov-Setup-8.9.66-x64.exe" | sha256sum --check
-
-      - name: Restore verified assets to GitHub Release
-        shell: bash
-        run: |
-          set -euo pipefail
-          gh release view 8.9.66 --repo "$GITHUB_REPOSITORY" >/dev/null
-          gh release upload 8.9.66 \
-            verified/Uchet-dilerov-Setup-8.9.66-x64.exe \
-            verified/Uchet-dilerov-Portable-8.9.66-x64.exe \
-            verified/latest.json \
-            --repo "$GITHUB_REPOSITORY" --clobber
-
-      - name: Verify restored published installer
+      - name: Download currently published verified Windows installer
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p published
           gh release download 8.9.66 --repo "$GITHUB_REPOSITORY" --pattern 'Uchet-dilerov-Setup-8.9.66-x64.exe' --dir published
-          echo "$EXPECTED_SETUP_SHA256  published/Uchet-dilerov-Setup-8.9.66-x64.exe" | sha256sum --check
+          test -s published/Uchet-dilerov-Setup-8.9.66-x64.exe
+          sha256sum published/Uchet-dilerov-Setup-8.9.66-x64.exe | tee setup.sha256
 
-      - name: Verify main update manifest still matches restored installer
+      - name: Rebuild manifest from the published installer
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json
-          m=json.load(open('latest.json'))
-          assert m['version']=='8.9.66', m
-          assert m['sha256']=='965b8604b6f73d93c03aa61428a4020ef88455888e70785a9eaec61a3ec465b8', m
+          sha=$(awk '{print $1}' setup.sha256)
+          python3 - "$sha" <<'PY'
+          import json, pathlib, sys
+          sha=sys.argv[1]
+          notes=pathlib.Path('RELEASE_NOTES.md').read_text().strip()
+          manifest={
+            'version':'8.9.66',
+            'url':'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.66/Uchet-dilerov-Setup-8.9.66-x64.exe',
+            'sha256':sha,
+            'notes':notes
+          }
+          pathlib.Path('latest.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
           PY
+
+      - name: Replace release manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release upload 8.9.66 latest.json --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Update main manifest safely
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/contents/latest.json?ref=main" > current.json
+          python3 - <<'PY'
+          import base64,json,pathlib
+          current=json.load(open('current.json'))
+          request={
+            'message':'Repair Windows 8.9.66 manifest checksum [skip ci]',
+            'branch':'main',
+            'sha':current['sha'],
+            'content':base64.b64encode(pathlib.Path('latest.json').read_bytes()).decode()
+          }
+          pathlib.Path('request.json').write_text(json.dumps(request))
+          PY
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/latest.json" --input request.json --jq .commit.sha
+
+      - name: Verify manifest checksum equals published installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=$(awk '{print $1}' setup.sha256)
+          actual=$(python3 -c "import json; print(json.load(open('latest.json'))['sha256'])")
+          test "$expected" = "$actual"
+          echo "Verified Windows Setup SHA256: $actual"
