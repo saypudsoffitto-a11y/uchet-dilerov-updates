@@ -36,4 +36,6 @@ test('receipt WhatsApp path is JPEG-only',()=>{
   assert.match(body,/\.jpg'/);
   assert.doesNotMatch(body,/sendPdf|\.pdf/i);
   assert.match(js,/dataset\.sendFormat='jpeg'/);
+  assert.match(js,/dataset\.interfaceVersion='8\.9\.68'/);
+  assert.match(js,/dataset\.uchetRuntime='8\.9\.68'/);
 });
