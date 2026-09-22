@@ -1,0 +1,67 @@
+name: Repair verified Windows 8.9.66 release assets
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/repair-8966-release.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: repair-8966-release
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VERIFIED_RUN: '35676968983'
+      EXPECTED_SETUP_SHA256: '965b8604b6f73d93c03aa61428a4020ef88455888e70785a9eaec61a3ec465b8'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download exact verified Windows artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p verified
+          gh run download "$VERIFIED_RUN" --repo "$GITHUB_REPOSITORY" --name Uchet-dilerov-8.9.66-Windows-verified --dir verified
+          test -s verified/Uchet-dilerov-Setup-8.9.66-x64.exe
+          test -s verified/Uchet-dilerov-Portable-8.9.66-x64.exe
+          test -s verified/latest.json
+          echo "$EXPECTED_SETUP_SHA256  verified/Uchet-dilerov-Setup-8.9.66-x64.exe" | sha256sum --check
+
+      - name: Restore verified assets to GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release view 8.9.66 --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh release upload 8.9.66 \
+            verified/Uchet-dilerov-Setup-8.9.66-x64.exe \
+            verified/Uchet-dilerov-Portable-8.9.66-x64.exe \
+            verified/latest.json \
+            --repo "$GITHUB_REPOSITORY" --clobber
+
+      - name: Verify restored published installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p published
+          gh release download 8.9.66 --repo "$GITHUB_REPOSITORY" --pattern 'Uchet-dilerov-Setup-8.9.66-x64.exe' --dir published
+          echo "$EXPECTED_SETUP_SHA256  published/Uchet-dilerov-Setup-8.9.66-x64.exe" | sha256sum --check
+
+      - name: Verify main update manifest still matches restored installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          m=json.load(open('latest.json'))
+          assert m['version']=='8.9.66', m
+          assert m['sha256']=='965b8604b6f73d93c03aa61428a4020ef88455888e70785a9eaec61a3ec465b8', m
+          PY
