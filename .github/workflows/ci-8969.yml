@@ -29,38 +29,25 @@ jobs:
       - name: Run 8.9.69 regression tests
         working-directory: app
         run: node --test ../tests/release-8969/*.test.cjs
-      - name: Check 8.9.61 regressions
+      - name: Check base regressions
         continue-on-error: true
         working-directory: app
-        run: node --test ../tests/release-8961/*.test.cjs
-      - name: Check 8.9.62 regressions
+        run: node --test ../tests/regressions/*.test.cjs
+      - name: Check releases 8.9.29-8.9.39
         continue-on-error: true
         working-directory: app
-        run: node --test ../tests/release-8962/*.test.cjs
-      - name: Check 8.9.63 regressions
+        run: node --test ../tests/release-8929/*.test.cjs ../tests/release-8930/*.test.cjs ../tests/release-8931/*.test.cjs ../tests/release-8932/*.test.cjs ../tests/release-8934/*.test.cjs ../tests/release-8935/*.test.cjs ../tests/release-8936/*.test.cjs ../tests/release-8937/*.test.cjs ../tests/release-8938/*.test.cjs ../tests/release-8939/*.test.cjs
+      - name: Check releases 8.9.40-8.9.49
         continue-on-error: true
         working-directory: app
-        run: node --test ../tests/release-8963/*.test.cjs
-      - name: Check 8.9.64 regressions
+        run: node --test ../tests/release-8940/*.test.cjs ../tests/release-8941/*.test.cjs ../tests/release-8942/*.test.cjs ../tests/release-8946/*.test.cjs ../tests/release-8947/*.test.cjs ../tests/release-8948/*.test.cjs ../tests/release-8949/*.test.cjs
+      - name: Check releases 8.9.50-8.9.59
         continue-on-error: true
         working-directory: app
-        run: node --test ../tests/release-8964/*.test.cjs
-      - name: Check 8.9.65 regressions
-        continue-on-error: true
+        run: node --test ../tests/release-8950/*.test.cjs ../tests/release-8951/*.test.cjs ../tests/release-8952/*.test.cjs ../tests/release-8953/*.test.cjs ../tests/release-8954/*.test.cjs ../tests/release-8955/*.test.cjs ../tests/release-8958/*.test.cjs ../tests/release-8959/*.test.cjs
+      - name: Check releases 8.9.61-8.9.68
         working-directory: app
-        run: node --test ../tests/release-8965/*.test.cjs
-      - name: Check 8.9.66 regressions
-        continue-on-error: true
-        working-directory: app
-        run: node --test ../tests/release-8966/*.test.cjs
-      - name: Check 8.9.67 regressions
-        continue-on-error: true
-        working-directory: app
-        run: node --test ../tests/release-8967/*.test.cjs
-      - name: Check 8.9.68 regressions
-        continue-on-error: true
-        working-directory: app
-        run: node --test ../tests/release-8968/*.test.cjs
+        run: node --test ../tests/release-8961/*.test.cjs ../tests/release-8962/*.test.cjs ../tests/release-8963/*.test.cjs ../tests/release-8964/*.test.cjs ../tests/release-8965/*.test.cjs ../tests/release-8966/*.test.cjs ../tests/release-8967/*.test.cjs ../tests/release-8968/*.test.cjs
       - name: Run full regression suite
         working-directory: app
         run: npm run prebuild:win
