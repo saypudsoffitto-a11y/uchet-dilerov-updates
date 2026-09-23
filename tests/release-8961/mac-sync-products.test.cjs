@@ -7,17 +7,18 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('8.9.61 ships the macOS sync and placeholder-product fix',()=>{
+test('8.9.61 macOS sync and placeholder-product fix stays shipped on later releases',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const preload=read('app/preload.js');
   const patch=read('app/release-8961.js');
-  assert.match(pkg.version,/^8\.9\.(61|62|63|64|65|66|67)$/);
+  const releasePatch=Number(String(pkg.version).split('.')[2]||0);
+  assert.ok(releasePatch>=61,'expected 8.9.61 or later');
   assert.ok(pkg.build.files.includes('release-8961.js'));
   assert.match(pkg.scripts['prebuild:mac'],/release-8961/);
   assert.match(pkg.scripts['prebuild:win'],/release-8961/);
   assert.match(preload,/release-8961\.js/);
-  assert.match(preload,/runtime=89(61|62|63|64|65|66|67)/);
-  assert.match(preload,/uchetRuntime='8\.9\.(61|62|63|64|65|66|67)'/);
+  assert.match(preload,/runtime=89\d{2}/);
+  assert.match(preload,/uchetRuntime='8\.9\.\d+'/);
   assert.doesNotThrow(()=>new Function(patch));
 });
 
