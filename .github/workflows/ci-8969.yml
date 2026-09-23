@@ -1,0 +1,31 @@
+name: Validate 8.9.69 fixes
+
+on:
+  push:
+    branches: [fix/8.9.69-newmatros-price-ui]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify version and syntax
+        shell: pwsh
+        run: |
+          $version = node -p "require('./app/package.json').version"
+          if ($version -ne '8.9.69') { throw "Unexpected version: $version" }
+          node --check app/release-8969.js
+          node --check app/preload.js
+      - name: Install dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+      - name: Run full regression suite
+        working-directory: app
+        run: npm run prebuild:win
