@@ -6,14 +6,15 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('8.9.68 is wired into package and preload',()=>{
+test('8.9.68 layer remains wired into package and preload on later releases',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.equal(pkg.version,'8.9.68');
+  const patch=Number(String(pkg.version).split('.')[2]||0);
+  assert.ok(patch>=68,'expected release 8.9.68 or later');
   assert.ok(pkg.build.files.includes('interface-8968.css'));
   assert.ok(pkg.build.files.includes('release-8968.js'));
   const preload=read('app/preload.js');
   assert.match(preload,/release-8968\.js/);
-  assert.match(preload,/runtime=8968/);
+  assert.match(preload,/runtime=89(?:68|69|7\d)/);
 });
 
 test('all working tables are compact and navigation keeps approved button UI',()=>{
