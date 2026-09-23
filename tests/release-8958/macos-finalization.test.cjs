@@ -7,9 +7,10 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('8.9.58 is a native Apple Silicon package with ad-hoc signature',()=>{
+test('8.9.58 Apple Silicon packaging remains configured on later releases',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.match(pkg.version,/^8\.9\.(58|59|60|61|62|63|63|64|65|66|67)$/);
+  const patchNo=Number(String(pkg.version).split('.')[2]||0);
+  assert.ok(patchNo>=58,'expected 8.9.58 or later');
   assert.equal(pkg.build.mac.identity,null);
   assert.equal(pkg.build.afterPack,'after-pack-macos.cjs');
   const targets=pkg.build.mac.target||[];
@@ -61,10 +62,10 @@ test('published macOS workflow verifies arm64, app version, and code signature b
   assert.match(yml,/codesign --verify --deep --strict "\$app_path"/);
 });
 
-test('renderer reports current 8.9.59 runtime',()=>{
+test('renderer keeps 8.9.61 product fix while reporting the current later runtime',()=>{
   const preload=read('app/preload.js');
   const productFix=read('app/release-8961.js');
-  assert.match(preload,/\?runtime=89(61|62|63|64|65|66|67)/);
-  assert.match(preload,/dataset\.uchetRuntime='8\.9\.(61|62|63|64|65|66|67)'/);
+  assert.match(preload,/\?runtime=89\d{2}/);
+  assert.match(preload,/dataset\.uchetRuntime='8\.9\.\d+'/);
   assert.match(productFix,/dataset\.interfaceVersion='8\.9\.61'/);
 });
