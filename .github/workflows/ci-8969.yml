@@ -29,6 +29,27 @@ jobs:
       - name: Run 8.9.69 targeted regression tests
         working-directory: app
         run: node --test ../tests/release-8969/*.test.cjs
+      - name: Check 8.9.40
+        working-directory: app
+        run: node --test ../tests/release-8940/*.test.cjs
+      - name: Check 8.9.41
+        working-directory: app
+        run: node --test ../tests/release-8941/*.test.cjs
+      - name: Check 8.9.42
+        working-directory: app
+        run: node --test ../tests/release-8942/*.test.cjs
+      - name: Check 8.9.46
+        working-directory: app
+        run: node --test ../tests/release-8946/*.test.cjs
+      - name: Check 8.9.47
+        working-directory: app
+        run: node --test ../tests/release-8947/*.test.cjs
+      - name: Check 8.9.48
+        working-directory: app
+        run: node --test ../tests/release-8948/*.test.cjs
+      - name: Check 8.9.49
+        working-directory: app
+        run: node --test ../tests/release-8949/*.test.cjs
       - name: Run production sequential regression suite
         working-directory: app
         run: npm run prebuild:win
