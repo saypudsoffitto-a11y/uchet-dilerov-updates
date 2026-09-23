@@ -29,27 +29,54 @@ jobs:
       - name: Run 8.9.69 targeted regression tests
         working-directory: app
         run: node --test ../tests/release-8969/*.test.cjs
-      - name: Check 8.9.40
+      - name: Check 8.9.50
         working-directory: app
-        run: node --test ../tests/release-8940/*.test.cjs
-      - name: Check 8.9.41
+        run: node --test ../tests/release-8950/*.test.cjs
+      - name: Check 8.9.51
         working-directory: app
-        run: node --test ../tests/release-8941/*.test.cjs
-      - name: Check 8.9.42
+        run: node --test ../tests/release-8951/*.test.cjs
+      - name: Check 8.9.52
         working-directory: app
-        run: node --test ../tests/release-8942/*.test.cjs
-      - name: Check 8.9.46
+        run: node --test ../tests/release-8952/*.test.cjs
+      - name: Check 8.9.53
         working-directory: app
-        run: node --test ../tests/release-8946/*.test.cjs
-      - name: Check 8.9.47
+        run: node --test ../tests/release-8953/*.test.cjs
+      - name: Check 8.9.54
         working-directory: app
-        run: node --test ../tests/release-8947/*.test.cjs
-      - name: Check 8.9.48
+        run: node --test ../tests/release-8954/*.test.cjs
+      - name: Check 8.9.55
         working-directory: app
-        run: node --test ../tests/release-8948/*.test.cjs
-      - name: Check 8.9.49
+        run: node --test ../tests/release-8955/*.test.cjs
+      - name: Check 8.9.58
         working-directory: app
-        run: node --test ../tests/release-8949/*.test.cjs
+        run: node --test ../tests/release-8958/*.test.cjs
+      - name: Check 8.9.59
+        working-directory: app
+        run: node --test ../tests/release-8959/*.test.cjs
+      - name: Check 8.9.61
+        working-directory: app
+        run: node --test ../tests/release-8961/*.test.cjs
+      - name: Check 8.9.62
+        working-directory: app
+        run: node --test ../tests/release-8962/*.test.cjs
+      - name: Check 8.9.63
+        working-directory: app
+        run: node --test ../tests/release-8963/*.test.cjs
+      - name: Check 8.9.64
+        working-directory: app
+        run: node --test ../tests/release-8964/*.test.cjs
+      - name: Check 8.9.65
+        working-directory: app
+        run: node --test ../tests/release-8965/*.test.cjs
+      - name: Check 8.9.66
+        working-directory: app
+        run: node --test ../tests/release-8966/*.test.cjs
+      - name: Check 8.9.67
+        working-directory: app
+        run: node --test ../tests/release-8967/*.test.cjs
+      - name: Check 8.9.68
+        working-directory: app
+        run: node --test ../tests/release-8968/*.test.cjs
       - name: Run production sequential regression suite
         working-directory: app
         run: npm run prebuild:win
