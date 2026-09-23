@@ -24,13 +24,14 @@ test('8.9.55 permanently removes blank product cards instead of rendering dash r
   assert.match(src,/dataset\.productDeletionFix='8\.9\.55'/);
 });
 
-test('8.9.55 deletion fix remains shipped in 8.9.59 package',()=>{
+test('8.9.55 deletion fix remains shipped on later releases',()=>{
   const pkg=JSON.parse(fs.readFileSync(path.join(appDir,'package.json'),'utf8'));
   const preload=fs.readFileSync(path.join(appDir,'preload.js'),'utf8');
-  assert.match(pkg.version,/^8\.9\.(61|62|63|64|65|66|67)$/);
+  const patchNo=Number(String(pkg.version).split('.')[2]||0);
+  assert.ok(patchNo>=55,'expected 8.9.55 or later');
   assert.ok(pkg.build.files.includes('release-8955.js'));
   assert.match(preload,/release-8955\.js/);
-  assert.match(preload,/uchetRuntime='8\.9\.(61|62|63|64|65|66|67)'/);
+  assert.match(preload,/uchetRuntime='8\.9\.\d+'/);
 });
 
 test('sync server persists deletion tombstones and strips blank products',()=>{
