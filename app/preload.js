@@ -1,4 +1,4 @@
-// Release 8.9.68: compact tables, approved button UI, receipt WhatsApp JPEG.
+// Release 8.9.69: NewMatRos card pricing, product sync, price/history UI fixes.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
@@ -74,21 +74,22 @@ window.addEventListener('DOMContentLoaded',()=>{
       './release-8961.js',
       './release-8962.js',
       './release-8967.js',
-      './release-8968.js'
+      './release-8968.js',
+      './release-8969.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8968';
+        s.src=src+'?runtime=8969';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.68';
+    document.documentElement.dataset.uchetRuntime='8.9.69';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.68 runtime loader error',e))}
-  catch(e){console.error('8.9.68 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.69 runtime loader error',e))}
+  catch(e){console.error('8.9.69 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{
