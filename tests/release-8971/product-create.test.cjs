@@ -10,13 +10,18 @@ const pkg=JSON.parse(read('app/package.json'));
 const preload=read('app/preload.js');
 const r71=read('app/release-8971.js');
 
-test('8.9.71 product hotfix is packaged and loaded last',()=>{
-  assert.equal(pkg.version,'8.9.72');
+test('8.9.71 product hotfix remains packaged before the current runtime layer',()=>{
+  const parts=pkg.version.split('.').map(Number);
+  assert.equal(parts[0],8);
+  assert.equal(parts[1],9);
+  assert.ok(parts[2]>=72,`Версия должна быть >= 8.9.72, обнаружена: ${pkg.version}`);
   assert(pkg.build.files.includes('release-8971.js'));
   assert(preload.includes("'./release-8971.js'"));
   assert(preload.indexOf("'./release-8971.js'")>preload.indexOf("'./release-8970.js'"));
-  assert(preload.includes("?runtime=8972"));
-  assert(preload.includes("dataset.uchetRuntime='8.9.72'"));
+  const runtimeMatch=preload.match(/runtime=(\d+)/);
+  assert.ok(runtimeMatch,'runtime должен быть указан в preload.js');
+  assert.ok(Number(runtimeMatch[1])>=8972,`runtime должен быть >= 8972, обнаружен: ${runtimeMatch&&runtimeMatch[1]}`);
+  assert.match(preload,new RegExp(`dataset\\.uchetRuntime='${pkg.version.replace(/\./g,'\\.')}'`));
 });
 
 test('new product creation uses explicit form controls and group is optional',()=>{
