@@ -154,5 +154,6 @@
   new MutationObserver(queueCompact8973).observe(document.getElementById('products')||document.body,{childList:true,subtree:true});
   compactProducts8973();
 
+  document.documentElement.dataset.interfaceVersion='8.9.73';
   document.documentElement.dataset.uchetRuntime='8.9.73';
 })();
