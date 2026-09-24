@@ -13,15 +13,17 @@ const r70=read('app/release-8970.js');
 const master=read('app/master-sync-8962.js');
 const protocol=read('server/master-protocol-8962.js');
 
-test('8.9.70 package loads the user 8.9.69 fixes and final patch through preload',()=>{
-  assert.equal(pkg.version,'8.9.70');
+test('8.9.70 fixes remain packaged and loaded on later releases',()=>{
+  const parts=String(pkg.version||'').split('.').map(Number);
+  assert.equal(parts[0],8);
+  assert.equal(parts[1],9);
+  assert(parts[2]>=70,'current release must be 8.9.70 or newer');
   assert.equal(pkg.main,'main-8948.js');
   assert(pkg.build.files.includes('release-8969.js'));
   assert(pkg.build.files.includes('release-8970.js'));
-  assert(preload.includes("'./release-8969.js'"));
-  assert(preload.includes("'./release-8970.js'"));
-  assert(preload.includes("?runtime=8970"));
-  assert(preload.includes("dataset.uchetRuntime='8.9.70'"));
+  const p69=preload.indexOf("'./release-8969.js'");
+  const p70=preload.indexOf("'./release-8970.js'");
+  assert(p69>=0&&p70>p69,'8.9.69 and 8.9.70 runtime layers must remain loaded in order');
 });
 
 test('approved 8.9.67 JPEG handler loads after legacy 8.9.68 and stays final',()=>{
