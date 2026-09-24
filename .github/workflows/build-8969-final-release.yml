@@ -1,58 +1,103 @@
-name: Build 8.9.69 Final Windows Release
+name: Publish 8.9.69 Final Windows Release
 
 on:
   push:
     branches:
       - release/8.9.69-final-build
     paths:
-      - 'app/**'
-      - 'server/**'
-      - 'tests/**'
       - '.github/workflows/build-8969-final-release.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
+  actions: read
 
 jobs:
-  build-windows:
-    runs-on: windows-latest
-    timeout-minutes: 45
+  publish-windows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - name: Checkout release source
+      - name: Checkout release branch
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: app/package.json
+          ref: release/8.9.69-final-build
+          fetch-depth: 0
 
-      - name: Install app build dependencies
-        working-directory: app
-        run: npm install --no-audit --no-fund
-
-      - name: Run complete Windows regression suite
-        working-directory: app
-        run: npm run prebuild:win
-
-      - name: Build Setup and Portable x64
-        working-directory: app
+      - name: Download verified Windows 8.9.69 artifacts
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npm run build:win -- --publish never
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh run download 36016634212 \
+            --repo "$GITHUB_REPOSITORY" \
+            --name "Uchet-dilerov-8.9.69-Windows-x64" \
+            --dir release-artifacts
+          test -f release-artifacts/Uchet-dilerov-Setup-8.9.69-x64.exe
+          test -f release-artifacts/Uchet-dilerov-Portable-8.9.69-x64.exe
 
-      - name: List release outputs
-        shell: pwsh
-        run: Get-ChildItem -Path app/dist -Recurse | Select-Object FullName,Length
+      - name: Generate update manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA=$(sha256sum release-artifacts/Uchet-dilerov-Setup-8.9.69-x64.exe | awk '{print $1}')
+          export SHA
+          python - <<'PY'
+          import json, os
+          manifest = {
+              "version": "8.9.69",
+              "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.69/Uchet-dilerov-Setup-8.9.69-x64.exe",
+              "sha256": os.environ["SHA"],
+              "notes": "Учёт дилеров 8.9.69 — финальная Windows-сборка с последними исправлениями. Перед установкой программа сохраняет резервную копию данных."
+          }
+          with open("latest.json", "w", encoding="utf-8") as f:
+              json.dump(manifest, f, ensure_ascii=False, indent=2)
+              f.write("\n")
+          PY
+          cat latest.json
 
-      - name: Upload Windows 8.9.69 release
-        uses: actions/upload-artifact@v4
-        with:
-          name: Uchet-dilerov-8.9.69-Windows-x64
-          path: |
-            app/dist/Uchet-dilerov-Setup-8.9.69-x64.exe
-            app/dist/Uchet-dilerov-Portable-8.9.69-x64.exe
-          if-no-files-found: error
-          retention-days: 14
+      - name: Publish GitHub Release 8.9.69
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view 8.9.69 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload 8.9.69 \
+              release-artifacts/Uchet-dilerov-Setup-8.9.69-x64.exe \
+              release-artifacts/Uchet-dilerov-Portable-8.9.69-x64.exe \
+              latest.json \
+              --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create 8.9.69 \
+              release-artifacts/Uchet-dilerov-Setup-8.9.69-x64.exe \
+              release-artifacts/Uchet-dilerov-Portable-8.9.69-x64.exe \
+              latest.json \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "release/8.9.69-final-build" \
+              --title "Учёт дилеров 8.9.69" \
+              --notes "Финальная Windows-версия 8.9.69. Обновление доступно через встроенную кнопку программы."
+          fi
+
+      - name: Switch update button manifest to 8.9.69
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp latest.json "$RUNNER_TEMP/latest-8.9.69.json"
+          git fetch origin main
+          git checkout -B main origin/main
+          cp "$RUNNER_TEMP/latest-8.9.69.json" latest.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add latest.json
+          if git diff --cached --quiet; then
+            echo "latest.json already points to 8.9.69"
+          else
+            git commit -m "Publish Windows 8.9.69 update manifest [skip ci]"
+            git push origin main
+          fi
+
+      - name: Verify published release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view 8.9.69 --repo "$GITHUB_REPOSITORY" --json tagName,assets --jq '{tag: .tagName, assets: [.assets[].name]}'
