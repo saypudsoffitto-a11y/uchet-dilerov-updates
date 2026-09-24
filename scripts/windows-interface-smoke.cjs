@@ -107,13 +107,12 @@ async function main(){
       };
     })()`);
     assert.deepEqual(whatsappTemplate,{builder:true,finalHandler:true,legacyHandler:false,hasTotal:true,hasDebt:false},'8.9.67 WhatsApp JPEG template must stay final and must not contain current debt');
-    const moneyLayout=await evaluate(`(async()=>{
+    const moneyLayout=await evaluate(`(()=>{
       const frame=document.createElement('iframe');frame.style='position:fixed;width:820px;height:900px;left:0;top:0';
-      const loaded=new Promise(r=>frame.onload=r);
-      frame.srcdoc=window.buildReceiptImage8967({receiptNo:42,date:'21.09.2026',dealerId:1,total:4410,items:[{name:'Светильник',qty:9,price:490,total:4410}]},state.dealers[0]);
-      document.body.appendChild(frame);await loaded;
-      const result=[...frame.contentDocument.querySelectorAll('.m')].map(el=>{
-        const text=el.firstChild;const a=frame.contentDocument.createRange(),b=frame.contentDocument.createRange();
+      document.body.appendChild(frame);
+      const doc=frame.contentDocument;doc.open();doc.write(window.buildReceiptImage8967({receiptNo:42,date:'21.09.2026',dealerId:1,total:4410,items:[{name:'Светильник',qty:9,price:490,total:4410}]},state.dealers[0]));doc.close();
+      const result=[...doc.querySelectorAll('.m')].map(el=>{
+        const text=el.firstChild;const a=doc.createRange(),b=doc.createRange();
         a.setStart(text,0);a.setEnd(text,1);b.setStart(text,text.length-1);b.setEnd(text,text.length);
         return {sameLine:Math.abs(a.getBoundingClientRect().top-b.getBoundingClientRect().top)<1, fits:el.scrollWidth<=el.clientWidth};
       });frame.remove();return result;
