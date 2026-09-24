@@ -73,8 +73,8 @@ window.addEventListener('DOMContentLoaded',()=>{
       './release-8955.js',
       './release-8961.js',
       './release-8962.js',
-      './release-8967.js',
       './release-8968.js',
+      './release-8967.js',
       './release-8969.js',
       './release-8970.js'
     ];
