@@ -1,3 +1,4 @@
+# retry after preserving the historical 8.9.46 interface regression
 name: Build and Publish 8.9.73 Receipt UI
 
 on:
