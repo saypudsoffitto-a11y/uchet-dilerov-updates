@@ -24,6 +24,15 @@ test('8.9.70 package loads the user 8.9.69 fixes and final patch through preload
   assert(preload.includes("dataset.uchetRuntime='8.9.70'"));
 });
 
+test('approved 8.9.67 JPEG handler loads after legacy 8.9.68 and stays final',()=>{
+  const p68=preload.indexOf("'./release-8968.js'");
+  const p67=preload.indexOf("'./release-8967.js'");
+  const p69=preload.indexOf("'./release-8969.js'");
+  assert(p68>=0&&p67>p68&&p69>p67);
+  assert(!r70.includes('window.sendWhatsApp='));
+  assert(!r70.includes('window.renderReceiptHtml='));
+});
+
 test('NewMatRos BAUF price comes from the matching product card',()=>{
   assert(r69.includes('priceSource=\'Карточка товара\''));
   assert(r69.includes('/BAUF|БАУФ|ГЕРМАН/'));
@@ -40,19 +49,20 @@ test('products can be created/edited without mandatory group and keep prices',()
   assert(r69.includes('pushCatalog()'));
 });
 
-test('receipt item name is editable and remains part of the receipt/JPEG data',()=>{
+test('receipt item name is editable without replacing the approved receipt/JPEG renderer',()=>{
   assert(r70.includes("field!=='name'"));
   assert(r70.includes("item.name=next"));
   assert(r70.includes('receiptName8970'));
+  assert(r70.includes('enhanceReceiptNames8970'));
   assert(r70.includes("e.key==='Enter'"));
   assert(r70.includes("e.key==='Escape'"));
   assert(r70.includes('Изменить название'));
+  assert(!r70.includes('Остаток долга:</b>'));
 });
 
 test('Price Group column is moved together with body cells',()=>{
   assert(r70.includes('priceGroupRight8970'));
-  assert(r70.includes('row.appendChild(cells[0])'));
-  assert(r70.includes('groupRight8970'));
+  assert(r70.includes('row.appendChild(cells[groupIndex])'));
 });
 
 test('sync uses stable device/product IDs and separates display client name',()=>{
