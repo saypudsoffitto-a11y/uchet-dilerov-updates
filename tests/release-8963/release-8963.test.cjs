@@ -10,7 +10,8 @@ test('8.9.63 keeps the approved 8.9.62 UI fixes and adds protected master sync',
   const pkg=JSON.parse(read('app/package.json'));
   const html=read('app/index.html');
   const preload=read('app/preload.js');
-  assert.equal(pkg.version,'8.9.67');
+  const parts=pkg.version.split('.').map(Number);
+  assert.equal(parts[0],8);assert.equal(parts[1],9);assert.ok(parts[2]>=69,`Версия должна быть >= 8.9.69, обнаружена: ${pkg.version}`);
   assert.ok(pkg.build.files.includes('release-8962.js'));
   assert.ok(pkg.build.files.includes('sync-core-8962.js'));
   assert.ok(pkg.build.files.includes('master-sync-8962.js'));
@@ -22,8 +23,8 @@ test('8.9.63 keeps the approved 8.9.62 UI fixes and adds protected master sync',
   assert.match(html,/if\(window\.masterSync8962\)return window\.masterSync8962\.push/);
   assert.match(html,/Загрузка старого встроенного списка отключена/);
   assert.match(preload,/\.\/release-8962\.js/);
-  assert.match(preload,/runtime=8967/);
-  assert.match(preload,/uchetRuntime='8\.9\.(64|65|66|67)'/);
+  const runtimeMatch=preload.match(/runtime=(\d+)/);assert.ok(runtimeMatch);assert.ok(Number(runtimeMatch[1])>=8969);
+  assert.match(preload,new RegExp(`uchetRuntime='${pkg.version.replace(/\./g,'\\.')}'`));
 });
 
 test('master sync refuses non-Turso storage and server rejects legacy full-state writes',()=>{
