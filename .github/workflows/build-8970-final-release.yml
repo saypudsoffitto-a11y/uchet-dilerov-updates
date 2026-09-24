@@ -140,4 +140,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-# rerun after recursive verification of the legacy runtime chain
+# rerun after verifying the 8.9.48 layer through the current main wrapper
