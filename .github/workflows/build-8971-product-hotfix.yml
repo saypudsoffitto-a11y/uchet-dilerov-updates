@@ -108,4 +108,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-# rerun after making 8.9.70 regression checks forward-compatible
+# rerun after correcting the installed product-creation smoke check
