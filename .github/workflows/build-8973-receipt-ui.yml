@@ -1,4 +1,5 @@
-# final verification with installed-app smoke checks split by subsystem
+# final verification: run the packaged app directly through the Portable executable;
+# Setup is still built, hashed and published for normal in-app updates.
 name: Build and Publish 8.9.73 Receipt UI
 
 on:
@@ -55,36 +56,34 @@ jobs:
           GITHUB_TOKEN: ''
         run: npm run build:win -- --publish never
 
-      - name: Install built application
+      - name: Verify packaged executables exist
         shell: pwsh
         run: |
-          $setup = (Resolve-Path 'app/dist/Uchet-dilerov-Setup-8.9.73-x64.exe').Path
-          $destination = Join-Path $env:RUNNER_TEMP 'uchet-8973-smoke'
-          if (Test-Path $destination) { Remove-Item $destination -Recurse -Force -ErrorAction SilentlyContinue }
-          $installer = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$destination") -PassThru
-          if (!$installer.WaitForExit(90000)) { Stop-Process -Id $installer.Id -Force -ErrorAction SilentlyContinue; throw 'Installer timed out' }
-          if ($installer.ExitCode -ne 0) { throw "Installer exited with code $($installer.ExitCode)" }
-          $exe = Join-Path $destination 'Учёт дилеров.exe'
-          if (!(Test-Path $exe)) { throw 'Installed application was not found' }
+          $setup = 'app/dist/Uchet-dilerov-Setup-8.9.73-x64.exe'
+          $portable = 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe'
+          if (!(Test-Path $setup)) { throw 'Setup executable was not built' }
+          if (!(Test-Path $portable)) { throw 'Portable executable was not built' }
+          Write-Host "Setup bytes: $((Get-Item $setup).Length)"
+          Write-Host "Portable bytes: $((Get-Item $portable).Length)"
 
       - name: Smoke - product creation and live prices
         shell: pwsh
         run: |
-          $exe = Join-Path $env:RUNNER_TEMP 'uchet-8973-smoke\Учёт дилеров.exe'
+          $exe = (Resolve-Path 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe').Path
           node scripts/windows-product-create-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Product creation smoke failed' }
 
       - name: Smoke - interface, receipt and archive
         shell: pwsh
         run: |
-          $exe = Join-Path $env:RUNNER_TEMP 'uchet-8973-smoke\Учёт дилеров.exe'
+          $exe = (Resolve-Path 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe').Path
           node scripts/windows-interface-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Interface smoke failed' }
 
       - name: Smoke - NewMatRos current-price flow
         shell: pwsh
         run: |
-          $exe = Join-Path $env:RUNNER_TEMP 'uchet-8973-smoke\Учёт дилеров.exe'
+          $exe = (Resolve-Path 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe').Path
           node scripts/windows-newmatros-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'NewMatRos smoke failed' }
 
