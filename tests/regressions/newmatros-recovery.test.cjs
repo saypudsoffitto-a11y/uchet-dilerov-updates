@@ -81,3 +81,17 @@ test('Recovery IPC refuses traversal and files outside the NewMatRos directory',
   assert.equal(reads,0);assert.equal(handler(null,'order.ini').text,ini());assert.equal(reads,1);
   realFile='C:\\elsewhere\\order.ini';assert.ok(handler(null,'order.ini').error);assert.equal(reads,1);
 });
+
+test('repeat export replaces a valid draft ceiling at current price 180 -> 85 without adding debt',()=>{
+  const h=harness();h.ctx.state.products[0].retailPrice=180;h.send();
+  assert.equal(h.draft().ceilings[0].total,1800);
+  h.ctx.state.products[0].retailPrice=85;h.send();
+  assert.equal(h.draft().ceilings.length,1);assert.equal(h.draft().ceilings[0].materialPrice,85);assert.equal(h.draft().ceilings[0].total,850);assert.equal(h.ctx.state.ops.length,0);
+  h.nodes.get('#nmDraftFinish8926').onclick();assert.equal(h.ctx.state.ops.length,1);assert.equal(h.ctx.state.ops[0].total,850);
+  h.ctx.state.products[0].retailPrice=70;h.send();assert.equal(h.ctx.state.ops.length,1);assert.equal(h.ctx.state.ops[0].total,850);assert.equal(h.draft(),null);
+});
+
+test('changing one ceiling price keeps the other ceiling and identity',()=>{
+ const h=harness();h.ctx.state.products[0].retailPrice=180;h.send();h.send(ini(2));
+ h.ctx.state.products[0].retailPrice=85;h.send();const d=h.draft();assert.equal(d.ceilings.length,2);assert.deepEqual(d.ceilings.map(c=>c.materialPrice),[85,180]);
+});

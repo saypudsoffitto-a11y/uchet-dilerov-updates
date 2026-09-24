@@ -11,12 +11,12 @@ const preload=read('app/preload.js');
 const r71=read('app/release-8971.js');
 
 test('8.9.71 product hotfix is packaged and loaded last',()=>{
-  assert.equal(pkg.version,'8.9.71');
+  assert.equal(pkg.version,'8.9.72');
   assert(pkg.build.files.includes('release-8971.js'));
   assert(preload.includes("'./release-8971.js'"));
   assert(preload.indexOf("'./release-8971.js'")>preload.indexOf("'./release-8970.js'"));
-  assert(preload.includes("?runtime=8971"));
-  assert(preload.includes("dataset.uchetRuntime='8.9.71'"));
+  assert(preload.includes("?runtime=8972"));
+  assert(preload.includes("dataset.uchetRuntime='8.9.72'"));
 });
 
 test('new product creation uses explicit form controls and group is optional',()=>{
@@ -37,11 +37,11 @@ test('created card is persisted locally and is made visible immediately',()=>{
   assert(r71.includes('Товар «'));
 });
 
-test('first sync pull cannot silently erase a newly created product',()=>{
-  assert(r71.includes('const first=await window.masterSync8962.push(true)'));
-  assert(r71.includes('if(!current||JSON.stringify(current)!==JSON.stringify(snapshot))'));
-  assert(r71.includes('state.products.push(clone(snapshot))'));
-  assert(r71.includes('const second=await window.masterSync8962.push(true)'));
+test('product changes use a durable journal and queued sync, not snapshot restoration',()=>{
+  assert(pkg.build.files.includes('catalog-pending-8972.js'));
+  assert(r71.includes('CatalogPending8972.record(state,null,row)'));
+  assert(r71.includes('CatalogPending8972.record(state,before,snapshot)'));
+  assert(!r71.includes('state.products.push(clone(snapshot))'));
 });
 
 test('product edits also keep optional group, prices and numeric update timestamp',()=>{

@@ -48,30 +48,10 @@
 
   async function syncProduct8971(snapshot){
     if(!snapshot||!state?.sync?.enabled||!state?.sync?.url||!window.masterSync8962?.push)return;
-    const id=String(snapshot.id);
     try{
-      const first=await window.masterSync8962.push(true);
-      if(first){productStatus8971('Товар «'+(snapshot.name||'')+'» создан и отправлен на сервер.');return;}
-
-      // On a computer without a sync baseline the legacy push first performs a pull.
-      // That pull can replace the just-created local catalogue. Restore the exact card,
-      // persist it, then retry now that the baseline exists.
-      const current=(state.products||[]).find(p=>String(p.id)===id);
-      if(!current||JSON.stringify(current)!==JSON.stringify(snapshot)){
-        state.products=Array.isArray(state.products)?state.products:[];
-        const index=state.products.findIndex(p=>String(p.id)===id);
-        if(index>=0)state.products[index]=clone(snapshot);else state.products.push(clone(snapshot));
-        persist8971();
-      }
-      await new Promise(resolve=>setTimeout(resolve,120));
-      const second=await window.masterSync8962.push(true);
-      if(second)productStatus8971('Товар «'+(snapshot.name||'')+'» создан и отправлен на сервер.');
-      else productStatus8971('Товар «'+(snapshot.name||'')+'» создан локально. Сервер пока не подтвердил синхронизацию.',true);
-    }catch(e){
-      const exists=(state.products||[]).some(p=>String(p.id)===id);
-      if(!exists){state.products.push(clone(snapshot));persist8971();}
-      productStatus8971('Товар создан локально. Синхронизация: '+String(e?.message||'ошибка сервера'),true);
-    }
+      const ok=await window.masterSync8962.push(true);
+      productStatus8971(ok?'Карточка «'+snapshot.name+'» отправлена на сервер.':'Карточка «'+snapshot.name+'» сохранена на этом компьютере. Отправка на сервер не подтверждена.',!ok);
+    }catch(e){productStatus8971('Карточка сохранена на этом компьютере. Синхронизация: '+String(e?.message||e),true);}
   }
 
   window.addProduct=async function(){
@@ -101,7 +81,12 @@
       updatedAt:Date.now()
     };
     state.products=Array.isArray(state.products)?state.products:[];
+    const previousPending=clone(state.pendingProducts8972||{});
+    window.CatalogPending8972.record(state,null,row);
     state.products.push(row);
+    try{localStorage.setItem(KEY,JSON.stringify(state));}
+    catch(e){state.products=state.products.filter(p=>p!==row);state.pendingProducts8972=previousPending;alert('Товар не сохранён: '+String(e?.message||e));return;}
+
 
     if(nameEl)nameEl.value='';
     if(articleEl)articleEl.value='';
@@ -113,6 +98,7 @@
     if(group)group.value='';
     const search=byId('productListSearch');
     if(search)search.value='';
+    const filter=byId('productGroupFilter');if(filter)filter.value='';
 
     persist8971();
     if(typeof toggleAddProductForm==='function')toggleAddProductForm(false);
@@ -129,6 +115,7 @@
     if(!p)return alert('Карточка товара не найдена');
     const name=String(byId('editPname')?.value||'').trim();
     if(!name)return alert('Укажи название товара');
+    const before=clone(p),previousPending=clone(state.pendingProducts8972||{});
     p.name=name;
     p.groupId=num(byId('editPgroup')?.value);
     p.article=String(byId('editParticle')?.value||'').trim();
@@ -139,6 +126,10 @@
     if(typeof pendingEditPhoto!=='undefined'&&pendingEditPhoto!==null)p.photo=pendingEditPhoto;
     p.updatedAt=Date.now();
     const snapshot=clone(p);
+    window.CatalogPending8972.record(state,before,snapshot);
+    try{localStorage.setItem(KEY,JSON.stringify(state));}
+    catch(e){Object.keys(p).forEach(k=>delete p[k]);Object.assign(p,before);state.pendingProducts8972=previousPending;alert('Цена не сохранена: '+String(e?.message||e));return;}
+
     persist8971();
     if(typeof closeProductModal==='function')closeProductModal();
     if(typeof renderProducts==='function')renderProducts();
@@ -151,6 +142,6 @@
   const group=byId('pgroup');
   if(group)new MutationObserver(ensureOptionalGroup8971).observe(group,{childList:true});
   ensureOptionalGroup8971();
-  document.documentElement.dataset.productCreateFix='8.9.71';
-  document.documentElement.dataset.interfaceVersion='8.9.71';
+  document.documentElement.dataset.productCreateFix='8.9.72';
+  document.documentElement.dataset.interfaceVersion='8.9.72';
 })();

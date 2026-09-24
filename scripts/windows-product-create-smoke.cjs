@@ -34,10 +34,10 @@ async function main(){
     let ready;
     for(let i=0;i<180;i++){
       try{ready=await evaluate(`({ready:document.readyState,runtime:document.documentElement.dataset.uchetRuntime||'',fix:document.documentElement.dataset.productCreateFix||''})`)}catch{ready=null}
-      if(ready?.ready==='complete'&&ready.runtime===expected&&ready.fix==='8.9.71')break;
+      if(ready?.ready==='complete'&&ready.runtime===expected&&ready.fix==='8.9.72')break;
       await sleep(200);
     }
-    assert.deepEqual(ready,{ready:'complete',runtime:expected,fix:'8.9.71'});
+    assert.deepEqual(ready,{ready:'complete',runtime:expected,fix:'8.9.72'});
     const pin=await evaluate(`(async()=>{if(window.__pinLock8948){if(!window.__pinLock8948.isConfigured())await window.__pinLock8948.setInitialPin('2468','2468');else if(!window.__pinLock8948.isUnlocked())await window.__pinLock8948.unlock('2468')}return !document.getElementById('appPinLock8948')})()`);assert.equal(pin,true);
 
     const local=await evaluate(`(async()=>{
@@ -49,21 +49,38 @@ async function main(){
     })()`);
     assert.equal(local.count,1);assert.equal(local.name,'Тестовый товар без группы');assert.equal(local.groupId,0);assert.equal(local.retail,0);assert.equal(local.wholesale,0);assert.equal(local.visible,true);assert.equal(local.search,'');assert.match(local.status,/создан/);
 
-    const syncRetry=await evaluate(`(async()=>{
-      state=norm({dealers:[],groups:[],products:[],ops:[],receiptSeq:1,sync:{enabled:true,url:'https://example.invalid',token:'x',interval:5,revision:0}});localStorage.setItem(KEY,JSON.stringify(state));render();go('products');
-      let calls=0;const old=window.masterSync8962;window.masterSync8962={push:async()=>{calls++;if(calls===1){state.products=[];localStorage.setItem(KEY,JSON.stringify(state));render();return false}return true}};
-      pname.value='Товар после первого pull';particle.value='SYNC-8971';pgroup.value='';pretail.value='100';pwholesale.value='90';
-      await addProduct();await new Promise(r=>setTimeout(r,500));
-      const p=state.products.find(x=>x.article==='SYNC-8971');window.masterSync8962=old;
-      return {calls,exists:!!p,price:p?.retailPrice,status:document.getElementById('productCreateStatus8971')?.textContent||''};
+    const live=await evaluate(`(async()=>{
+      const oldRequest=syncRequest;
+      const url='https://example.invalid';
+      state=norm({dealers:[],groups:[],products:[{id:1,name:'Полотно BAUF',retailPrice:180,wholesalePrice:180}],ops:[],receiptSeq:1,sync:{enabled:true,url,token:'x',interval:5,revision:1}});
+      let remote=JSON.parse(JSON.stringify(state));
+      localStorage.setItem(KEY,JSON.stringify(state));
+      localStorage.setItem('uchet_sync_baseline_8962:'+url,JSON.stringify({state:remote,revision:1}));
+      const device=masterSync8962.device;
+      let release,enteredResolve,first=true;const entered=new Promise(r=>enteredResolve=r);
+      syncRequest=async(method,body)=>{
+        if(method==='GET'&&first){first=false;enteredResolve();await new Promise(r=>release=r)}
+        if(method==='PUT'&&body.catalog)remote={...remote,...JSON.parse(JSON.stringify(body.catalog))};
+        return {ok:true,protocol:2,storage:'turso',revision:2,state:JSON.parse(JSON.stringify(remote)),computers:{masterId:device.id,devices:{[device.id]:{name:device.name}}}};
+      };
+      try{
+        render();go('products');
+        const pulling=masterSync8962.pull(true);await entered;
+        pname.value='ПРИЩЕПКА ДЛЯ МОНТАЖА';particle.value='SYNC-8972';pgroup.value='';pretail.value='100';pwholesale.value='90';
+        await addProduct();const immediate=productRows.textContent.includes('ПРИЩЕПКА ДЛЯ МОНТАЖА');
+        release();await pulling;await masterSync8962.push(true);
+        productListSearch.value='ПРИЩЕ';renderProducts();
+        const searched=productRows.textContent.includes('ПРИЩЕПКА ДЛЯ МОНТАЖА');
+        editProduct(1);editPretail.value='85';editPwholesale.value='85';saveProductEdit();
+        await masterSync8962.push(true);await masterSync8962.pull(true);
+        editProduct(1);const reopened=Number(editPretail.value);closeProductModal();
+        return {immediate,searched,reopened,stored:JSON.parse(localStorage.getItem(KEY)).products.find(p=>p.id===1)?.retailPrice,remotePrice:remote.products.find(p=>p.id===1)?.retailPrice,remoteCreated:remote.products.some(p=>p.article==='SYNC-8972')};
+      }finally{state.sync.enabled=false;syncRequest=oldRequest;}
     })()`);
-    assert.ok(syncRetry.calls>=2,`Expected a retry after the first pull, got ${syncRetry.calls} sync call(s)`);
-    assert.equal(syncRetry.exists,true,'Product disappeared after first sync pull');
-    assert.equal(syncRetry.price,100,'Product price changed during first sync pull');
-    assert.equal(syncRetry.status,'Товар «Товар после первого pull» создан и отправлен на сервер.');
+    assert.deepEqual(live,{immediate:true,searched:true,reopened:85,stored:85,remotePrice:85,remoteCreated:true});
     assert.doesNotMatch(output,/runtime loader error|Uncaught Exception/);
     socket.close();
-    console.log('PASS: 8.9.71 creates products without a group and restores them after first-sync pull');
+    console.log('PASS: created products and price 85 survive actual queued pull/push and reopening');
   }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F'])}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});

@@ -144,7 +144,9 @@
       if(alreadyImported(ceil.key)){if(!options.quiet){renderDraft(false);alert('Этот потолок уже был оформлен раньше. Повторно в продажу он не добавлен.');}return}
       let d=loadDraft();
       const duplicate=d&&(d.ceilings||[]).find(x=>x.key===ceil.key);
-      if(duplicate&&!ceilingHasErrors(duplicate)){if(!options.quiet){renderDraft(true);alert('Этот потолок уже есть в открытой продаже. Повторно он не добавлен.');}return}
+      if(duplicate&&JSON.stringify({...duplicate,ts:0,fileName:''})===JSON.stringify({...ceil,ts:0,fileName:''})){if(!options.quiet)renderDraft(true);return;}
+      // A repeated export refreshes this ceiling from current product cards, without a duplicate.
+      if(duplicate&&options.recoverOnly&&!ceilingHasErrors(duplicate))return;
       // Empty placeholders from older releases have no order/dealer identity.
       // Archive them before accepting a real ceiling; preserve all actual orders.
       if(d&&(d.ceilings||[]).some(emptyLegacyCeiling)){
@@ -156,12 +158,12 @@
       if(options.recoverOnly&&!d&&!options.allowEmptyRecovery)return;
       if(!d)d={version:1,createdAt:Date.now(),dealerId:ceil.dealerId,dealerName:ceil.dealerName,dealerPhone:ceil.dealerPhone,ceilings:[]};
       else{if(d.dealerId==null&&ceil.dealerId!=null)d.dealerId=ceil.dealerId;if(!d.dealerPhone&&ceil.dealerPhone)d.dealerPhone=ceil.dealerPhone;if((!d.dealerName||d.dealerName==='Дилер не определён')&&ceil.dealerName)d.dealerName=ceil.dealerName}
-      const replace=d.ceilings.findIndex(c=>c.key===ceil.key&&ceilingHasErrors(c));
+      const replace=d.ceilings.findIndex(c=>c.key===ceil.key);
       if(replace>=0){backupDraft(d);d.ceilings[replace]=ceil;}else d.ceilings.push(ceil);
       d.updatedAt=Date.now();saveDraft(d);
       try{if(typeof clearNewMatRosNotification==='function')clearNewMatRosNotification()}catch(_){ }
       clearOldPending();try{if(!options.quiet&&typeof go==='function')go('newmatros')}catch(_){ }renderDraft(!options.quiet);
-      const s=document.getElementById('nmStatus');if(s)s.textContent='Открытая продажа: '+d.dealerName+' · добавлен потолок '+d.ceilings.length+' · итого '+m(draftTotal(d));
+      const s=document.getElementById('nmStatus');if(s)s.textContent='Открытая продажа: '+d.dealerName+(replace>=0?' · потолок пересчитан':' · добавлен потолок '+d.ceilings.length)+' · итого '+m(draftTotal(d));
       return true;
     }catch(e){console.error('NewMatRos add ceiling',e);if(!options.quiet)alert('Не удалось добавить потолок из NewMatRos: '+String(e&&e.message||e));return false}
   }

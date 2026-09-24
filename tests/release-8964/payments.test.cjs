@@ -12,7 +12,7 @@ function harness(local,remote,onBackup){
   document:{getElementById:()=>null,querySelector:()=>null,createElement:()=>({})},
   syncCfg:()=>s.state.sync,norm:x=>x,render:()=>{},go:()=>{},
   syncRequest:async(method)=>{calls.push(method);return {ok:true,protocol:2,storage:'turso',revision:1,state:C.clone(remote),computers:{masterId:'master',devices:{}}}},
-  updateAPI:{saveBackup:async()=>{if(onBackup)onBackup(s);return {ok:true}}},SyncCore8962:C};
+  updateAPI:{saveBackup:async()=>{if(onBackup)onBackup(s);return {ok:true}}},SyncCore8962:C,CatalogPending8972:require('../../app/catalog-pending-8972')};
  s.window=s;vm.createContext(s);vm.runInContext(source,s);return {s,data,calls};
 }
 const base=()=>({dealers:[{id:1,name:'A'}],products:[],ops:[],sync:{url:'https://test.invalid',enabled:false}});

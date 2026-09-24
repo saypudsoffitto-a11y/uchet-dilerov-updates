@@ -100,13 +100,22 @@ async function main(){
       }
       assert.equal(draft?.ceilings?.length,2,JSON.stringify(draft));
       assert.deepEqual(draft.ceilings.map(c=>c.materialPrice),[200,200]);
+      await evaluate(`(()=>{editProduct(894402);editPretail.value='85';editPwholesale.value='85';saveProductEdit();return true})()`);
+      fs.writeFileSync(file,ini(2)+'\n; re-export after price edit','utf8');
+      for(let i=0;i<100;i++){
+        await sleep(200);
+        draft=await evaluate(`JSON.parse(localStorage.getItem('uchetNewMatRosOpenSale8926')||'null')`);
+        if(draft?.ceilings?.[1]?.materialPrice===85)break;
+      }
+      assert.equal(draft?.ceilings?.length,2,JSON.stringify(draft));
+      assert.deepEqual(draft.ceilings.map(c=>c.materialPrice),[200,85]);
       const posted=await evaluate(`(()=>{
         window.confirm=()=>true;window.alert=()=>{};
         document.getElementById('nmDraftFinish8926').click();
         return {ops:state.ops.map(o=>({total:o.total,dealerId:o.dealerId,keys:o.newmatrosKeys})),draft:localStorage.getItem('uchetNewMatRosOpenSale8926')};
       })()`);
       assert.equal(posted.ops.length,1,JSON.stringify(posted));
-      assert.equal(posted.ops[0].total,4000,JSON.stringify(posted));
+      assert.equal(posted.ops[0].total,2850,JSON.stringify(posted));
       assert.equal(posted.ops[0].dealerId,894401,JSON.stringify(posted));
       assert.equal(posted.ops[0].keys.length,2,JSON.stringify(posted));
       assert.equal(posted.draft,null,JSON.stringify(posted));
