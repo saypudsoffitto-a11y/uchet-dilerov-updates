@@ -7,19 +7,21 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const pkg=JSON.parse(read('app/package.json'));
-const main=read('app/main-8970.js');
+const preload=read('app/preload.js');
 const r69=read('app/release-8969.js');
 const r70=read('app/release-8970.js');
 const master=read('app/master-sync-8962.js');
 const protocol=read('server/master-protocol-8962.js');
 
-test('8.9.70 package loads the real final renderer fixes',()=>{
+test('8.9.70 package loads the user 8.9.69 fixes and final patch through preload',()=>{
   assert.equal(pkg.version,'8.9.70');
-  assert.equal(pkg.main,'main-8970.js');
+  assert.equal(pkg.main,'main-8948.js');
   assert(pkg.build.files.includes('release-8969.js'));
   assert(pkg.build.files.includes('release-8970.js'));
-  assert(main.includes("release-8969.js?v=8.9.70"));
-  assert(main.includes("release-8970.js?v=8.9.70"));
+  assert(preload.includes("'./release-8969.js'"));
+  assert(preload.includes("'./release-8970.js'"));
+  assert(preload.includes("?runtime=8970"));
+  assert(preload.includes("dataset.uchetRuntime='8.9.70'"));
 });
 
 test('NewMatRos BAUF price comes from the matching product card',()=>{
