@@ -140,4 +140,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-# final publish run after preserving the approved JPEG handler and receipt layout
+# publish run after deterministic Windows receipt layout smoke fix
