@@ -57,7 +57,6 @@
       "pin-lock-8948.js",
       "next-8948.js",
       "main-8948.js",
-      "main-8970.js",
       "interface-8949.css",
       "interface-8950.css",
       "interface-8951.css",
@@ -138,7 +137,7 @@
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
   },
-  "main": "main-8970.js",
+  "main": "main-8948.js",
   "name": "uchet-dilerov",
   "repository": {
     "type": "git",
