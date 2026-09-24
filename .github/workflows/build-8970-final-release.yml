@@ -140,4 +140,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-# final run: package directly from the corrected user-provided 8.9.69 source loader
+# final publish run after preserving the approved JPEG handler and receipt layout
