@@ -1,5 +1,5 @@
 # final verification: run the packaged app directly through the Portable executable;
-# Setup is still built, hashed and published for normal in-app updates.
+# Setup is still built, hashed and published for normal in-app updates. Final interface marker refreshed.
 name: Build and Publish 8.9.73 Receipt UI
 
 on:
