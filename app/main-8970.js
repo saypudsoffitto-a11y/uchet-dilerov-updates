@@ -1,7 +1,7 @@
 'use strict';
 require('./main-8948.js');
 
-const {app,BrowserWindow}=require('electron');
+const {app}=require('electron');
 
 const loader=`(()=>{
   if(window.__release8970Loader)return;
@@ -22,8 +22,6 @@ function attach(win){
   win.__uchet8970Attached=true;
   const run=()=>{if(!win.isDestroyed())win.webContents.executeJavaScript(loader,true).catch(e=>console.error('8.9.70 inject',e));};
   win.webContents.on('did-finish-load',run);
-  if(!win.webContents.isLoading())setTimeout(run,0);
 }
 
 app.on('browser-window-created',(_event,win)=>attach(win));
-app.whenReady().then(()=>BrowserWindow.getAllWindows().forEach(attach));
