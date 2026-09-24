@@ -8,18 +8,23 @@ const vm=require('node:vm');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
+function mainLoaderChain(start){
+  const seen=new Set(),out=[];
+  function walk(file){
+    if(seen.has(file))return;seen.add(file);out.push(file);
+    const src=read('app/'+file);
+    for(const m of src.matchAll(/require\(['"]\.\/(main-89\d+\.js)['"]\)/g))walk(m[1]);
+  }
+  walk(start);return out;
+}
+
 test('later package keeps the verified 8.9.39 runtime in its loader chain',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   assert.match(pkg.main,/^main-89\d+\.js$/);
   for(const f of ['main-8939.js','release-8939-main.js','dealer-delete-8939.js'])assert.ok(pkg.build.files.includes(f),f+' missing from build');
-  const current=read('app/'+pkg.main);
-  assert.match(current,/main-8941\.js|main-8940\.js|main-8939\.js/);
-  if(/main-8941\.js/.test(current)){
-    const wrapper8941=read('app/main-8941.js');
-    assert.match(wrapper8941,/main-8940\.js/);
-  }
-  const wrapper8940=read('app/main-8940.js');
-  assert.match(wrapper8940,/main-8939\.js/);
+  const chain=mainLoaderChain(pkg.main);
+  assert.ok(chain.includes('main-8941.js')||chain.includes('main-8940.js')||chain.includes('main-8939.js'),'verified 8.9.39 runtime is not reachable from '+pkg.main+': '+chain.join(' -> '));
+  assert.ok(chain.includes('main-8939.js'),'main-8939.js is not reachable from '+pkg.main+': '+chain.join(' -> '));
   const main8939=read('app/main-8939.js');
   assert.match(main8939,/release-8939-main\.js/);
   assert.match(main8939,/main-8938\.js/);
