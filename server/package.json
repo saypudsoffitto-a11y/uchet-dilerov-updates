@@ -6,7 +6,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --check server.js && node --check store.js && node --check master-protocol-8962.js && node --check sync-core-8962.js && node --test store.test.cjs server.integration.test.cjs ../tests/release-8962/master-sync.test.cjs ../tests/release-8962/no-bundled-clients.test.cjs ../tests/release-8963/release-8963.test.cjs",
+    "test": "node --check server.js && node --check store.js && node --check master-protocol-8962.js && node --check sync-core-8962.js && node --test store.test.cjs server.integration.test.cjs routes-8969.test.cjs ../tests/release-8962/master-sync.test.cjs ../tests/release-8962/no-bundled-clients.test.cjs ../tests/release-8963/release-8963.test.cjs",
     "prestart": "npm test"
   },
   "engines": {
