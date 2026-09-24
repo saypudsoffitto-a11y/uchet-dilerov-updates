@@ -52,3 +52,26 @@ test('first master selection keeps server payments',()=>{
  const s={revision:1,state:state()};s.state.ops=[{id:50,type:'payment',dealerId:1,total:20}];const r=P.update(s,{protocol:2,action:'claim',device:main,state:state()});assert.equal(r.state.ops.length,1);assert.equal(r.computers.masterId,main.id);
 });
 test('server and browser run identical sync rules',()=>assert.equal(require('node:fs').readFileSync(require.resolve('../../server/sync-core-8962'),'utf8'),require('node:fs').readFileSync(require.resolve('../../app/sync-core-8962'),'utf8')));
+
+test('first master keeps server payment and master sale without duplicate IDs',()=>{
+ const s={revision:1,state:state()};s.state.ops=[{id:50,type:'payment',dealerId:1,total:20}];
+ const selected=state();selected.ops=[{id:60,type:'sale',dealerId:1,total:80,items:[{productId:2,qty:4,total:80}]}];
+ const r=P.update(s,{protocol:2,action:'claim',device:main,state:selected});
+ assert.deepEqual(r.state.ops.map(o=>o.id).sort((a,b)=>a-b),[50,60]);
+ assert.equal(new Set(r.state.ops.map(o=>String(o.id))).size,r.state.ops.length);
+});
+test('first master quarantines pre-master operation for unknown dealer',()=>{
+ const s={revision:1,state:state()};s.state.ops=[{id:70,type:'payment',dealerId:999,total:30}];
+ const r=P.update(s,{protocol:2,action:'claim',device:main,state:state()});
+ assert.equal(r.state.ops.some(o=>o.id===70),false);
+ assert.equal(r.claimQuarantine.operations.length,1);
+ assert.equal(r.claimQuarantine.operations[0].reason,'unknown_dealer');
+});
+test('first master does not auto-apply pre-master sales to canonical stock',()=>{
+ const s={revision:1,state:state()};s.state.ops=[{id:80,type:'sale',dealerId:1,total:80,items:[{productId:2,qty:4,total:80}]}];
+ const selected=state();
+ const r=P.update(s,{protocol:2,action:'claim',device:main,state:selected});
+ assert.equal(r.state.ops.some(o=>o.id===80),false);
+ assert.equal(r.state.products[0].stock,100);
+ assert.equal(r.claimQuarantine.operations[0].reason,'pre_master_non_financial');
+});
