@@ -140,4 +140,4 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-# rerun after fixing the startup lifecycle wrapper
+# rerun after recursive verification of the legacy runtime chain
