@@ -1,6 +1,6 @@
 {
-  "version": "8.9.69",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.69/Uchet-dilerov-Setup-8.9.69-x64.exe",
-  "sha256": "34e81a1113d77ad532aa6d7d33185f0da5cb53bb96ea300c4c3246e7c1e5b570",
-  "notes": "Учёт дилеров 8.9.69 — финальная Windows-сборка с последними исправлениями. Перед установкой программа сохраняет резервную копию данных."
+  "version": "8.9.70",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.70/Uchet-dilerov-Setup-8.9.70-x64.exe",
+  "sha256": "17457d31cbc387b6548f9fb886d3d2458cb15bd82b5482dc635f58464d7e3e7e",
+  "notes": "Учёт дилеров 8.9.70 — исправленная Windows-сборка. Перед установкой программа сохраняет резервную копию данных."
 }
