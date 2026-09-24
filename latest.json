@@ -1,6 +1,6 @@
 {
-  "version": "8.9.71",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.71/Uchet-dilerov-Setup-8.9.71-x64.exe",
-  "sha256": "6ea5e922d8a64c9ad444cd2ed65b06e772d41ac1530d48851b91ceee5365ea6a",
-  "notes": "Учёт дилеров 8.9.71 — исправлено создание товара и защита новой карточки от исчезновения при первой синхронизации."
+  "version": "8.9.72",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.72/Uchet-dilerov-Setup-8.9.72-x64.exe",
+  "sha256": "682b8469433252411ff244d5554bb5fd480e05e19023c4a3ba02f78db86fa483",
+  "notes": "Учёт дилеров 8.9.72 — новые товары появляются сразу, изменения цен сохраняются при синхронизации, повторная выгрузка потолка пересчитывает цену без дубля."
 }
