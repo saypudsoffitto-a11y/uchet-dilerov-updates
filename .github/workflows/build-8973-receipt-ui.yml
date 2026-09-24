@@ -76,8 +76,14 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path 'smoke-diagnostics' | Out-Null
           $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
-          node scripts/windows-interface-smoke.cjs "$exe" *> 'smoke-diagnostics/interface.log'
-          $code = $LASTEXITCODE
+          $stdout = 'smoke-diagnostics/interface.stdout.log'
+          $stderr = 'smoke-diagnostics/interface.stderr.log'
+          $p = Start-Process -FilePath 'node' -ArgumentList @('scripts/windows-interface-smoke.cjs', $exe) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          $code = $p.ExitCode
+          $parts = @()
+          if (Test-Path $stdout) { $parts += Get-Content $stdout }
+          if (Test-Path $stderr) { $parts += Get-Content $stderr }
+          $parts | Set-Content 'smoke-diagnostics/interface.log' -Encoding utf8
           Set-Content 'smoke-diagnostics/interface.exit' $code
           Get-Content 'smoke-diagnostics/interface.log'
           Write-Host "Interface smoke exit code: $code"
@@ -86,8 +92,14 @@ jobs:
         shell: pwsh
         run: |
           $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
-          node scripts/windows-newmatros-smoke.cjs "$exe" *> 'smoke-diagnostics/newmatros.log'
-          $code = $LASTEXITCODE
+          $stdout = 'smoke-diagnostics/newmatros.stdout.log'
+          $stderr = 'smoke-diagnostics/newmatros.stderr.log'
+          $p = Start-Process -FilePath 'node' -ArgumentList @('scripts/windows-newmatros-smoke.cjs', $exe) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          $code = $p.ExitCode
+          $parts = @()
+          if (Test-Path $stdout) { $parts += Get-Content $stdout }
+          if (Test-Path $stderr) { $parts += Get-Content $stderr }
+          $parts | Set-Content 'smoke-diagnostics/newmatros.log' -Encoding utf8
           Set-Content 'smoke-diagnostics/newmatros.exit' $code
           Get-Content 'smoke-diagnostics/newmatros.log'
           Write-Host "NewMatRos smoke exit code: $code"
