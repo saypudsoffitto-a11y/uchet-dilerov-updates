@@ -41,7 +41,7 @@ jobs:
         working-directory: app
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
-        run: npm run build:win
+        run: npm run build:win -- --publish never
 
       - name: List release outputs
         shell: pwsh
