@@ -59,8 +59,10 @@ jobs:
         run: |
           $setup = 'app/dist/Uchet-dilerov-Setup-8.9.73-x64.exe'
           $portable = 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe'
+          $unpacked = 'app/dist/win-unpacked/Учёт дилеров.exe'
           if (!(Test-Path $setup)) { throw 'Setup executable was not built' }
           if (!(Test-Path $portable)) { throw 'Portable executable was not built' }
+          if (!(Test-Path $unpacked)) { throw 'Unpacked application executable was not built' }
 
       - name: Smoke - product creation and live prices
         shell: pwsh
@@ -73,7 +75,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path 'smoke-diagnostics' | Out-Null
-          $exe = (Resolve-Path 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe').Path
+          $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
           node scripts/windows-interface-smoke.cjs "$exe" *> 'smoke-diagnostics/interface.log'
           $code = $LASTEXITCODE
           Set-Content 'smoke-diagnostics/interface.exit' $code
@@ -83,7 +85,7 @@ jobs:
       - name: Smoke - NewMatRos current-price diagnostics
         shell: pwsh
         run: |
-          $exe = (Resolve-Path 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe').Path
+          $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
           node scripts/windows-newmatros-smoke.cjs "$exe" *> 'smoke-diagnostics/newmatros.log'
           $code = $LASTEXITCODE
           Set-Content 'smoke-diagnostics/newmatros.exit' $code
