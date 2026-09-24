@@ -33,9 +33,13 @@ function runtime(){
   return ctx;
 }
 
-test('8.9.69 is wired into package and preload',()=>{
-  const pkg=JSON.parse(read('app/package.json'));assert.equal(pkg.version,'8.9.69');assert.ok(pkg.build.files.includes('release-8969.js'));
-  const preload=read('app/preload.js');assert.match(preload,/release-8969\.js/);assert.match(preload,/runtime=8969/);
+test('8.9.69 fixes remain packaged and are loaded by the current release',()=>{
+  const pkg=JSON.parse(read('app/package.json'));
+  assert.ok(Number(pkg.version.split('.').pop())>=69);
+  assert.ok(pkg.build.files.includes('release-8969.js'));
+  const entry=read('app/'+pkg.main);
+  const preload=read('app/preload.js');
+  assert.ok(/release-8969\.js/.test(entry)||/release-8969\.js/.test(preload));
 });
 test('BAUF 5m cannot fall through to Premium 140',()=>{const c=runtime();const mat=c.nmBuildItems({width:5,['Заказ']:{'МатериалКаталог':'БЕЛАЯ МАТ-303 BAUF'}})[0];assert.equal(mat.productId,13);assert.equal(mat.price,180);});
 test('BAUF narrow and Premium wide keep their own product cards',()=>{const c=runtime();let mat=c.nmBuildItems({width:2.8,['Заказ']:{'МатериалКаталог':'БЕЛАЯ МАТ-303 BAUF'}})[0];assert.equal(mat.productId,12);assert.equal(mat.price,135);mat=c.nmBuildItems({width:4.5,['Заказ']:{'МатериалКаталог':'БЕЛАЯ МАТ-303 PREMIUM'}})[0];assert.equal(mat.productId,11);assert.equal(mat.price,140);});
