@@ -1,6 +1,6 @@
 {
-  "version": "8.9.72",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.72/Uchet-dilerov-Setup-8.9.72-x64.exe",
-  "sha256": "682b8469433252411ff244d5554bb5fd480e05e19023c4a3ba02f78db86fa483",
-  "notes": "Учёт дилеров 8.9.72 — новые товары появляются сразу, изменения цен сохраняются при синхронизации, повторная выгрузка потолка пересчитывает цену без дубля."
+  "version": "8.9.73",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.73/Uchet-dilerov-Setup-8.9.73-x64.exe",
+  "sha256": "84e40b68046e7a15296a75c3f649c8a07a2dd3f242c5565e3a372804f1b6a820",
+  "notes": "Учёт дилеров 8.9.73 — название позиции редактируется прямо в готовой накладной, можно добавить произвольную позицию, таблица товаров стала компактнее."
 }
