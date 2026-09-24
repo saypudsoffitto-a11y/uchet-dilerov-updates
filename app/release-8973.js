@@ -3,8 +3,6 @@
   if(window.__release8973Installed)return;
   window.__release8973Installed=true;
 
-  const esc8973=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
   function findColumn8973(root,label){
     const headers=[...root.querySelectorAll('table thead th')];
     const needle=String(label).toLocaleLowerCase('ru');
@@ -28,10 +26,26 @@
     return input;
   }
 
-  function qtyCell8973(cell,op,item,index){
-    const guard=document.createElement('span');
-    guard.hidden=true;
-    guard.className='receiptNameInput8973 receiptNameGuard8973';
+  function ensureNameCell8973(cell,op,item,index){
+    const existing=cell.querySelector('input.receiptNameInput8973:not(.receiptNameGuard8973)');
+    if(existing){
+      if(document.activeElement!==existing&&existing.value!==(item.name||''))existing.value=item.name||'';
+      return;
+    }
+    cell.replaceChildren(nameInput8973(op,item,index));
+  }
+
+  function ensureQtyCell8973(cell,op,item,index){
+    const guard=cell.querySelector('.receiptNameGuard8973');
+    const existing=cell.querySelector('input.receiptEditInput');
+    if(guard&&existing){
+      const wanted=String(Number(item.qty)||0);
+      if(document.activeElement!==existing&&existing.value!==wanted)existing.value=wanted;
+      return;
+    }
+    const nextGuard=document.createElement('span');
+    nextGuard.hidden=true;
+    nextGuard.className='receiptNameInput8973 receiptNameGuard8973';
     const input=document.createElement('input');
     input.className='receiptEditInput';
     input.type='number';
@@ -39,10 +53,16 @@
     input.step='0.01';
     input.value=Number(item.qty)||0;
     input.onchange=()=>editReceiptItem(op.id,index,'qty',input.value);
-    cell.replaceChildren(guard,input,document.createTextNode(' '+(item.unit||'шт')));
+    cell.replaceChildren(nextGuard,input,document.createTextNode(' '+(item.unit||'шт')));
   }
 
-  function priceCell8973(cell,op,item,index){
+  function ensurePriceCell8973(cell,op,item,index){
+    const existing=cell.querySelector('input.receiptEditInput');
+    if(existing){
+      const wanted=String(Number(item.price)||0);
+      if(document.activeElement!==existing&&existing.value!==wanted)existing.value=wanted;
+      return;
+    }
     const input=document.createElement('input');
     input.className='receiptEditInput';
     input.type='number';
@@ -54,7 +74,7 @@
   }
 
   function repairReceipt8973(root){
-    if(!root||!root.matches?.('[data-receipt-op-id]')||root.dataset.receipt8973Fixed==='1')return;
+    if(!root||!root.matches?.('[data-receipt-op-id]'))return;
     const op=(state.ops||[]).find(x=>String(x.id)===String(root.dataset.receiptOpId)&&x.type==='sale');
     if(!op)return;
     const nameCol=findColumn8973(root,'наименование');
@@ -66,13 +86,14 @@
     rows.forEach((tr,index)=>{
       const item=op.items?.[index];if(!item)return;
       const nameCell=tr.children?.[nameCol],qtyCell=tr.children?.[qtyCol],priceCell=tr.children?.[priceCol];
-      if(nameCell)nameCell.replaceChildren(nameInput8973(op,item,index));
-      if(qtyCell)qtyCell8973(qtyCell,op,item,index);
-      if(priceCell)priceCell8973(priceCell,op,item,index);
+      if(nameCell)ensureNameCell8973(nameCell,op,item,index);
+      if(qtyCell)ensureQtyCell8973(qtyCell,op,item,index);
+      if(priceCell)ensurePriceCell8973(priceCell,op,item,index);
     });
 
     const help=root.querySelector('.receiptEditHelp');
-    if(help)help.textContent='Название, количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.';
+    const helpText='Название, количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.';
+    if(help&&help.textContent!==helpText)help.textContent=helpText;
 
     const actions=root.querySelector('.actions');
     if(actions&&!actions.querySelector('.manualReceiptBtn8973')&&typeof window.openReceiptManualAdd8973==='function'){
@@ -91,7 +112,13 @@
     document.querySelectorAll('[data-receipt-op-id]').forEach(repairReceipt8973);
   }
 
-  const observer=new MutationObserver(()=>queueMicrotask(repairAll8973));
+  let repairQueued8973=false;
+  const queueRepair8973=()=>{
+    if(repairQueued8973)return;
+    repairQueued8973=true;
+    queueMicrotask(()=>{repairQueued8973=false;repairAll8973()});
+  };
+  const observer=new MutationObserver(queueRepair8973);
   observer.observe(document.body,{childList:true,subtree:true});
   repairAll8973();
 
@@ -99,23 +126,32 @@
   if(typeof baseRefresh==='function'){
     window.refreshReceiptViews=function(opId){
       const result=baseRefresh.apply(this,arguments);
-      queueMicrotask(repairAll8973);
+      queueRepair8973();
       return result;
     };
     try{refreshReceiptViews=window.refreshReceiptViews}catch(_){}
   }
 
-  // Re-apply compact widths after any product-table rerender.
   function compactProducts8973(){
     const table=document.querySelector('#products .productTable');if(!table)return;
     const headers=[...table.querySelectorAll('thead th')];
     for(const [label,width] of [['Группа','78px'],['Артикул','82px']]){
       const index=headers.findIndex(th=>String(th.textContent||'').trim()===label);if(index<0)continue;
-      const th=headers[index];th.style.width=width;th.style.minWidth=width;th.style.maxWidth=width;
-      table.querySelectorAll('tbody tr').forEach(tr=>{const td=tr.children?.[index];if(td){td.style.width=width;td.style.minWidth=width;td.style.maxWidth=width;td.style.whiteSpace='nowrap';td.style.overflow='hidden';td.style.textOverflow='ellipsis'}});
+      const th=headers[index];
+      if(th.style.width!==width){th.style.width=width;th.style.minWidth=width;th.style.maxWidth=width}
+      table.querySelectorAll('tbody tr').forEach(tr=>{
+        const td=tr.children?.[index];if(!td)return;
+        if(td.style.width!==width){td.style.width=width;td.style.minWidth=width;td.style.maxWidth=width;td.style.whiteSpace='nowrap';td.style.overflow='hidden';td.style.textOverflow='ellipsis'}
+      });
     }
   }
-  new MutationObserver(()=>queueMicrotask(compactProducts8973)).observe(document.getElementById('products')||document.body,{childList:true,subtree:true});
+  let compactQueued8973=false;
+  const queueCompact8973=()=>{
+    if(compactQueued8973)return;
+    compactQueued8973=true;
+    queueMicrotask(()=>{compactQueued8973=false;compactProducts8973()});
+  };
+  new MutationObserver(queueCompact8973).observe(document.getElementById('products')||document.body,{childList:true,subtree:true});
   compactProducts8973();
 
   document.documentElement.dataset.uchetRuntime='8.9.73';
