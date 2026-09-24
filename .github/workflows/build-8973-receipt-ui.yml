@@ -1,4 +1,4 @@
-# verification after making historical 8.9.71 assertions version-compatible
+# final verification with installed-app smoke checks split by subsystem
 name: Build and Publish 8.9.73 Receipt UI
 
 on:
@@ -55,7 +55,7 @@ jobs:
           GITHUB_TOKEN: ''
         run: npm run build:win -- --publish never
 
-      - name: Install and smoke-test built application
+      - name: Install built application
         shell: pwsh
         run: |
           $setup = (Resolve-Path 'app/dist/Uchet-dilerov-Setup-8.9.73-x64.exe').Path
@@ -66,10 +66,25 @@ jobs:
           if ($installer.ExitCode -ne 0) { throw "Installer exited with code $($installer.ExitCode)" }
           $exe = Join-Path $destination 'Учёт дилеров.exe'
           if (!(Test-Path $exe)) { throw 'Installed application was not found' }
+
+      - name: Smoke - product creation and live prices
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'uchet-8973-smoke\Учёт дилеров.exe'
           node scripts/windows-product-create-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Product creation smoke failed' }
+
+      - name: Smoke - interface, receipt and archive
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'uchet-8973-smoke\Учёт дилеров.exe'
           node scripts/windows-interface-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Interface smoke failed' }
+
+      - name: Smoke - NewMatRos current-price flow
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:RUNNER_TEMP 'uchet-8973-smoke\Учёт дилеров.exe'
           node scripts/windows-newmatros-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'NewMatRos smoke failed' }
 
