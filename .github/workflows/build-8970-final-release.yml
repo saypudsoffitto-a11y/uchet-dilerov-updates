@@ -139,3 +139,5 @@ jobs:
             latest.json
           if-no-files-found: error
           retention-days: 14
+
+# rerun after fixing the startup lifecycle wrapper
