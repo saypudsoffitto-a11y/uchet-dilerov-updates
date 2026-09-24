@@ -11,6 +11,19 @@ const editMenu=fs.readFileSync(path.join(appDir,'release-8930-main.js'),'utf8');
 const pinLock=fs.readFileSync(path.join(appDir,'pin-lock-8948.js'),'utf8');
 const pkg=require('../../app/package.json');
 
+function mainEntryReaches(target){
+  const seen=new Set();
+  function walk(file){
+    if(file===target)return true;
+    if(seen.has(file))return false;seen.add(file);
+    const p=path.join(appDir,file);if(!fs.existsSync(p))return false;
+    const src=fs.readFileSync(p,'utf8');
+    for(const m of src.matchAll(/require\(['"]\.\/(main-89\d+\.js)['"]\)/g))if(walk(m[1]))return true;
+    return false;
+  }
+  return walk(pkg.main);
+}
+
 test('next release keeps NewMatRos receipt description compact',()=>{
   assert.match(patch,/Полотно: /);
   assert.match(patch,/рулон /);
@@ -38,7 +51,7 @@ test('WhatsApp uses JPEG IPC in the new override',()=>{
 test('8.9.48 application layer remains wired on later releases',()=>{
   const patchNo=Number(String(pkg.version).split('.')[2]||0);
   assert.ok(patchNo>=48,'expected 8.9.48 or later');
-  assert.equal(pkg.main,'main-8948.js');
+  assert.ok(mainEntryReaches('main-8948.js'),'current entry '+pkg.main+' must reach main-8948.js');
   assert.ok(pkg.build.files.includes('next-8948.js'));
   assert.ok(pkg.build.files.includes('main-8948.js'));
 });
