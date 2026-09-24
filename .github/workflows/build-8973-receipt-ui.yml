@@ -71,54 +71,19 @@ jobs:
           node scripts/windows-product-create-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Product creation smoke failed' }
 
-      - name: Smoke - interface receipt archive diagnostics
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force -Path 'smoke-diagnostics' | Out-Null
-          $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
-          $stdout = 'smoke-diagnostics/interface.stdout.log'
-          $stderr = 'smoke-diagnostics/interface.stderr.log'
-          $p = Start-Process -FilePath 'node' -ArgumentList @('scripts/windows-interface-smoke.cjs', $exe) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-          $code = $p.ExitCode
-          $parts = @()
-          if (Test-Path $stdout) { $parts += Get-Content $stdout }
-          if (Test-Path $stderr) { $parts += Get-Content $stderr }
-          $parts | Set-Content 'smoke-diagnostics/interface.log' -Encoding utf8
-          Set-Content 'smoke-diagnostics/interface.exit' $code
-          Get-Content 'smoke-diagnostics/interface.log'
-          Write-Host "Interface smoke exit code: $code"
-
-      - name: Smoke - NewMatRos current-price diagnostics
+      - name: Smoke - 8.9.73 receipt editing and compact products
         shell: pwsh
         run: |
           $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
-          $stdout = 'smoke-diagnostics/newmatros.stdout.log'
-          $stderr = 'smoke-diagnostics/newmatros.stderr.log'
-          $p = Start-Process -FilePath 'node' -ArgumentList @('scripts/windows-newmatros-smoke.cjs', $exe) -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-          $code = $p.ExitCode
-          $parts = @()
-          if (Test-Path $stdout) { $parts += Get-Content $stdout }
-          if (Test-Path $stderr) { $parts += Get-Content $stderr }
-          $parts | Set-Content 'smoke-diagnostics/newmatros.log' -Encoding utf8
-          Set-Content 'smoke-diagnostics/newmatros.exit' $code
-          Get-Content 'smoke-diagnostics/newmatros.log'
-          Write-Host "NewMatRos smoke exit code: $code"
+          node scripts/windows-8973-receipt-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw '8.9.73 receipt runtime smoke failed' }
 
-      - name: Upload smoke diagnostics
-        uses: actions/upload-artifact@v4
-        with:
-          name: Uchet-dilerov-8.9.73-smoke-diagnostics
-          path: smoke-diagnostics/
-          if-no-files-found: error
-          retention-days: 3
-
-      - name: Gate publication on smoke checks
+      - name: Smoke - NewMatRos current-price flow
         shell: pwsh
         run: |
-          $interface = [int](Get-Content 'smoke-diagnostics/interface.exit')
-          $newmatros = [int](Get-Content 'smoke-diagnostics/newmatros.exit')
-          if ($interface -ne 0) { throw "Interface smoke failed with exit code $interface" }
-          if ($newmatros -ne 0) { throw "NewMatRos smoke failed with exit code $newmatros" }
+          $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
+          node scripts/windows-newmatros-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'NewMatRos smoke failed' }
 
       - name: Generate verified update manifest
         shell: pwsh
@@ -132,6 +97,7 @@ jobs:
             notes = 'Учёт дилеров 8.9.73 — название позиции редактируется прямо в готовой накладной, можно добавить произвольную позицию, таблица товаров стала компактнее.'
           }
           $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path 'latest.json' -Encoding utf8
+          Get-Content latest.json
 
       - name: Publish GitHub Release 8.9.73
         shell: pwsh
