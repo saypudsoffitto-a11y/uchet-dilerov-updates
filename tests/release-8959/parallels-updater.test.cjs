@@ -37,8 +37,10 @@ test('8.9.59 keeps downloaded installer in userData instead of temporary storage
   assert.match(src,/fs\.mkdirSync\(updateDir,\{recursive:true\}\)/);
 });
 
-test('package version is 8.9.59',()=>{
+test('package version has not been rolled back before 8.9.59',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.match(pkg.version,/^8\.9\.(61|62|63|64|65|66|67)$/);
+  const m=pkg.version.match(/^8\.9\.(\d+)$/);
+  assert.ok(m,`unexpected version format: ${pkg.version}`);
+  assert.ok(Number(m[1])>=59,`version ${pkg.version} is older than 8.9.59, parallels-updater fix may have been reverted`);
   assert.match(pkg.scripts['prebuild:win'],/release-8959/);
 });
