@@ -1,0 +1,141 @@
+name: Build and Publish 8.9.70 Corrected Windows Release
+
+on:
+  push:
+    branches:
+      - release/8.9.70-final-build
+    paths:
+      - '.github/workflows/build-8970-final-release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: uchet-dilerov-8970-final
+  cancel-in-progress: false
+
+jobs:
+  build-test-publish:
+    runs-on: windows-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout corrected release source
+        uses: actions/checkout@v4
+        with:
+          ref: release/8.9.70-final-build
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: app/package.json
+
+      - name: Install build dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: Run complete regression suite
+        working-directory: app
+        run: npm run prebuild:win
+
+      - name: Build Setup and Portable x64
+        working-directory: app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
+        run: npm run build:win -- --publish never
+
+      - name: Install and smoke-test built application
+        shell: pwsh
+        run: |
+          $setup = (Resolve-Path 'app/dist/Uchet-dilerov-Setup-8.9.70-x64.exe').Path
+          $destination = Join-Path $env:RUNNER_TEMP 'uchet-8970-smoke'
+          if (Test-Path $destination) { Remove-Item $destination -Recurse -Force -ErrorAction SilentlyContinue }
+          $installer = Start-Process -FilePath $setup -ArgumentList @('/S', "/D=$destination") -PassThru
+          if (!$installer.WaitForExit(90000)) { Stop-Process -Id $installer.Id -Force -ErrorAction SilentlyContinue; throw 'Installer timed out' }
+          if ($installer.ExitCode -ne 0) { throw "Installer exited with code $($installer.ExitCode)" }
+          $exe = Join-Path $destination 'Учёт дилеров.exe'
+          if (!(Test-Path $exe)) { throw 'Installed application was not found' }
+          node scripts/windows-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Windows smoke failed' }
+          node scripts/windows-group-filter-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Group/product smoke failed' }
+          node scripts/windows-interface-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Interface smoke failed' }
+          node scripts/windows-newmatros-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'NewMatRos smoke failed' }
+
+      - name: Generate verified update manifest
+        shell: pwsh
+        run: |
+          $setup = 'app/dist/Uchet-dilerov-Setup-8.9.70-x64.exe'
+          $sha = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          $manifest = [ordered]@{
+            version = '8.9.70'
+            url = 'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.70/Uchet-dilerov-Setup-8.9.70-x64.exe'
+            sha256 = $sha
+            notes = 'Исправленная Windows-версия 8.9.70. В сборке активированы фактические правки 8.9.69 и дополнительные исправления текущего релиза.'
+          }
+          $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path 'latest.json' -Encoding utf8
+          Get-Content latest.json
+
+      - name: Publish GitHub Release 8.9.70
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $setup = 'app/dist/Uchet-dilerov-Setup-8.9.70-x64.exe'
+          $portable = 'app/dist/Uchet-dilerov-Portable-8.9.70-x64.exe'
+          gh release view 8.9.70 --repo $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload 8.9.70 $setup $portable latest.json --repo $env:GITHUB_REPOSITORY --clobber
+          } else {
+            gh release create 8.9.70 $setup $portable latest.json --repo $env:GITHUB_REPOSITORY --target 'release/8.9.70-final-build' --title 'Учёт дилеров 8.9.70' --notes 'Исправленная Windows-сборка 8.9.70. Опубликована только после полного prebuild и Windows smoke-проверок.'
+          }
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Switch built-in update button to 8.9.70
+        shell: pwsh
+        run: |
+          Copy-Item latest.json "$env:RUNNER_TEMP/latest-8.9.70.json"
+          git fetch origin main
+          git checkout -B main origin/main
+          Copy-Item "$env:RUNNER_TEMP/latest-8.9.70.json" latest.json -Force
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add latest.json
+          git diff --cached --quiet
+          if ($LASTEXITCODE -ne 0) {
+            git commit -m 'Publish corrected Windows 8.9.70 update manifest [skip ci]'
+            git push origin main
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Verify published installer and updater manifest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $assets = gh release view 8.9.70 --repo $env:GITHUB_REPOSITORY --json assets --jq '.assets[].name'
+          if ($assets -notcontains 'Uchet-dilerov-Setup-8.9.70-x64.exe') { throw 'Setup asset missing' }
+          if ($assets -notcontains 'Uchet-dilerov-Portable-8.9.70-x64.exe') { throw 'Portable asset missing' }
+          $raw = gh api repos/$env:GITHUB_REPOSITORY/contents/latest.json?ref=main --jq '.content' | ForEach-Object { $_ -replace '\s','' }
+          $bytes = [Convert]::FromBase64String($raw)
+          $text = [Text.Encoding]::UTF8.GetString($bytes)
+          if ($text -notmatch '"version"\s*:\s*"8\.9\.70"') { throw 'main latest.json does not point to 8.9.70' }
+
+      - name: Upload verified build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Uchet-dilerov-8.9.70-Windows-x64
+          path: |
+            app/dist/Uchet-dilerov-Setup-8.9.70-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.70-x64.exe
+            latest.json
+          if-no-files-found: error
+          retention-days: 14
