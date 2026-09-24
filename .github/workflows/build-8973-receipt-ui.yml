@@ -1,4 +1,4 @@
-# final verification after aligning preload/runtime and compact receipt columns
+# verification after making historical 8.9.71 assertions version-compatible
 name: Build and Publish 8.9.73 Receipt UI
 
 on:
