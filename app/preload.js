@@ -1,4 +1,4 @@
-// Release 8.9.72: verified loader with product creation/sync hotfix.
+// Release 8.9.73: receipt-name editing and compact product-list patch over verified 8.9.72.
 const { contextBridge, ipcRenderer, webFrame } = require('electron');
 
 const nmCallbacks=[];
@@ -77,21 +77,22 @@ window.addEventListener('DOMContentLoaded',()=>{
       './release-8967.js',
       './release-8969.js',
       './release-8970.js',
-      './release-8971.js'
+      './release-8971.js',
+      './release-8973.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
         const s=document.createElement('script');
-        s.src=src+'?runtime=8972';
+        s.src=src+'?runtime=8973';
         s.onload=resolve;
         s.onerror=()=>reject(new Error('Не загрузился '+src));
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.72';
+    document.documentElement.dataset.uchetRuntime='8.9.73';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.72 runtime loader error',e))}
-  catch(e){console.error('8.9.72 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.73 runtime loader error',e))}
+  catch(e){console.error('8.9.73 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{

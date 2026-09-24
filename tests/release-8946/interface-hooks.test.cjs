@@ -13,7 +13,7 @@ test('8.9.46 interface includes NewMatRos cancel, receipt context menu and deale
   assert.match(js,/archiveReceipt/);
   assert.match(js,/dealerMetricDebt8946/);
   assert.match(js,/dealerMetricClear8946/);
-  assert.match(js,/interfaceVersion='8\.9\.46'/);
+  assert.match(js,/interfaceVersion='8\.9\.(?:46|73)'/);
   assert.match(css,/nmDraftOpenRed8946/);
   assert.match(css,/dealerMetricPaid8946/);
   assert.match(css,/dealerMetricDebt8946/);

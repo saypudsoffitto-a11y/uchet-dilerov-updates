@@ -1,0 +1,142 @@
+name: Build and Publish 8.9.73 Receipt UI
+
+on:
+  push:
+    branches:
+      - fix/8.9.73-receipt-name-compact-products
+    paths:
+      - '.github/workflows/build-8973-receipt-ui.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: uchet-dilerov-8973-receipt-ui
+  cancel-in-progress: false
+
+jobs:
+  build-test-publish:
+    runs-on: windows-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout 8.9.73 source
+        uses: actions/checkout@v4
+        with:
+          ref: fix/8.9.73-receipt-name-compact-products
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: app/package.json
+
+      - name: Install build dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: Run complete regression suite
+        working-directory: app
+        run: npm run prebuild:win
+
+      - name: Run 8.9.73 receipt regression tests
+        working-directory: app
+        run: node --test ../tests/release-8973/*.test.cjs
+
+      - name: Build Setup and Portable x64
+        working-directory: app
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
+        run: npm run build:win -- --publish never
+
+      - name: Verify packaged executables exist
+        shell: pwsh
+        run: |
+          $setup = 'app/dist/Uchet-dilerov-Setup-8.9.73-x64.exe'
+          $portable = 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe'
+          $unpacked = 'app/dist/win-unpacked/Учёт дилеров.exe'
+          if (!(Test-Path $setup)) { throw 'Setup executable was not built' }
+          if (!(Test-Path $portable)) { throw 'Portable executable was not built' }
+          if (!(Test-Path $unpacked)) { throw 'Unpacked application executable was not built' }
+
+      - name: Smoke - product creation and live prices
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe').Path
+          node scripts/windows-product-create-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'Product creation smoke failed' }
+
+      - name: Smoke - staged 8.9.73 receipt diagnostics
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
+          node scripts/windows-8973-receipt-diagnostic.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw '8.9.73 staged receipt diagnostic failed' }
+
+      - name: Smoke - NewMatRos current-price flow
+        shell: pwsh
+        run: |
+          $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
+          node scripts/windows-newmatros-smoke.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw 'NewMatRos smoke failed' }
+
+      - name: Generate verified update manifest
+        shell: pwsh
+        run: |
+          $setup = 'app/dist/Uchet-dilerov-Setup-8.9.73-x64.exe'
+          $sha = (Get-FileHash $setup -Algorithm SHA256).Hash.ToLower()
+          $manifest = [ordered]@{
+            version = '8.9.73'
+            url = 'https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.73/Uchet-dilerov-Setup-8.9.73-x64.exe'
+            sha256 = $sha
+            notes = 'Учёт дилеров 8.9.73 — название позиции редактируется прямо в готовой накладной, можно добавить произвольную позицию, таблица товаров стала компактнее.'
+          }
+          $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path 'latest.json' -Encoding utf8
+          Get-Content latest.json
+
+      - name: Publish GitHub Release 8.9.73
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create 8.9.73 `
+            'app/dist/Uchet-dilerov-Setup-8.9.73-x64.exe' `
+            'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe' `
+            'latest.json' `
+            --repo $env:GITHUB_REPOSITORY `
+            --target 'fix/8.9.73-receipt-name-compact-products' `
+            --title 'Учёт дилеров 8.9.73' `
+            --notes 'Добавлено редактирование названия позиции прямо в готовом чеке, ручная произвольная позиция с количеством и ценой, а также более компактные колонки «Группа» и «Артикул». Сохранены исправления 8.9.72 по товарам, ценам и NewMatRos.'
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Upload verified build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Uchet-dilerov-8.9.73-Windows-x64
+          path: |
+            app/dist/Uchet-dilerov-Setup-8.9.73-x64.exe
+            app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe
+            latest.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Update Windows auto-update manifest after verified publication
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$env:GITHUB_REPOSITORY/contents/latest.json?ref=main" > current-manifest.json
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot read current update manifest' }
+          $current = Get-Content current-manifest.json -Raw | ConvertFrom-Json
+          $old = [System.Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($current.content)) | ConvertFrom-Json
+          if ([version]$old.version -gt [version]'8.9.73') { throw 'A newer version has already been published; refusing to downgrade manifest' }
+          $bytes = [System.IO.File]::ReadAllBytes((Resolve-Path 'latest.json'))
+          $request = @{message='Publish verified Windows 8.9.73 manifest [skip ci]';branch='main';sha=$current.sha;content=[Convert]::ToBase64String($bytes)} | ConvertTo-Json
+          Set-Content manifest-request.json $request -Encoding utf8
+          gh api --method PUT "repos/$env:GITHUB_REPOSITORY/contents/latest.json" --input manifest-request.json --jq .commit.sha
+          if ($LASTEXITCODE -ne 0) { throw 'Update manifest was not published' }

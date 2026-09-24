@@ -115,6 +115,105 @@
   }
   installDealerDecorator();setTimeout(installDealerDecorator,1500);setTimeout(installDealerDecorator,5000);
 
+  // 8.9.73: editable receipt item names, manual free-form positions and denser product table.
+  const patchStyle8973=document.createElement('style');
+  patchStyle8973.textContent=`
+    #products .productTable th,#products .productTable td{padding:5px 6px!important;line-height:1.08!important}
+    #products .productTable .compactGroup8973{width:78px!important;min-width:78px!important;max-width:78px!important}
+    #products .productTable .compactArticle8973{width:82px!important;min-width:82px!important;max-width:82px!important}
+    #products .productTable td.compactGroup8973,#products .productTable td.compactArticle8973{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+    .receiptNameInput8973{width:100%;min-width:190px;padding:5px 6px;border:1px solid #b8c3d1;border-radius:6px;font:inherit;background:#fff}
+    .receiptNameInput8973:focus{border-color:#75a8ec;box-shadow:0 0 0 2px #eaf2ff;outline:none}
+    .manualReceiptGrid8973{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;align-items:end}
+    @media(max-width:760px){.manualReceiptGrid8973{grid-template-columns:1fr 1fr}.manualReceiptGrid8973 .name8973{grid-column:1/-1}}
+    @media print{.receiptNameInput8973{border:0!important;box-shadow:none!important;padding:0!important;background:transparent!important;color:#111!important}}
+  `;
+  document.head.appendChild(patchStyle8973);
+
+  function compactProductColumns8973(){
+    const table=document.querySelector('#products .productTable');if(!table)return;
+    const headers=[...table.querySelectorAll('thead th')];
+    for(const [label,cls] of [['Группа','compactGroup8973'],['Артикул','compactArticle8973']]){
+      const th=headers.find(x=>x.textContent.trim()===label);if(!th)continue;
+      const key=th.dataset.colKey;th.classList.add(cls);
+      table.querySelectorAll('tbody tr').forEach(row=>{const td=[...row.children].find(x=>x.dataset.colKey===key);if(td)td.classList.add(cls)});
+    }
+  }
+
+  function recalcReceipt8973(op){
+    op.total=(op.items||[]).reduce((s,i)=>s+(+i.total||0),0);
+    op.profit=(op.items||[]).reduce((s,i)=>s+(+i.profit||0),0);
+    op.updatedAt=Date.now();
+  }
+  function editReceiptItemName8973(opId,itemIndex,value){
+    const op=(state.ops||[]).find(x=>String(x.id)===String(opId)&&x.type==='sale');
+    const item=op&&op.items&&op.items[itemIndex];if(!item)return;
+    const name=String(value||'').trim();
+    if(!name){alert('Название товара не может быть пустым.');if(typeof refreshReceiptViews==='function')refreshReceiptViews(opId);return}
+    if(item.name===name)return;
+    item.name=name;recalcReceipt8973(op);save();
+    if(typeof refreshReceiptViews==='function')refreshReceiptViews(opId);
+  }
+  window.editReceiptItemName8973=editReceiptItemName8973;
+
+  let manualReceiptOpId8973=null,manualReceiptModal8973=null;
+  function ensureManualReceiptModal8973(){
+    if(manualReceiptModal8973)return manualReceiptModal8973;
+    const modal=document.createElement('div');modal.id='manualReceiptModal8973';modal.className='modal hidden';
+    modal.innerHTML='<div class="modalBox" style="max-width:820px"><div class="actions" style="justify-content:space-between"><h2 style="margin:0">Своя позиция в накладной</h2><button id="manualReceiptClose8973" class="secondary" type="button">Закрыть</button></div><p class="muted">Можно вписать любое название, количество и цену. Сумма накладной и долг пересчитаются автоматически.</p><div class="manualReceiptGrid8973"><label class="name8973">Название<input id="manualReceiptName8973" autocomplete="off" placeholder="Например: Монтаж световой линии"></label><label>Количество<input id="manualReceiptQty8973" type="number" min="0.001" step="any" value="1"></label><label>Ед.<input id="manualReceiptUnit8973" value="шт"></label><label>Цена, ₽<input id="manualReceiptPrice8973" type="number" min="0" step="0.01" value="0"></label></div><p id="manualReceiptTotal8973" style="font-weight:700"></p><p id="manualReceiptError8973" role="alert" style="color:#a22"></p><div class="actions"><button id="manualReceiptSave8973" class="primary" type="button">Добавить в накладную</button><button id="manualReceiptCancel8973" class="secondary" type="button">Отмена</button></div></div>';
+    document.body.appendChild(modal);manualReceiptModal8973=modal;
+    const $=id=>document.getElementById(id),close=()=>{modal.classList.add('hidden');manualReceiptOpId8973=null;$('manualReceiptError8973').textContent=''};
+    const updateTotal=()=>{const q=Number($('manualReceiptQty8973').value)||0,p=Number($('manualReceiptPrice8973').value)||0;$('manualReceiptTotal8973').textContent='Сумма позиции: '+money(q*p)};
+    $('manualReceiptClose8973').onclick=close;$('manualReceiptCancel8973').onclick=close;
+    $('manualReceiptQty8973').oninput=updateTotal;$('manualReceiptPrice8973').oninput=updateTotal;
+    modal.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();close()}else if(e.key==='Enter'&&!e.shiftKey&&e.target.tagName!=='BUTTON'){e.preventDefault();$('manualReceiptSave8973').click()}});
+    $('manualReceiptSave8973').onclick=()=>{
+      const op=(state.ops||[]).find(x=>String(x.id)===String(manualReceiptOpId8973)&&x.type==='sale');if(!op){close();return}
+      const name=$('manualReceiptName8973').value.trim(),qty=Number($('manualReceiptQty8973').value),price=Number($('manualReceiptPrice8973').value),unit=$('manualReceiptUnit8973').value.trim()||'шт';
+      if(!name)return $('manualReceiptError8973').textContent='Укажи название.';
+      if(!Number.isFinite(qty)||qty<=0)return $('manualReceiptError8973').textContent='Количество должно быть больше 0.';
+      if(!Number.isFinite(price)||price<0)return $('manualReceiptError8973').textContent='Цена не может быть отрицательной.';
+      const total=Math.round((qty*price+Number.EPSILON)*100)/100;
+      op.items=op.items||[];op.items.push({stockTracked:false,productId:null,article:'',name,qty,unit,price,buyPrice:0,total,profit:total,manualEntry:true,source:'manual'});
+      recalcReceipt8973(op);const id=op.id;save();close();if(typeof refreshReceiptViews==='function')refreshReceiptViews(id);
+    };
+    updateTotal();return modal;
+  }
+  function openReceiptManualAdd8973(opId){
+    const op=(state.ops||[]).find(x=>String(x.id)===String(opId)&&x.type==='sale');if(!op)return alert('Накладная не найдена.');
+    const modal=ensureManualReceiptModal8973(),$=id=>document.getElementById(id);manualReceiptOpId8973=op.id;
+    $('manualReceiptName8973').value='';$('manualReceiptQty8973').value='1';$('manualReceiptUnit8973').value='шт';$('manualReceiptPrice8973').value='0';$('manualReceiptError8973').textContent='';$('manualReceiptTotal8973').textContent='Сумма позиции: '+money(0);
+    modal.classList.remove('hidden');setTimeout(()=>$('manualReceiptName8973').focus(),30);
+  }
+  window.openReceiptManualAdd8973=openReceiptManualAdd8973;
+
+  function decorateReceipt8973(root){
+    if(!root||!root.matches?.('[data-receipt-op-id]'))return;
+    const opId=root.dataset.receiptOpId,op=(state.ops||[]).find(x=>String(x.id)===String(opId)&&x.type==='sale');if(!op)return;
+    const help=root.querySelector('.receiptEditHelp');if(help)help.textContent='Название, количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.';
+    const rows=[...root.querySelectorAll('table tbody tr')];
+    rows.forEach((tr,idx)=>{
+      const item=op.items?.[idx],cell=tr.children?.[2];if(!item||!cell||cell.querySelector('.receiptNameInput8973'))return;
+      const input=document.createElement('input');input.type='text';input.className='receiptNameInput8973';input.value=item.name||'';input.title='Название можно менять произвольно';
+      input.onchange=()=>editReceiptItemName8973(op.id,idx,input.value);
+      input.ondblclick=()=>{input.focus();input.select()};
+      input.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();input.blur()}else if(e.key==='Escape'){e.preventDefault();input.value=item.name||'';input.blur()}};
+      cell.replaceChildren(input);
+    });
+    const actions=root.querySelector('.actions');
+    if(actions&&!actions.querySelector('.manualReceiptBtn8973')){
+      const btn=document.createElement('button');btn.type='button';btn.className='secondary manualReceiptBtn8973';btn.textContent='＋ Своя позиция';btn.onclick=()=>openReceiptManualAdd8973(op.id);
+      const danger=actions.querySelector('.dangerBtn');if(danger)actions.insertBefore(btn,danger);else actions.appendChild(btn);
+    }
+  }
+  function decorateAllReceipts8973(){
+    document.querySelectorAll('[data-receipt-op-id]').forEach(decorateReceipt8973);compactProductColumns8973();
+  }
+  let decorateQueued8973=false;
+  const queueDecorate8973=()=>{if(decorateQueued8973)return;decorateQueued8973=true;requestAnimationFrame(()=>{decorateQueued8973=false;decorateAllReceipts8973()})};
+  const receiptObserver8973=new MutationObserver(queueDecorate8973);receiptObserver8973.observe(document.body,{childList:true,subtree:true});
+  queueDecorate8973();setTimeout(decorateAllReceipts8973,400);setTimeout(decorateAllReceipts8973,1500);
+
   renderHomeDashboard();updateStatus();
-  document.documentElement.dataset.interfaceVersion='8.9.46';
+  document.documentElement.dataset.interfaceVersion='8.9.73';
 })();
