@@ -193,6 +193,6 @@
     }
   `;(document.head||document.documentElement).appendChild(style);
 
-  document.documentElement.dataset.interfaceVersion='8.9.62';
-  document.documentElement.dataset.uchetRuntime='8.9.62';
+  document.documentElement.dataset.interfaceVersion='8.9.63';
+  document.documentElement.dataset.uchetRuntime='8.9.63';
 })();

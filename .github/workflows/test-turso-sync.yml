@@ -1,0 +1,31 @@
+name: Test Turso sync server
+
+on:
+  push:
+    branches:
+      - turso-sync-8963
+  pull_request:
+    branches:
+      - main
+      - release-8.9.62
+  workflow_dispatch:
+
+jobs:
+  test-server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: server/package.json
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run server tests
+        run: npm test

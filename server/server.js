@@ -1,16 +1,20 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { createStore } = require('./store');
 
 const PORT = Number(process.env.PORT || 8787);
 const HOST = process.env.HOST || '0.0.0.0';
 const TOKEN = String(process.env.SYNC_TOKEN || '').trim();
+const TOKEN_SHA256 = String(process.env.SYNC_TOKEN_SHA256 || '').trim().toLowerCase();
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.61-sync3';
+const SERVER_VERSION = '8.9.63-sync5';
+const masterProtocol = require('./master-protocol-8962');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
+const storeBackend = createStore({ dataFile: DATA_FILE });
 
 function mergeMarks(a, b) {
   const out = {};
@@ -201,20 +205,19 @@ function sanitizeState(incoming, previous) {
   return state;
 }
 
-function readStore() {
-  try {
-    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-    const rawState = parsed.state && typeof parsed.state === 'object' ? parsed.state : {};
-    return { revision: Number(parsed.revision || 0), state: sanitizeState(rawState, rawState) };
-  } catch (_) {
-    return { revision: 0, state: {} };
-  }
+async function readStore() {
+  const parsed = await storeBackend.read();
+  const rawState = parsed.state && typeof parsed.state === 'object' ? parsed.state : {};
+  return {
+    ...parsed,
+    revision: Number(parsed.revision || 0),
+    state: parsed.computers?.masterId ? rawState : sanitizeState(rawState, rawState),
+    storage: storeBackend.kind
+  };
 }
 
-function writeStore(store) {
-  const tmp = DATA_FILE + '.tmp';
-  fs.writeFileSync(tmp, JSON.stringify(store, null, 2), 'utf8');
-  fs.renameSync(tmp, DATA_FILE);
+async function writeStore(expectedRevision, nextStore) {
+  return await storeBackend.writeIfRevision(expectedRevision, nextStore);
 }
 
 function send(res, status, body) {
@@ -230,8 +233,13 @@ function send(res, status, body) {
 }
 
 function authorized(req) {
-  if (!TOKEN) return true;
-  return String(req.headers.authorization || '') === 'Bearer ' + TOKEN;
+  const auth = String(req.headers.authorization || '');
+  if (!TOKEN && !TOKEN_SHA256) return true;
+  if (TOKEN && auth === 'Bearer ' + TOKEN) return true;
+  const match = auth.match(/^Bearer\s+(.+)$/);
+  if (!match || !TOKEN_SHA256) return false;
+  const digest = require('crypto').createHash('sha256').update(match[1]).digest('hex');
+  return digest === TOKEN_SHA256;
 }
 
 function readJsonBody(req) {
@@ -258,31 +266,119 @@ function readJsonBody(req) {
   });
 }
 
+function requestPath(req) {
+  try {
+    const pathname = new URL(String(req.url || '/'), 'http://localhost').pathname;
+    if (pathname === '/') return '/';
+    return pathname.replace(/\/+$/, '') || '/';
+  } catch (_) {
+    return String(req.url || '/').split('?')[0].replace(/\/+$/, '') || '/';
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   try {
+    const route = requestPath(req);
     if (req.method === 'OPTIONS') return send(res, 204, {});
-    if (req.url === '/health' && req.method === 'GET') {
-      const store = readStore();
-      return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION });
+    if (route === '/' && req.method === 'GET') {
+      const store = await readStore();
+      return send(res, 200, {
+        ok: true,
+        message: 'Сервер «Учёт дилеров» работает',
+        revision: store.revision,
+        serverVersion: SERVER_VERSION,
+        storage: store.storage,
+        protocol: 2,
+        health: '/health',
+        api: '/api/state'
+      });
     }
-    if (req.url !== '/api/state') return send(res, 404, { ok: false, message: 'Маршрут не найден' });
+    if (route === '/health' && req.method === 'GET') {
+      const store = await readStore();
+      return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION, storage: store.storage, protocol: 2 });
+    }
+    if (route !== '/api/state') return send(res, 404, { ok: false, message: 'Маршрут не найден', health: '/health', api: '/api/state' });
     if (!authorized(req)) return send(res, 401, { ok: false, message: 'Неверный секретный ключ' });
     if (req.method === 'GET') {
-      const store = readStore();
-      return send(res, 200, { ok: true, revision: store.revision, state: store.state, serverVersion: SERVER_VERSION });
+      const store = await readStore();
+      return send(res, 200, { ok: true, revision: store.revision, state: store.state, computers: store.computers || null, protocol: 2, serverVersion: SERVER_VERSION, storage: store.storage });
     }
     if (req.method === 'PUT') {
       const body = await readJsonBody(req);
-      const current = readStore();
+      const current = await readStore();
       const baseRevision = Number(body.baseRevision || 0);
       if (baseRevision !== current.revision) {
-        return send(res, 409, { ok: false, conflict: true, revision: current.revision, state: current.state, serverVersion: SERVER_VERSION, message: 'База уже изменилась на другом компьютере' });
+        return send(res, 409, {
+          ok: false,
+          conflict: true,
+          revision: current.revision,
+          state: current.state,
+          computers: current.computers || null,
+          protocol: 2,
+          serverVersion: SERVER_VERSION,
+          storage: current.storage,
+          message: 'База уже изменилась на другом компьютере'
+        });
       }
-      if (!body.state || typeof body.state !== 'object') return send(res, 400, { ok: false, message: 'Не передано состояние базы' });
-      const nextState = sanitizeState(body.state, current.state);
-      const next = { revision: current.revision + 1, state: nextState, serverVersion: SERVER_VERSION, updatedAt: new Date().toISOString() };
-      writeStore(next);
-      return send(res, 200, { ok: true, revision: next.revision, serverVersion: SERVER_VERSION });
+
+      // 8.9.63 deliberately blocks legacy full-state uploads. They were the
+      // path by which old computers could resurrect deleted catalog records.
+      if (body.protocol !== 2) {
+        return send(res, 422, {
+          ok: false,
+          protocol: 2,
+          serverVersion: SERVER_VERSION,
+          storage: current.storage,
+          message: 'Обновите этот компьютер до 8.9.63. Старые списки не приняты.'
+        });
+      }
+
+      try {
+        const next = masterProtocol.update(current, body);
+        next.serverVersion = SERVER_VERSION;
+        next.updatedAt = new Date().toISOString();
+        if (body.action === 'claim' && !next.beforeMaster) {
+          next.beforeMaster = {
+            savedAt: new Date().toISOString(),
+            revision: current.revision,
+            state: current.state,
+            computers: current.computers || null
+          };
+        }
+        const saved = await writeStore(current.revision, next);
+        if (!saved || saved.conflict) {
+          const latest = saved && saved.store ? { ...saved.store, storage: storeBackend.kind } : await readStore();
+          return send(res, 409, {
+            ok: false,
+            conflict: true,
+            revision: latest.revision,
+            state: latest.state,
+            computers: latest.computers || null,
+            protocol: 2,
+            serverVersion: SERVER_VERSION,
+            storage: latest.storage || storeBackend.kind,
+            message: 'База изменилась во время отправки. Повторите синхронизацию.'
+          });
+        }
+        const persisted = saved.store || next;
+        return send(res, 200, {
+          ok: true,
+          revision: saved.revision,
+          state: persisted.state,
+          computers: persisted.computers || null,
+          protocol: 2,
+          serverVersion: SERVER_VERSION,
+          storage: storeBackend.kind
+        });
+      } catch (e) {
+        return send(res, 422, {
+          ok: false,
+          message: e.message,
+          protocol: 2,
+          serverVersion: SERVER_VERSION,
+          storage: current.storage
+        });
+      }
     }
     return send(res, 405, { ok: false, message: 'Метод не поддерживается' });
   } catch (e) {
@@ -291,6 +387,6 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, HOST, () => {
-  console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT}`);
-  console.log(TOKEN ? 'Авторизация по SYNC_TOKEN включена' : 'ВНИМАНИЕ: SYNC_TOKEN не задан');
+  console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT} · storage=${storeBackend.kind}`);
+  console.log(TOKEN || TOKEN_SHA256 ? 'Авторизация по ключу синхронизации включена' : 'ВНИМАНИЕ: ключ синхронизации не задан');
 });
