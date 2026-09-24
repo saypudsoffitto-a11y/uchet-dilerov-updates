@@ -266,14 +266,38 @@ function readJsonBody(req) {
   });
 }
 
+function requestPath(req) {
+  try {
+    const pathname = new URL(String(req.url || '/'), 'http://localhost').pathname;
+    if (pathname === '/') return '/';
+    return pathname.replace(/\/+$/, '') || '/';
+  } catch (_) {
+    return String(req.url || '/').split('?')[0].replace(/\/+$/, '') || '/';
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   try {
+    const route = requestPath(req);
     if (req.method === 'OPTIONS') return send(res, 204, {});
-    if (req.url === '/health' && req.method === 'GET') {
+    if (route === '/' && req.method === 'GET') {
+      const store = await readStore();
+      return send(res, 200, {
+        ok: true,
+        message: 'Сервер «Учёт дилеров» работает',
+        revision: store.revision,
+        serverVersion: SERVER_VERSION,
+        storage: store.storage,
+        protocol: 2,
+        health: '/health',
+        api: '/api/state'
+      });
+    }
+    if (route === '/health' && req.method === 'GET') {
       const store = await readStore();
       return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION, storage: store.storage, protocol: 2 });
     }
-    if (req.url !== '/api/state') return send(res, 404, { ok: false, message: 'Маршрут не найден' });
+    if (route !== '/api/state') return send(res, 404, { ok: false, message: 'Маршрут не найден', health: '/health', api: '/api/state' });
     if (!authorized(req)) return send(res, 401, { ok: false, message: 'Неверный секретный ключ' });
     if (req.method === 'GET') {
       const store = await readStore();
@@ -366,4 +390,3 @@ server.listen(PORT, HOST, () => {
   console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT} · storage=${storeBackend.kind}`);
   console.log(TOKEN || TOKEN_SHA256 ? 'Авторизация по ключу синхронизации включена' : 'ВНИМАНИЕ: ключ синхронизации не задан');
 });
-
