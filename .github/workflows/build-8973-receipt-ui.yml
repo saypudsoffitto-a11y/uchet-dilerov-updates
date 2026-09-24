@@ -71,12 +71,12 @@ jobs:
           node scripts/windows-product-create-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Product creation smoke failed' }
 
-      - name: Smoke - 8.9.73 receipt editing and compact products
+      - name: Smoke - staged 8.9.73 receipt diagnostics
         shell: pwsh
         run: |
           $exe = (Resolve-Path 'app/dist/win-unpacked/Учёт дилеров.exe').Path
-          node scripts/windows-8973-receipt-smoke.cjs "$exe"
-          if ($LASTEXITCODE -ne 0) { throw '8.9.73 receipt runtime smoke failed' }
+          node scripts/windows-8973-receipt-diagnostic.cjs "$exe"
+          if ($LASTEXITCODE -ne 0) { throw '8.9.73 staged receipt diagnostic failed' }
 
       - name: Smoke - NewMatRos current-price flow
         shell: pwsh
