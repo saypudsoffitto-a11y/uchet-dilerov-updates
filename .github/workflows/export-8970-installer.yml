@@ -1,0 +1,32 @@
+name: Export 8.9.70 Installer Artifact
+
+on:
+  push:
+    branches:
+      - release/8.9.70-final-build
+    paths:
+      - '.github/workflows/export-8970-installer.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download published setup
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download 8.9.70 --repo $GITHUB_REPOSITORY --pattern 'Uchet-dilerov-Setup-8.9.70-x64.exe'
+      - name: Verify SHA256
+        shell: bash
+        run: |
+          echo '5e9c2014d16f58d863f8b49c60909942e64232a51bb21299752a7d07adf0a299  Uchet-dilerov-Setup-8.9.70-x64.exe' | sha256sum -c -
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Uchet-dilerov-Setup-8.9.70-x64
+          path: Uchet-dilerov-Setup-8.9.70-x64.exe
+          if-no-files-found: error
+          retention-days: 14
