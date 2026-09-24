@@ -3,30 +3,26 @@
   if(window.__release8970Final)return;
   window.__release8970Final=true;
 
-  const h=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
-  /* Correct the Price table: move the Group column, including body cells, to the far right. */
+  /* Price: keep Group as the last visible column, moving matching body cells with the header. */
   function priceGroupRight8970(){
     const table=document.querySelector('#pricelist8962 .priceTable8962');
     if(!table)return;
     const head=table.querySelector('thead tr');
     if(!head)return;
-    let heads=[...head.children];
-    let groupIndex=heads.findIndex(x=>String(x.textContent||'').trim().toLocaleLowerCase('ru-RU')==='группа');
-    if(groupIndex<0)return;
-    if(groupIndex!==heads.length-1){head.appendChild(heads[groupIndex]);groupIndex=head.children.length-1;}
+    const heads=[...head.children];
+    const groupIndex=heads.findIndex(x=>String(x.textContent||'').trim().toLocaleLowerCase('ru-RU')==='группа');
+    if(groupIndex<0||groupIndex===heads.length-1)return;
+    head.appendChild(heads[groupIndex]);
     table.querySelectorAll('tbody tr').forEach(row=>{
-      if(row.dataset.groupRight8970==='1')return;
       const cells=[...row.children];
-      if(cells.length===heads.length&&cells.length>1)row.appendChild(cells[0]);
-      row.dataset.groupRight8970='1';
+      if(cells[groupIndex])row.appendChild(cells[groupIndex]);
     });
   }
   const priceRoot=document.getElementById('pricelist8962')||document.body;
   new MutationObserver(priceGroupRight8970).observe(priceRoot,{childList:true,subtree:true});
   setTimeout(priceGroupRight8970,0);
 
-  /* Allow changing only the displayed name of an item in a saved receipt. */
+  /* Saved receipt: change only the displayed item name. Do not replace the approved receipt/JPEG renderers. */
   const baseEditReceiptItem=window.editReceiptItem;
   window.editReceiptItem=function(opId,itemIndex,field,value){
     if(field!=='name')return typeof baseEditReceiptItem==='function'?baseEditReceiptItem.apply(this,arguments):undefined;
@@ -42,15 +38,37 @@
   };
   try{editReceiptItem=window.editReceiptItem}catch(_){}
 
-  function nameCell8970(opId,index,item){
-    return '<span class="receiptName8970" tabindex="0" data-op-id="'+h(opId)+'" data-item-index="'+index+'" title="Двойной щелчок или правая кнопка — изменить название">'+h(item?.name||'Товар')+'</span>';
+  function enhanceReceiptNames8970(root=document){
+    root.querySelectorAll?.('.receipt[data-receipt-op-id]').forEach(receipt=>{
+      const opId=receipt.dataset.receiptOpId;
+      const op=(state.ops||[]).find(x=>String(x.id)===String(opId)&&x.type==='sale');
+      if(!op)return;
+      receipt.querySelectorAll('tbody tr').forEach((row,index)=>{
+        const cell=row.cells?.[1];
+        const item=op.items?.[index];
+        if(!cell||!item||cell.querySelector('.receiptName8970'))return;
+        const span=document.createElement('span');
+        span.className='receiptName8970';
+        span.tabIndex=0;
+        span.dataset.opId=String(opId);
+        span.dataset.itemIndex=String(index);
+        span.title='Двойной щелчок или правая кнопка — изменить название';
+        span.textContent=item.name||'Товар';
+        cell.replaceChildren(span);
+      });
+      const help=receipt.querySelector('.receiptEditHelp');
+      if(help&&!help.dataset.nameHelp8970){
+        help.dataset.nameHelp8970='1';
+        help.textContent='Количество и цену можно изменить прямо в накладной. Название товара — двойным щелчком или правой кнопкой мыши.';
+      }
+    });
   }
-
-  window.renderReceiptHtml=function(op,d){
-    const rows=(op.items||[]).map((i,n)=>'<tr><td>'+(n+1)+'</td><td>'+h(i.article||'')+'</td><td>'+nameCell8970(op.id,n,i)+'</td><td><input class="receiptEditInput" type="number" min="0.01" step="0.01" value="'+(+i.qty||0)+'" onchange="editReceiptItem('+op.id+','+n+',\'qty\',this.value)"> '+h(i.unit||'шт')+'</td><td><input class="receiptEditInput" type="number" min="0" step="0.01" value="'+(+i.price||0)+'" onchange="editReceiptItem('+op.id+','+n+',\'price\',this.value)"></td><td>'+money(i.total)+'</td></tr>').join('');
-    return '<div class="receipt" id="receiptPrint" data-receipt-op-id="'+op.id+'"><h2>ТОВАРНАЯ НАКЛАДНАЯ № '+op.receiptNo+' от '+h(op.date)+'</h2><div class="meta"><div><b>Поставщик:</b> ____________________</div><div><b>Покупатель:</b> '+h(d?.name||op.dealer||'')+'</div></div><p class="receiptEditHelp">Количество и цену можно изменить прямо в накладной. Название товара — двойным щелчком или правой кнопкой мыши.</p><table><thead><tr><th>№</th><th>Артикул</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total">Итого: '+money(op.total)+'</div><p><b>Остаток долга:</b> '+money(debtOf(d.id))+'</p><div class="sign"><span>Отпустил: ____________</span><span>Получил: ____________</span></div><div class="actions" style="margin-top:20px"><button class="primary" onclick="printReceipt()">Распечатать</button><button class="primary" onclick="downloadReceipt('+op.id+')">Скачать накладную</button><button class="primary" onclick="sendWhatsApp('+op.id+')">Отправить в WhatsApp</button><button class="primary" type="button" onclick="openReceiptAdd('+op.id+')">Добавить товар в этот чек</button><button class="dangerBtn" type="button" onclick="archiveReceipt('+op.id+')">Удалить чек</button></div></div>';
-  };
-  try{renderReceiptHtml=window.renderReceiptHtml}catch(_){}
+  const receiptRoots=['receiptArea','receiptViewBody'].map(id=>document.getElementById(id)).filter(Boolean);
+  receiptRoots.forEach(root=>{
+    enhanceReceiptNames8970(root);
+    new MutationObserver(()=>enhanceReceiptNames8970(root)).observe(root,{childList:true,subtree:true});
+  });
+  setTimeout(()=>enhanceReceiptNames8970(document),0);
 
   function closeNameMenu(){document.getElementById('receiptNameMenu8970')?.remove();}
   function startNameEdit(el){
@@ -61,18 +79,19 @@
     const input=document.createElement('input');
     input.className='receiptEditInput receiptNameInput8970';
     input.type='text';input.value=old;
-    const finish=saveIt=>{
-      if(!input.isConnected)return;
-      if(saveIt){window.editReceiptItem(el.dataset.opId,Number(el.dataset.itemIndex),'name',input.value);return;}
-      input.replaceWith(el);delete el.dataset.editing8970;
-    };
-    input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();finish(true)}else if(e.key==='Escape'){e.preventDefault();finish(false)}});
-    input.addEventListener('blur',()=>setTimeout(()=>finish(false),0));
+    const cancel=()=>{if(input.isConnected){input.replaceWith(el);delete el.dataset.editing8970;}};
+    const saveName=()=>{if(!input.isConnected)return;window.editReceiptItem(el.dataset.opId,Number(el.dataset.itemIndex),'name',input.value);};
+    input.addEventListener('keydown',e=>{
+      if(e.key==='Enter'){e.preventDefault();saveName();}
+      else if(e.key==='Escape'){e.preventDefault();cancel();}
+    });
+    input.addEventListener('blur',()=>setTimeout(cancel,0));
     el.replaceWith(input);input.focus();input.select();
   }
   function showNameMenu(e,el){
     e.preventDefault();e.stopPropagation();closeNameMenu();
-    const m=document.createElement('div');m.id='receiptNameMenu8970';m.className='saleContextMenu';m.style.left=Math.min(e.clientX,window.innerWidth-250)+'px';m.style.top=Math.min(e.clientY,window.innerHeight-80)+'px';
+    const m=document.createElement('div');m.id='receiptNameMenu8970';m.className='saleContextMenu';
+    m.style.left=Math.min(e.clientX,window.innerWidth-250)+'px';m.style.top=Math.min(e.clientY,window.innerHeight-80)+'px';
     const b=document.createElement('button');b.type='button';b.textContent='Изменить название';b.onclick=()=>startNameEdit(el);m.appendChild(b);document.body.appendChild(m);
   }
   document.addEventListener('dblclick',e=>{const el=e.target.closest?.('.receiptName8970');if(el)startNameEdit(el)});
@@ -81,16 +100,18 @@
   window.addEventListener('blur',closeNameMenu);
 
   const style=document.createElement('style');
-  style.textContent='.receiptName8970{display:inline-block;min-width:120px;cursor:text;border-radius:5px;padding:3px 4px}.receiptName8970:hover{background:#eef5ff;outline:1px dashed #8eb5e8}.receiptNameInput8970{min-width:180px}@media print{.receiptName8970{padding:0!important;background:transparent!important;outline:0!important}}';
+  style.textContent='.receiptName8970{display:inline-block;min-width:120px;cursor:text;border-radius:5px;padding:3px 4px;font-weight:700}.receiptName8970:hover{background:#eef5ff;outline:1px dashed #8eb5e8}.receiptNameInput8970{min-width:180px}@media print{.receiptName8970{padding:0!important;background:transparent!important;outline:0!important}}';
   document.head.appendChild(style);
 
-  /* Make manual sync actions visibly report completion/failure even when called from old inline buttons. */
+  /* Manual sync: make the completed action visible. */
   if(window.masterSync8962&&!window.masterSync8962.__feedback8970){
     const wrap=(fn,label)=>async function(){
       const s=document.getElementById('syncStatus');if(s)s.textContent=label+'…';
-      const ok=await fn.apply(this,arguments);
-      if(s&&!String(s.textContent||'').trim())s.textContent=ok?label+' выполнено':label+' не выполнено';
-      return ok;
+      try{
+        const ok=await fn.apply(this,arguments);
+        if(s)s.textContent=ok?label+' выполнено':label+' не выполнено';
+        return ok;
+      }catch(e){if(s)s.textContent=label+' — ошибка';throw e;}
     };
     if(typeof window.masterSync8962.pull==='function')window.masterSync8962.pull=wrap(window.masterSync8962.pull,'Загрузка с сервера');
     if(typeof window.masterSync8962.push==='function')window.masterSync8962.push=wrap(window.masterSync8962.push,'Отправка на сервер');
