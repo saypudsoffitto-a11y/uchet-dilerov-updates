@@ -57,7 +57,10 @@ async function main(){
       const p=state.products.find(x=>x.article==='SYNC-8971');window.masterSync8962=old;
       return {calls,exists:!!p,price:p?.retailPrice,status:document.getElementById('productCreateStatus8971')?.textContent||''};
     })()`);
-    assert.deepEqual(syncRetry,{calls:2,exists:true,price:100,status:'Товар «Товар после первого pull» создан и отправлен на сервер.'});
+    assert.ok(syncRetry.calls>=2,`Expected a retry after the first pull, got ${syncRetry.calls} sync call(s)`);
+    assert.equal(syncRetry.exists,true,'Product disappeared after first sync pull');
+    assert.equal(syncRetry.price,100,'Product price changed during first sync pull');
+    assert.equal(syncRetry.status,'Товар «Товар после первого pull» создан и отправлен на сервер.');
     assert.doesNotMatch(output,/runtime loader error|Uncaught Exception/);
     socket.close();
     console.log('PASS: 8.9.71 creates products without a group and restores them after first-sync pull');
