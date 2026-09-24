@@ -1,5 +1,3 @@
-# final verification: run the packaged app directly through the Portable executable;
-# Setup is still built, hashed and published for normal in-app updates. Final interface marker refreshed.
 name: Build and Publish 8.9.73 Receipt UI
 
 on:
@@ -63,8 +61,6 @@ jobs:
           $portable = 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe'
           if (!(Test-Path $setup)) { throw 'Setup executable was not built' }
           if (!(Test-Path $portable)) { throw 'Portable executable was not built' }
-          Write-Host "Setup bytes: $((Get-Item $setup).Length)"
-          Write-Host "Portable bytes: $((Get-Item $portable).Length)"
 
       - name: Smoke - product creation and live prices
         shell: pwsh
@@ -73,19 +69,42 @@ jobs:
           node scripts/windows-product-create-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Product creation smoke failed' }
 
-      - name: Smoke - interface, receipt and archive
+      - name: Smoke - interface receipt archive diagnostics
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Force -Path 'smoke-diagnostics' | Out-Null
           $exe = (Resolve-Path 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe').Path
-          node scripts/windows-interface-smoke.cjs "$exe"
-          if ($LASTEXITCODE -ne 0) { throw 'Interface smoke failed' }
+          node scripts/windows-interface-smoke.cjs "$exe" *> 'smoke-diagnostics/interface.log'
+          $code = $LASTEXITCODE
+          Set-Content 'smoke-diagnostics/interface.exit' $code
+          Get-Content 'smoke-diagnostics/interface.log'
+          Write-Host "Interface smoke exit code: $code"
 
-      - name: Smoke - NewMatRos current-price flow
+      - name: Smoke - NewMatRos current-price diagnostics
         shell: pwsh
         run: |
           $exe = (Resolve-Path 'app/dist/Uchet-dilerov-Portable-8.9.73-x64.exe').Path
-          node scripts/windows-newmatros-smoke.cjs "$exe"
-          if ($LASTEXITCODE -ne 0) { throw 'NewMatRos smoke failed' }
+          node scripts/windows-newmatros-smoke.cjs "$exe" *> 'smoke-diagnostics/newmatros.log'
+          $code = $LASTEXITCODE
+          Set-Content 'smoke-diagnostics/newmatros.exit' $code
+          Get-Content 'smoke-diagnostics/newmatros.log'
+          Write-Host "NewMatRos smoke exit code: $code"
+
+      - name: Upload smoke diagnostics
+        uses: actions/upload-artifact@v4
+        with:
+          name: Uchet-dilerov-8.9.73-smoke-diagnostics
+          path: smoke-diagnostics/
+          if-no-files-found: error
+          retention-days: 3
+
+      - name: Gate publication on smoke checks
+        shell: pwsh
+        run: |
+          $interface = [int](Get-Content 'smoke-diagnostics/interface.exit')
+          $newmatros = [int](Get-Content 'smoke-diagnostics/newmatros.exit')
+          if ($interface -ne 0) { throw "Interface smoke failed with exit code $interface" }
+          if ($newmatros -ne 0) { throw "NewMatRos smoke failed with exit code $newmatros" }
 
       - name: Generate verified update manifest
         shell: pwsh
@@ -99,7 +118,6 @@ jobs:
             notes = 'Учёт дилеров 8.9.73 — название позиции редактируется прямо в готовой накладной, можно добавить произвольную позицию, таблица товаров стала компактнее.'
           }
           $manifest | ConvertTo-Json -Depth 4 | Set-Content -Path 'latest.json' -Encoding utf8
-          Get-Content latest.json
 
       - name: Publish GitHub Release 8.9.73
         shell: pwsh
