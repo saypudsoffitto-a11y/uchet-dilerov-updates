@@ -8,6 +8,12 @@ on:
       - 'scripts/smoke-macos.cjs'
       - '.github/workflows/macos-release.yml'
   workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Verified release source commit or tag'
+        required: true
+        default: '3d6f347d5a15cd7816e87912e3b8d6852e92a25d'
+        type: string
 
 permissions:
   contents: write
@@ -25,6 +31,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Same source as the published Windows 8.9.73 release.
+          ref: ${{ inputs.source_ref || '3d6f347d5a15cd7816e87912e3b8d6852e92a25d' }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -123,7 +132,7 @@ jobs:
           import base64,json,pathlib
           current=json.load(open('current-macos-manifest.json'))
           request={
-            'message':'Update latest-macos.json for 8.9.67 [skip ci]',
+            'message':'Update latest-macos.json for '+json.load(open('latest-macos.json'))['version']+' [skip ci]',
             'branch':'main',
             'sha':current['sha'],
             'content':base64.b64encode(pathlib.Path('latest-macos.json').read_bytes()).decode()
