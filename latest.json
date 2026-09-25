@@ -1,6 +1,6 @@
 {
-  "version": "8.9.73",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.73/Uchet-dilerov-Setup-8.9.73-x64.exe",
-  "sha256": "84e40b68046e7a15296a75c3f649c8a07a2dd3f242c5565e3a372804f1b6a820",
-  "notes": "Учёт дилеров 8.9.73 — название позиции редактируется прямо в готовой накладной, можно добавить произвольную позицию, таблица товаров стала компактнее."
+  "version": "8.9.74",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.74/Uchet-dilerov-Setup-8.9.74-x64.exe",
+  "sha256": "441743803e60abe41cb734e4f8e99b4bb5b24fde49aaf900e470a5f7d03f2fb3",
+  "notes": "Учёт дилеров 8.9.74 — исправлено зависание окна накладной из-за конфликта обработчиков интерфейса."
 }
