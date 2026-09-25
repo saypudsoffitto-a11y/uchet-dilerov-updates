@@ -39,6 +39,8 @@
   try{editReceiptItem=window.editReceiptItem}catch(_){}
 
   function enhanceReceiptNames8970(root=document){
+    // The final receipt editor owns these cells. Competing observers starve the UI.
+    if(window.__release8973Installed)return;
     root.querySelectorAll?.('.receipt[data-receipt-op-id]').forEach(receipt=>{
       const opId=receipt.dataset.receiptOpId;
       const op=(state.ops||[]).find(x=>String(x.id)===String(opId)&&x.type==='sale');
@@ -46,7 +48,7 @@
       receipt.querySelectorAll('tbody tr').forEach((row,index)=>{
         const cell=row.cells?.[1];
         const item=op.items?.[index];
-        if(!cell||!item||cell.querySelector('.receiptName8970'))return;
+        if(!cell||!item||cell.querySelector('.receiptName8970, .receiptNameInput8973'))return;
         const span=document.createElement('span');
         span.className='receiptName8970';
         span.tabIndex=0;

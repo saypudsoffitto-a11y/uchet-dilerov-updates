@@ -188,12 +188,17 @@
   window.openReceiptManualAdd8973=openReceiptManualAdd8973;
 
   function decorateReceipt8973(root){
+    if(window.__release8973Installed)return;
     if(!root||!root.matches?.('[data-receipt-op-id]'))return;
     const opId=root.dataset.receiptOpId,op=(state.ops||[]).find(x=>String(x.id)===String(opId)&&x.type==='sale');if(!op)return;
-    const help=root.querySelector('.receiptEditHelp');if(help)help.textContent='Название, количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.';
+    const help=root.querySelector('.receiptEditHelp');
+    const helpText='Название, количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.';
+    if(help&&help.textContent!==helpText)help.textContent=helpText;
+    const nameColumn=[...root.querySelectorAll('table thead th')].findIndex(th=>String(th.textContent||'').trim().toLocaleLowerCase('ru').includes('наименование'));
+    if(nameColumn<0)return;
     const rows=[...root.querySelectorAll('table tbody tr')];
     rows.forEach((tr,idx)=>{
-      const item=op.items?.[idx],cell=tr.children?.[2];if(!item||!cell||cell.querySelector('.receiptNameInput8973'))return;
+      const item=op.items?.[idx],cell=tr.children?.[nameColumn];if(!item||!cell||cell.querySelector('.receiptNameInput8973'))return;
       const input=document.createElement('input');input.type='text';input.className='receiptNameInput8973';input.value=item.name||'';input.title='Название можно менять произвольно';
       input.onchange=()=>editReceiptItemName8973(op.id,idx,input.value);
       input.ondblclick=()=>{input.focus();input.select()};

@@ -45,11 +45,11 @@ test('product list uses compact group and article columns',()=>{
 });
 
 test('8.9.73 runtime is packaged and preload reports the same version',()=>{
-  assert.equal(pkg.version,'8.9.73');
+  assert.equal(pkg.version,'8.9.74');
   assert.ok(pkg.build.files.includes('release-8973.js'));
   assert.match(preload,/release-8973\.js/);
   assert.match(preload,/runtime=8973/);
-  assert.match(preload,/uchetRuntime='8\.9\.73'/);
+  assert.match(preload,/uchetRuntime='8\.9\.74'/);
 });
 
 test('8.9.72 product sync protection remains present',()=>{
