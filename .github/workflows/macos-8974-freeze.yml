@@ -1,0 +1,147 @@
+name: Build and publish macOS 8.9.74 freeze fix
+
+on:
+  push:
+    branches: [fix/8.9.74-ui-freeze]
+    paths:
+      - '.github/workflows/macos-8974-freeze.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: uchet-dilerov-macos-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: macos-latest
+    timeout-minutes: 30
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: 4ee77e07585f8692bd4394d6b4ec12aecaa45682
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Read version
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./app/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        working-directory: app
+        run: npm install --no-audit --no-fund
+
+      - name: Build macOS DMG and ZIP for Apple Silicon
+        working-directory: app
+        env:
+          GH_TOKEN: ''
+          GITHUB_TOKEN: ''
+        run: npm run build:mac -- --publish never
+
+      - name: Verify Apple Silicon artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          version='${{ steps.meta.outputs.version }}'
+          dmg="app/dist/Uchet-dilerov-macOS-$version-arm64.dmg"
+          zip="app/dist/Uchet-dilerov-macOS-$version-arm64.zip"
+          test -s "$dmg"
+          test -s "$zip"
+          rm -rf "$RUNNER_TEMP/uchet-mac-check"
+          mkdir -p "$RUNNER_TEMP/uchet-mac-check"
+          ditto -x -k "$zip" "$RUNNER_TEMP/uchet-mac-check"
+          app_path=$(find "$RUNNER_TEMP/uchet-mac-check" -maxdepth 2 -name '*.app' -print -quit)
+          test -n "$app_path"
+          executable=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$app_path/Contents/Info.plist")
+          file "$app_path/Contents/MacOS/$executable" | tee "$RUNNER_TEMP/macos-architecture.txt"
+          grep -qi 'arm64' "$RUNNER_TEMP/macos-architecture.txt"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app_path/Contents/Info.plist" | grep -Fx "$version"
+          codesign --verify --deep --strict "$app_path"
+          node scripts/smoke-macos.cjs "$app_path"
+
+      - name: Generate latest-macos.json
+        shell: bash
+        run: |
+          set -euo pipefail
+          version='${{ steps.meta.outputs.version }}'
+          dmg="app/dist/Uchet-dilerov-macOS-$version-arm64.dmg"
+          zip="app/dist/Uchet-dilerov-macOS-$version-arm64.zip"
+          sha=$(shasum -a 256 "$dmg" | awk '{print $1}')
+          zip_sha=$(shasum -a 256 "$zip" | awk '{print $1}')
+          node - "$version" "$sha" "$zip_sha" <<'NODE'
+          const fs=require('fs');
+          const [version,sha,zipSha]=process.argv.slice(2);
+          const repo=process.env.GITHUB_REPOSITORY;
+          const manifest={
+            version,
+            platform:'darwin',
+            arch:'arm64',
+            url:'https://github.com/'+repo+'/releases/download/'+version+'/Uchet-dilerov-macOS-'+version+'-arm64.dmg',
+            sha256:sha,
+            zipUrl:'https://github.com/'+repo+'/releases/download/'+version+'/Uchet-dilerov-macOS-'+version+'-arm64.zip',
+            zipSha256:zipSha,
+            notes:'Сборка «Учёт дилеров» для macOS Apple Silicon (M1/M2/M3).'
+          };
+          fs.writeFileSync('latest-macos.json',JSON.stringify(manifest,null,2)+'\n');
+          NODE
+
+      - name: Upload macOS files to GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version='${{ steps.meta.outputs.version }}'
+          dmg="app/dist/Uchet-dilerov-macOS-$version-arm64.dmg"
+          zip="app/dist/Uchet-dilerov-macOS-$version-arm64.zip"
+          if ! gh release view "$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$version" --repo "$GITHUB_REPOSITORY" --title "Учёт дилеров $version" --notes "Учёт дилеров $version" || true
+          fi
+          gh release view "$version" --repo "$GITHUB_REPOSITORY" >/dev/null
+          gh release upload "$version" "$dmg" "$zip" latest-macos.json --repo "$GITHUB_REPOSITORY"
+
+      - name: Save latest-macos.json to main
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/contents/latest-macos.json?ref=main" > current-macos-manifest.json
+          python3 - <<'PY'
+          import base64,json,pathlib
+          current=json.load(open('current-macos-manifest.json'))
+          old=json.loads(base64.b64decode(current['content']))
+          if tuple(map(int,old['version'].split('.'))) > (8,9,74):
+            raise SystemExit('Newer macOS release is already active')
+          request={
+            'message':'Update latest-macos.json for 8.9.74 [skip ci]',
+            'branch':'main',
+            'sha':current['sha'],
+            'content':base64.b64encode(pathlib.Path('latest-macos.json').read_bytes()).decode()
+          }
+          pathlib.Path('macos-manifest-request.json').write_text(json.dumps(request))
+          PY
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/latest-macos.json" --input macos-manifest-request.json --jq .commit.sha
+
+      - name: Upload macOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: uchet-dilerov-macos-arm64
+          path: |
+            app/dist/Uchet-dilerov-macOS-*-arm64.dmg
+            app/dist/Uchet-dilerov-macOS-*-arm64.zip
+            latest-macos.json
+          retention-days: 14
