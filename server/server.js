@@ -216,8 +216,11 @@ async function readStore() {
   };
 }
 
-async function writeStore(expectedRevision, nextStore) {
-  return await storeBackend.writeIfRevision(expectedRevision, nextStore);
+let writeQueue = Promise.resolve();
+function writeStore(expectedRevision, nextStore) {
+  const pending = writeQueue.then(() => storeBackend.writeIfRevision(expectedRevision, nextStore));
+  writeQueue = pending.catch(() => {});
+  return pending;
 }
 
 function send(res, status, body) {
@@ -276,9 +279,12 @@ function requestPath(req) {
   }
 }
 
+const mobileHandler = require('./mobile-api').createMobileHandler({ readStore, writeStore });
+
 const server = http.createServer(async (req, res) => {
   try {
     const route = requestPath(req);
+    if (await mobileHandler(req, res)) return;
     if (req.method === 'OPTIONS') return send(res, 204, {});
     if (route === '/' && req.method === 'GET') {
       const store = await readStore();
