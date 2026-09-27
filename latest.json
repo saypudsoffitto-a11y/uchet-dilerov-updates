@@ -1,6 +1,6 @@
 {
-  "version": "8.9.74",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.74/Uchet-dilerov-Setup-8.9.74-x64.exe",
-  "sha256": "441743803e60abe41cb734e4f8e99b4bb5b24fde49aaf900e470a5f7d03f2fb3",
-  "notes": "Учёт дилеров 8.9.74 — исправлено зависание окна накладной из-за конфликта обработчиков интерфейса."
+  "version": "8.9.76",
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.76/Uchet-dilerov-Setup-8.9.76-x64.exe",
+  "sha256": "7fb8c7f3089ade9ee442a6e68be692c80ce7f6d9398cd18a0f0d300e5119cb83",
+  "notes": "Учёт дилеров 8.9.76 — исправлены выбор дилера при оплате, поиск и повторная отправка цен после сбоя связи."
 }
