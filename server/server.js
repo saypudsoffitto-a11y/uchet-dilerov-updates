@@ -10,7 +10,7 @@ const TOKEN_SHA256 = String(process.env.SYNC_TOKEN_SHA256 || '').trim().toLowerC
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.63-sync5';
+const SERVER_VERSION = '8.9.76-sync6';
 const masterProtocol = require('./master-protocol-8962');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });

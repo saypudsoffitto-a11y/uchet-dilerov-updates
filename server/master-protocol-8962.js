@@ -1,5 +1,6 @@
 'use strict';
 const C=require('./sync-core-8962');
+const {applySharedPatch}=require('./catalog-patch-8975');
 const fail=message=>{throw new Error(message);};
 function update(current,body){
   if(body.protocol!==2)fail('Обновите этот компьютер до 8.9.63. Старые списки не приняты.');
@@ -86,6 +87,7 @@ function update(current,body){
     for(const p of selected.products||[]){const existing=next.state.products.find(x=>C.id(x.id)===C.id(p.id));if(existing){p.stock=existing.stock;p.receiptArchiveStock=existing.receiptArchiveStock;}}
     next.state=C.applyCatalog(next.state,selected);
   }
+  if(body.catalogPatch)next.state=applySharedPatch(next.state,body.catalogPatch);
   for(const edit of body.stockOverrides||[]){
     if(device.id!==meta.masterId)fail('Остатки вручную изменяются на главном компьютере.');
     const previous=(current.state.products||[]).find(p=>C.id(p.id)===edit.id),p=next.state.products.find(p=>C.id(p.id)===edit.id);
