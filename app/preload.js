@@ -89,10 +89,10 @@ window.addEventListener('DOMContentLoaded',()=>{
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.74';
+    document.documentElement.dataset.uchetRuntime='8.9.75';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.74 runtime loader error',e))}
-  catch(e){console.error('8.9.74 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.75 runtime loader error',e))}
+  catch(e){console.error('8.9.75 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{

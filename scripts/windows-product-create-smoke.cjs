@@ -78,6 +78,16 @@ async function main(){
       }finally{state.sync.enabled=false;syncRequest=oldRequest;}
     })()`);
     assert.deepEqual(live,{immediate:true,searched:true,reopened:85,stored:85,remotePrice:85,remoteCreated:true});
+    const payment=await evaluate(`(async()=>{
+      state=norm({dealers:[{id:101,name:'Тест А',phone:'70000000001'},{id:102,name:'Тест Б',phone:'70000000002'}],products:[],groups:[],ops:[],sync:{enabled:false,url:''}});
+      render();go('payments');paymentDealerSearch.value='Тест А';renderPaymentDealers();paymentDealerSearch.focus();
+      const first=paymentDealerList.firstElementChild;render();const stableRow=first===paymentDealerList.firstElementChild;
+      paymentDealerList.querySelector('button').click();payAmount.value='125';payMethod.value='Наличные';payNote.value='Проверка';
+      render();render();const recipient=payDealer.value;const noDuplicate=payDealer.type==='hidden';
+      makePayment();const op=state.ops.find(x=>x.type==='payment');
+      return {stableRow,recipient,noDuplicate,dealer:op?.dealerId,total:op?.total,count:state.ops.filter(x=>x.type==='payment').length};
+    })()`);
+    assert.deepEqual(payment,{stableRow:true,recipient:'101',noDuplicate:true,dealer:101,total:125,count:1});
     assert.doesNotMatch(output,/runtime loader error|Uncaught Exception/);
     socket.close();
     console.log('PASS: created products and price 85 survive actual queued pull/push and reopening');

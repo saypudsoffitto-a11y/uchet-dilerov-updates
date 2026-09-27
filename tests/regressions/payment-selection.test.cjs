@@ -35,3 +35,16 @@ test('back to dealer selection clears recipient and subsequent choice owns payme
 test('payment form has no duplicate dealer selector',()=>{
  assert.match(html,/<input type="hidden" id="payDealer">/);assert.doesNotMatch(html,/<select id="payDealer"/);
 });
+
+test('background refresh cannot reorder dealer search results while the user is choosing',()=>{
+ const s=harness();let renders=0;
+ s.paymentDealerSearch.value='A';s.document={activeElement:s.paymentDealerSearch};
+ s.paymentDealerList={contains:()=>false,matches:()=>false,set innerHTML(v){renders++;},get innerHTML(){return ''}};
+ s.sortDealers=x=>x;s.opTime=()=>0;
+ vm.runInContext(html.slice(html.indexOf('function renderPaymentDealers('),html.indexOf('\nfunction renderPaymentSelection()')),s);
+ s.renderPaymentDealers(true);assert.equal(renders,0);
+ s.renderPaymentDealers();assert.equal(renders,1,'typing explicitly refreshes the results');
+ s.document.activeElement=null;s.paymentDealerList.matches=()=>true;
+ s.renderPaymentDealers(true);assert.equal(renders,1);
+ s.paymentDealerList.matches=()=>false;s.renderPaymentDealers(true);assert.equal(renders,2);
+});
