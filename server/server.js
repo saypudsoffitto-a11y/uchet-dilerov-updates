@@ -12,6 +12,41 @@ const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
 const SERVER_VERSION = '8.9.63-sync5';
 const masterProtocol = require('./master-protocol-8962');
+const mobile = require('./mobile-api');
+const MOBILE_TOKEN = String(process.env.MOBILE_TOKEN || '').trim();
+const mobileFiles = new Map([
+  ['/mobile/', ['index.html', 'text/html; charset=utf-8']],
+  ['/mobile/app.js', ['app.js', 'text/javascript; charset=utf-8']],
+  ['/mobile/style.css', ['style.css', 'text/css; charset=utf-8']],
+  ['/mobile/manifest.webmanifest', ['manifest.webmanifest', 'application/manifest+json']],
+  ['/mobile/icon.svg', ['icon.svg', 'image/svg+xml']],
+]);
+
+function mobileAuthorized(req) {
+  if (!MOBILE_TOKEN) return false;
+  const crypto = require('node:crypto');
+  const hash = value => crypto.createHash('sha256').update(value).digest();
+  return crypto.timingSafeEqual(hash(String(req.headers.authorization || '')), hash('Bearer ' + MOBILE_TOKEN));
+}
+
+async function mobileRoute(req, res) {
+  if (!MOBILE_TOKEN || (!TOKEN && !TOKEN_SHA256)) return send(res, 503, { ok:false, message:'Мобильный доступ ещё не настроен на сервере' });
+  if (!mobileAuthorized(req)) return send(res, 401, { ok:false, message:'Проверьте ключ мобильного доступа' });
+  if (req.url === '/api/mobile/snapshot' && req.method === 'GET') return send(res, 200, mobile.snapshot(await readStore()));
+  if (req.url !== '/api/mobile/commands' || req.method !== 'POST') return send(res, 405, { ok:false, message:'Метод не поддерживается' });
+  let body;
+  try { body = await readJsonBody(req); } catch (_) { return send(res, 400, { ok:false, message:'Неверный запрос' }); }
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const current = await readStore();
+    let applied;
+    try { applied = mobile.apply(current, body); }
+    catch (e) { return send(res, e.status || 422, { ok:false, message:e.message }); }
+    if (applied.replay) return send(res, 200, { ok:true, replay:true, result:applied.result });
+    const saved = await writeStore(current.revision, applied.next);
+    if (saved?.ok) return send(res, 200, { ok:true, revision:saved.revision, result:applied.result });
+  }
+  return send(res, 503, { ok:false, message:'База занята. Повторите тот же запрос через несколько секунд.' });
+}
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 const storeBackend = createStore({ dataFile: DATA_FILE });
@@ -227,7 +262,7 @@ function send(res, status, body) {
     'Cache-Control': 'no-store',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-    'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, PUT, POST, OPTIONS'
   });
   res.end(data);
 }
@@ -269,6 +304,13 @@ function readJsonBody(req) {
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'OPTIONS') return send(res, 204, {});
+    if (req.url === '/mobile' && req.method === 'GET') { res.writeHead(302, { Location:'/mobile/' }); return res.end(); }
+    if (mobileFiles.has(req.url) && req.method === 'GET') {
+      const [filename, type] = mobileFiles.get(req.url);
+      res.writeHead(200, { 'Content-Type':type, 'Cache-Control':'no-store', 'X-Content-Type-Options':'nosniff', 'Referrer-Policy':'no-referrer', 'Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'" });
+      return res.end(fs.readFileSync(path.join(__dirname, 'mobile', filename)));
+    }
+    if (req.url.startsWith('/api/mobile/')) return await mobileRoute(req, res);
     if (req.url === '/health' && req.method === 'GET') {
       const store = await readStore();
       return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION, storage: store.storage, protocol: 2 });
@@ -310,6 +352,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       try {
+        mobile.protectCatalog(current, body);
         const next = masterProtocol.update(current, body);
         next.serverVersion = SERVER_VERSION;
         next.updatedAt = new Date().toISOString();
@@ -366,4 +409,3 @@ server.listen(PORT, HOST, () => {
   console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT} · storage=${storeBackend.kind}`);
   console.log(TOKEN || TOKEN_SHA256 ? 'Авторизация по ключу синхронизации включена' : 'ВНИМАНИЕ: ключ синхронизации не задан');
 });
-

@@ -11,16 +11,19 @@ function normalizeStore(value) {
 function createFileStore(dataFile) {
   fs.mkdirSync(path.dirname(dataFile), { recursive: true });
 
+  let writes = Promise.resolve();
   return {
     kind: 'file',
     async read() {
       try {
         return normalizeStore(JSON.parse(fs.readFileSync(dataFile, 'utf8')));
-      } catch (_) {
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw new Error('Не удалось прочитать общую базу: ' + error.message);
         return { revision: 0, state: {} };
       }
     },
-    async writeIfRevision(expectedRevision, nextStore) {
+    writeIfRevision(expectedRevision, nextStore) {
+      const write = async () => {
       const current = await this.read();
       const expected = Number(expectedRevision || 0);
       if (Number(current.revision || 0) !== expected) {
@@ -33,6 +36,10 @@ function createFileStore(dataFile) {
       fs.writeFileSync(tmp, JSON.stringify(next, null, 2), 'utf8');
       fs.renameSync(tmp, dataFile);
       return { ok: true, revision: next.revision, store: next };
+      };
+      const result = writes.then(write);
+      writes = result.catch(() => {});
+      return result;
     }
   };
 }
