@@ -78,7 +78,8 @@ window.addEventListener('DOMContentLoaded',()=>{
       './release-8969.js',
       './release-8970.js',
       './release-8971.js',
-      './release-8973.js'
+      './release-8973.js',
+      './shared-catalog-8976.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{
@@ -89,10 +90,10 @@ window.addEventListener('DOMContentLoaded',()=>{
         (document.head||document.documentElement).appendChild(s);
       });
     }
-    document.documentElement.dataset.uchetRuntime='8.9.75';
+    document.documentElement.dataset.uchetRuntime='8.9.76';
   })()`;
-  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.75 runtime loader error',e))}
-  catch(e){console.error('8.9.75 preload loader error',e)}
+  try{webFrame.executeJavaScript(code,true).catch(e=>console.error('8.9.76 runtime loader error',e))}
+  catch(e){console.error('8.9.76 preload loader error',e)}
 });
 
 contextBridge.exposeInMainWorld('windowAPI',{

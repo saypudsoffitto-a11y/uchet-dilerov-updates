@@ -46,3 +46,20 @@ test('simultaneous price conflict retains both values and does not overwrite rem
  const h=setup(),[a,b]=h.clients;h.edit(a,200);h.edit(b,220);await a.masterSync8962.push(false);
  assert.equal(await b.masterSync8962.pull(false),false);assert.equal(h.server().state.products[0].retailPrice,200);assert.equal(b.state.products[0].retailPrice,220);
 });
+
+test('all three computers publish prices and dealer additions to one shared catalog',async()=>{
+ const h=setup();
+ for(let i=0;i<3;i++){
+  const s=h.clients[i],before=C.clone(s.state);h.edit(s,300+i);
+  s.state.dealers.push({id:100+i,name:'Дилер '+i,phone:'7999000000'+i});P.recordCatalog(s.state,before);
+  s.failWrite=true;assert.equal(await s.masterSync8962.push(false),false);s.failWrite=false;
+  assert.equal(await s.masterSync8962.pull(false),true);
+  for(const peer of h.clients){await peer.masterSync8962.pull(false);assert.equal(peer.state.products[0].retailPrice,300+i);assert.equal(peer.state.dealers.length,2+i);}
+ }
+});
+test('dealer edit before first connection survives pull and is uploaded',async()=>{
+ const h=setup(),s=h.clients[2],before=C.clone(s.state);
+ s.localStorage.removeItem('uchet_sync_baseline_8962:https://test.invalid');
+ s.state.dealers.push({id:45,name:'Новый',phone:'79990000045'});P.recordCatalog(s.state,before);
+ assert.equal(await s.masterSync8962.pull(false),true);assert.equal(h.server().state.dealers.length,2);assert.equal(s.state.dealers.length,2);
+});

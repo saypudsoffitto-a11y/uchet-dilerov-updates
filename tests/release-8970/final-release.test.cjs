@@ -71,8 +71,10 @@ test('sync uses stable device/product IDs and separates display client name',()=
   assert(master.includes('device.id'));
   assert(master.includes('productPatch'));
   assert(protocol.includes('clientName:incomingName'));
-  assert(protocol.includes('C.id(ch.id)'));
-  assert(protocol.includes('updatedAt'));
+  assert(protocol.includes('applySharedPatch'));
+  const patch=read('server/catalog-patch-8975.js');
+  assert(patch.includes('C.id(ch.id)'));
+  assert(patch.includes('C.same(definition(current),definition(ch.before))'));
 });
 
 test('manual server upload/download has visible status feedback',()=>{

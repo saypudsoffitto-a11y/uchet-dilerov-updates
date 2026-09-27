@@ -60,7 +60,7 @@ async function main(){
       let release,enteredResolve,first=true;const entered=new Promise(r=>enteredResolve=r);
       syncRequest=async(method,body)=>{
         if(method==='GET'&&first){first=false;enteredResolve();await new Promise(r=>release=r)}
-        if(method==='PUT'&&body.catalog)remote={...remote,...JSON.parse(JSON.stringify(body.catalog))};
+        if(method==='PUT'&&body.catalogPatch)remote=CatalogPending8972.merge(remote,remote,{...remote,products:body.catalogPatch.products.reduce((rows,ch)=>{const i=rows.findIndex(p=>String(p.id)===ch.id);if(ch.after){if(i<0)rows.push(ch.after);else rows[i]=ch.after}else if(i>=0)rows.splice(i,1);return rows},JSON.parse(JSON.stringify(remote.products)))});
         return {ok:true,protocol:2,storage:'turso',revision:2,state:JSON.parse(JSON.stringify(remote)),computers:{masterId:device.id,devices:{[device.id]:{name:device.name}}}};
       };
       try{
