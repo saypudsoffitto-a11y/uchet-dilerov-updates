@@ -53,7 +53,13 @@
     for(const [id,ch] of Object.entries(state.pendingProducts8972||{})){
       if(ch.before)rows.set(id,clone(ch.before));else rows.delete(id);
     }
-    base.products=[...rows.values()];return base;
+    base.products=[...rows.values()];
+    for(const [field,changes] of Object.entries(state.pendingCatalog8976||{})){
+      const rows=new Map((base[field]||[]).map(row=>[String(row.id),row]));
+      for(const [id,ch] of Object.entries(changes)){if(ch.before)rows.set(id,clone(ch.before));else rows.delete(id);}
+      base[field]=[...rows.values()];
+    }
+    return base;
   }
   function remaining(local,sent){
     const out={};
@@ -63,5 +69,22 @@
     }
     return out;
   }
-  return {merge,record,firstBase,remaining,definition,same};
+  function recordCatalog(state,before){
+    for(const field of ['dealers','groups']){
+      const a=new Map((before[field]||[]).map(row=>[String(row.id),row])),b=new Map((state[field]||[]).map(row=>[String(row.id),row]));
+      for(const id of new Set([...a.keys(),...b.keys()]))if(!same(a.get(id),b.get(id))){
+        const journal=state.pendingCatalog8976||(state.pendingCatalog8976={}),changes=journal[field]||(journal[field]={});
+        changes[id]={before:changes[id]?changes[id].before:clone(a.get(id)||null),after:clone(b.get(id)||null)};
+      }
+    }
+  }
+  function remainingCatalog(local,sent){
+    const out={};
+    for(const [field,changes] of Object.entries(local.pendingCatalog8976||{}))for(const [id,ch] of Object.entries(changes)){
+      const row=(sent[field]||[]).find(row=>String(row.id)===id)||null;
+      if(!same(ch.after,row))(out[field]||(out[field]={}))[id]={before:clone(row),after:clone(ch.after)};
+    }
+    return out;
+  }
+  return {merge,record,firstBase,remaining,recordCatalog,remainingCatalog,definition,same};
 });
