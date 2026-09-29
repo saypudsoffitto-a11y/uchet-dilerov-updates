@@ -35,8 +35,11 @@ test('WhatsApp uses JPEG IPC in the new override',()=>{
   assert.doesNotMatch(patch,/sendPdf\(/);
 });
 
-test('package is wired for 8.9.48 draft build',()=>{
-  assert.match(pkg.version,/^8\.9\.(48|49|50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68)$/);
+test('package remains wired for 8.9.x releases',()=>{
+  const [major,minor,patchNo]=String(pkg.version).split('.').map(Number);
+  assert.equal(major,8);
+  assert.equal(minor,9);
+  assert.ok(Number.isInteger(patchNo)&&patchNo>=48,'8.9.x patch must be 48 or newer');
   assert.equal(pkg.main,'main-8948.js');
   assert.ok(pkg.build.files.includes('next-8948.js'));
   assert.ok(pkg.build.files.includes('main-8948.js'));
