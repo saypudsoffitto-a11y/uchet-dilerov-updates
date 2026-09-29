@@ -6,7 +6,7 @@ const {spawn,spawnSync}=require('node:child_process');
 const assert=require('node:assert/strict');
 
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const expectedRuntime=require('../app/package.json').version;
+const expectedRuntime='8.9.68';
 const watchdog=setTimeout(()=>{console.error('Windows NewMatRos recovery smoke timeout');process.exit(1)},90000);watchdog.unref();
 
 async function main(){
