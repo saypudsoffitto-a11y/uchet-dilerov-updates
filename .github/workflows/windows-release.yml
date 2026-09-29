@@ -1,6 +1,10 @@
 name: Build and publish Windows release
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'RELEASE_WINDOWS_TRIGGER.txt'
   workflow_dispatch:
 
 permissions:
