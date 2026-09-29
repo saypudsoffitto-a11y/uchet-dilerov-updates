@@ -6,12 +6,13 @@ const path=require('node:path');
 
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const assert89AtLeast=(version,min)=>{const [major,minor,patch]=String(version).split('.').map(Number);assert.equal(major,8);assert.equal(minor,9);assert.ok(Number.isInteger(patch)&&patch>=min,`8.9.x patch must be ${min} or newer`)};
 
 test('8.9.61 ships the macOS sync and placeholder-product fix',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const preload=read('app/preload.js');
   const patch=read('app/release-8961.js');
-  assert.match(pkg.version,/^8\.9\.(61|62|63|64|65|66|67|68)$/);
+  assert89AtLeast(pkg.version,61);
   assert.ok(pkg.build.files.includes('release-8961.js'));
   assert.match(pkg.scripts['prebuild:mac'],/release-8961/);
   assert.match(pkg.scripts['prebuild:win'],/release-8961/);
