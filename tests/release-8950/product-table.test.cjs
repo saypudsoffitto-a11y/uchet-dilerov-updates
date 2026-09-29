@@ -4,12 +4,13 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const assert89AtLeast=(version,min)=>{const [major,minor,patch]=String(version).split('.').map(Number);assert.equal(major,8);assert.equal(minor,9);assert.ok(Number.isInteger(patch)&&patch>=min,`8.9.x patch must be ${min} or newer`)};
 
 test('8.9.50 product table keeps group article and product text in separate columns',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const html=read('app/index.html');
   const css=read('app/interface-8950.css');
-  assert.match(pkg.version,/^8\.9\.(50|51|52|53|54|55|56|57|58|59|60|61|62|63|64|65|66|67|68|68|68|68|68|68)$/);
+  assert89AtLeast(pkg.version,50);
   assert.ok(pkg.build.files.includes('interface-8950.css'));
   assert.match(html,/interface-8949\.css[\s\S]*interface-8950\.css/);
   assert.match(css,/data-col-key="Группа_0"/);
