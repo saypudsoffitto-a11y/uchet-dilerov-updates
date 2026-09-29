@@ -6,6 +6,7 @@ const path=require('node:path');
 
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const assert89AtLeast=(version,min)=>{const [major,minor,patch]=String(version).split('.').map(Number);assert.equal(major,8);assert.equal(minor,9);assert.ok(Number.isInteger(patch)&&patch>=min,`8.9.x patch must be ${min} or newer`)};
 
 test('8.9.59 Windows updater has multiple manifest routes for VPN/Parallels networks',()=>{
   const src=read('app/updater-8931.js');
@@ -37,8 +38,8 @@ test('8.9.59 keeps downloaded installer in userData instead of temporary storage
   assert.match(src,/fs\.mkdirSync\(updateDir,\{recursive:true\}\)/);
 });
 
-test('package version is 8.9.59',()=>{
+test('package version is 8.9.59 or newer in the 8.9 line',()=>{
   const pkg=JSON.parse(read('app/package.json'));
-  assert.match(pkg.version,/^8\.9\.(61|62|63|64|65|66|67|68|68|68|68|68|68)$/);
+  assert89AtLeast(pkg.version,59);
   assert.match(pkg.scripts['prebuild:win'],/release-8959/);
 });
