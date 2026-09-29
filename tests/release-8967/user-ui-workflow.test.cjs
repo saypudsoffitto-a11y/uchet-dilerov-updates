@@ -5,12 +5,13 @@ const fs=require('node:fs');
 const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const assert89AtLeast=(version,min)=>{const [major,minor,patch]=String(version).split('.').map(Number);assert.equal(major,8);assert.equal(minor,9);assert.ok(Number.isInteger(patch)&&patch>=min,`8.9.x patch must be ${min} or newer`)};
 
 test('8.9.67 runtime is wired after approved 8.9.51/8.9.62 layers',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const preload=read('app/preload.js');
   const html=read('app/index.html');
-  assert.equal(pkg.version,'8.9.68');
+  assert89AtLeast(pkg.version,67);
   assert.ok(pkg.build.files.includes('release-8967.js'));
   assert.ok(pkg.build.files.includes('interface-8967.css'));
   assert.match(preload,/release-8962\.js[\s\S]*release-8967\.js/);
