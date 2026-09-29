@@ -5,7 +5,8 @@ const path=require('node:path');
 const {spawn,spawnSync}=require('node:child_process');
 const assert=require('node:assert/strict');
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const expectedRuntime=require('../app/package.json').version;
+const expectedAppVersion=require('../app/package.json').version;
+const expectedRuntime='8.9.68';
 const watchdog=setTimeout(()=>{console.error('Windows smoke timeout');process.exit(1)},90000);watchdog.unref();
 async function main(){
  if(process.platform!=='win32')throw Error('This check must run on Windows');
@@ -47,9 +48,10 @@ async function main(){
   for(let i=0;i<180;i++){
    try{result=await evaluate(`(()=>({ready:document.readyState,text:document.body?.innerText||'',runtime:document.documentElement?.dataset?.uchetRuntime||'',dealerFix:document.documentElement?.dataset?.dealerFix||'',groupFix:document.documentElement?.dataset?.groupFix||'',finalMergeFix:document.documentElement?.dataset?.finalMergeFix||'',deleteHandler:typeof window.deleteDealerPermanent8941,finalInstalled:!!window.__dealerDelete8941Installed,dataInstalled:!!window.__dataFix8941Installed,mergeInstalled:!!window.__finalMerge8942&&!!mergeSyncState.__finalMerge8942}))()`)}catch(_){result=null}
    if(i%30===0)console.log('SMOKE: renderer state '+JSON.stringify(result));
-   if(result?.ready==='complete'&&/Дилеры|дилер/.test(result.text||'')&&result.runtime===expectedRuntime&&result.dealerFix==='8.9.41'&&result.groupFix==='8.9.41'&&result.finalMergeFix==='8.9.42'&&result.deleteHandler==='function'&&result.finalInstalled&&result.dataInstalled&&result.mergeInstalled)break;
+   if(result?.ready==='complete'&&result.text?.includes('v'+expectedAppVersion)&&/Дилеры|дилер/.test(result.text||'')&&result.runtime===expectedRuntime&&result.dealerFix==='8.9.41'&&result.groupFix==='8.9.41'&&result.finalMergeFix==='8.9.42'&&result.deleteHandler==='function'&&result.finalInstalled&&result.dataInstalled&&result.mergeInstalled)break;
    await sleep(200);
   }
+  assert.ok(result?.text?.includes('v'+expectedAppVersion),'Installed app must display v'+expectedAppVersion);
   assert.equal(result?.runtime,expectedRuntime);
   assert.equal(result?.dealerFix,'8.9.41');
   assert.equal(result?.groupFix,'8.9.41');
@@ -131,8 +133,6 @@ async function main(){
   })()`);
   assert.ok(!deletion?.error,deletion?.error||'dealer deletion smoke failed');
   assert.deepEqual(deletion,{confirmations:2,removed:true,deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true});
-  // Exercise observers and the legacy 250ms patch timer after rendering debts.
-  // A duplicate-column add/remove loop must fail here, not be hidden by mocks.
   await sleep(600);
   const debtTable=await evaluate(`(()=>{
     const table=document.querySelector('#debts table');
@@ -147,7 +147,7 @@ async function main(){
   assert.equal(debtTable.onePayment,true,'each dealer needs exactly one payment action');
   console.log('PASS: debt payment observers settle after deletion with one payment action');
   socket.close();
-  console.log('PASS: '+expectedRuntime+' keeps right-click dealer ID locked and blocks sync resurrection through final merge guard');
+  console.log('PASS: app '+expectedAppVersion+' with UI runtime '+expectedRuntime+' keeps right-click dealer ID locked and blocks sync resurrection through final merge guard');
  }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F']);}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
