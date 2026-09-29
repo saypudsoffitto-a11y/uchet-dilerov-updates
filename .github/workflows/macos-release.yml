@@ -10,9 +10,9 @@ on:
   workflow_dispatch:
     inputs:
       source_ref:
-        description: 'Verified release source commit or tag'
-        required: true
-        default: '3d6f347d5a15cd7816e87912e3b8d6852e92a25d'
+        description: 'Release source commit, tag, or branch (blank = current commit)'
+        required: false
+        default: ''
         type: string
 
 permissions:
@@ -32,8 +32,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Same source as the published Windows 8.9.73 release.
-          ref: ${{ inputs.source_ref || '3d6f347d5a15cd7816e87912e3b8d6852e92a25d' }}
+          ref: ${{ inputs.source_ref || github.sha }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
