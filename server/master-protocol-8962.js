@@ -1,6 +1,112 @@
 'use strict';
 const C=require('./sync-core-8962');
 const fail=message=>{throw new Error(message);};
+
+const productWire=p=>{
+  if(!p)return null;
+  const x=C.clone(p);
+  delete x.stock;
+  delete x.receiptArchiveStock;
+  return x;
+};
+const productUser=p=>{
+  const x=productWire(p);
+  if(!x)return null;
+  delete x.catalogRev;
+  delete x.catalogUpdatedAt;
+  delete x.catalogUpdatedBy;
+  return x;
+};
+const productListView=list=>(list||[])
+  .map(productWire)
+  .sort((a,b)=>C.id(a.id).localeCompare(C.id(b.id),'en',{numeric:true}));
+const nonProductCatalog=s=>({
+  dealers:C.clone(s?.dealers||[]),
+  groups:C.clone(s?.groups||[]),
+  deletedDealers:C.clone(s?.deletedDealers||{}),
+  dealerAliases:C.clone(s?.dealerAliases||{})
+});
+function applyNonProductCatalog(previous,incoming){
+  const synthetic=C.catalog(previous);
+  const value=nonProductCatalog(incoming||{});
+  synthetic.dealers=value.dealers;
+  synthetic.groups=value.groups;
+  synthetic.deletedDealers=value.deletedDealers;
+  synthetic.dealerAliases=value.dealerAliases;
+  return C.applyCatalog(previous,synthetic);
+}
+function applyProductChanges(state,changes,device){
+  const out=C.clone(state||{});
+  out.products=Array.isArray(out.products)?out.products:[];
+  out.deletedProducts=out.deletedProducts&&typeof out.deletedProducts==='object'?out.deletedProducts:{};
+  const map=new Map(out.products.map(p=>[C.id(p.id),p]));
+  for(const change of changes||[]){
+    if(!change||!change.id)fail('Неверное изменение карточки товара');
+    const key=C.id(change.id);
+    if(change.after&&C.id(change.after.id)!==key)fail('Неверный номер карточки товара');
+    const current=map.get(key)||null;
+    const before=change.before?productWire(change.before):null;
+    const after=change.after?productWire(change.after):null;
+    const currentWire=current?productWire(current):null;
+
+    // Повтор после потерянного подтверждения: сервер уже хранит ровно те
+    // пользовательские поля, которые клиент пытался записать.
+    if(after&&current&&C.same(productUser(current),productUser(after))&&
+       Number(current.catalogRev||0)>=Number(before?.catalogRev||0)+1){
+      continue;
+    }
+    if(!after&&!current)continue;
+
+    // Старый компьютер не может записать карточку поверх более новой.
+    if(!C.same(currentWire,before)){
+      fail('Карточка товара '+key+' уже изменена на другом компьютере. Сначала получите свежую версию.');
+    }
+
+    if(after){
+      const next=C.clone(after);
+      if(current){
+        next.stock=current.stock;
+        if(Object.prototype.hasOwnProperty.call(current,'receiptArchiveStock')){
+          next.receiptArchiveStock=C.clone(current.receiptArchiveStock);
+        }
+      }else{
+        next.stock=Number(next.stock)||0;
+      }
+      next.catalogRev=(Number(current?.catalogRev)||0)+1;
+      next.catalogUpdatedAt=new Date().toISOString();
+      next.catalogUpdatedBy=device?.id||'unknown';
+      map.set(key,next);
+      delete out.deletedProducts[key];
+    }else{
+      map.delete(key);
+      out.deletedProducts[key]=Date.now();
+    }
+  }
+  out.products=[...map.values()];
+  return C.remap(out);
+}
+function auditProductChanges(next,current,changes,device){
+  if(!changes?.length)return;
+  const slim=p=>p?{
+    id:p.id,
+    name:p.name||'',
+    article:p.article||'',
+    buyPrice:Number(p.buyPrice)||0,
+    retailPrice:Number(p.retailPrice)||0,
+    wholesalePrice:Number(p.wholesalePrice)||0,
+    catalogRev:Number(p.catalogRev)||0
+  }:null;
+  const rows=changes.map(change=>({
+    ts:new Date().toISOString(),
+    deviceId:device?.id||'unknown',
+    deviceName:String(device?.name||''),
+    productId:C.id(change.id),
+    before:slim(change.before),
+    after:slim((next.state.products||[]).find(p=>C.id(p.id)===C.id(change.id))||null)
+  }));
+  next.catalogAudit=[...(current.catalogAudit||[]),...rows].slice(-5000);
+}
+
 function update(current,body){
   if(body.protocol!==2)fail('Обновите этот компьютер до 8.9.63. Старые списки не приняты.');
   const device=body.device;
@@ -57,11 +163,28 @@ function update(current,body){
   }
   if(body.action!=='changes')fail('Неизвестная команда синхронизации');
   next.state=C.applyTransaction(current.state,body.changes||[],body.archives);
+
+  // 8.9.78: товары изменяются точечно на любом компьютере.
+  // Сервер сравнивает "before" с текущей карточкой и сам повышает catalogRev.
+  if(Array.isArray(body.productChanges)&&body.productChanges.length){
+    next.state=applyProductChanges(next.state,body.productChanges,device);
+    auditProductChanges(next,current,body.productChanges,device);
+  }
+
+  // Дилеры/группы пока остаются под контролем главного компьютера.
+  if(body.catalogNonProducts){
+    if(device.id!==meta.masterId)fail('Дилеры и группы изменяются на главном компьютере.');
+    next.state=applyNonProductCatalog(next.state,body.catalogNonProducts);
+  }
+
+  // Совместимость со старыми клиентами: разрешаем им обновлять дилеров/группы,
+  // но не позволяем старому полному catalog вернуть прежнюю цену товара.
   if(body.catalog){
     if(device.id!==meta.masterId)fail('Справочники изменяются на главном компьютере.');
-    const selected=C.clone(body.catalog);
-    for(const p of selected.products||[]){const existing=next.state.products.find(x=>C.id(x.id)===C.id(p.id));if(existing){p.stock=existing.stock;p.receiptArchiveStock=existing.receiptArchiveStock;}}
-    next.state=C.applyCatalog(next.state,selected);
+    if(!C.same(productListView(body.catalog.products||[]),productListView(next.state.products||[]))){
+      fail('Старая версия программы попыталась заменить каталог товаров. Обновите программу перед изменением цен.');
+    }
+    next.state=applyNonProductCatalog(next.state,body.catalog);
   }
   for(const edit of body.stockOverrides||[]){
     if(device.id!==meta.masterId)fail('Остатки вручную изменяются на главном компьютере.');
