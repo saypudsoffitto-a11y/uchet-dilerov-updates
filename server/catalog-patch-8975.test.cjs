@@ -11,7 +11,8 @@ test('worker price reaches shared catalog; repeat is idempotent and leaves stock
 });
 test('master prices are accepted and worker later changes only the intended card',()=>{
  let s=initial(),catalog=C.catalog(s.state);catalog.products[0].retailPrice=250;
- s=write(s,master,{catalog});assert.equal(s.state.products[0].retailPrice,250);
+ assert.throws(()=>write(s,master,{catalog}),/заменить каталог товаров/);
+ const original=C.clone(s.state.products[0]);s=write(s,master,{productChanges:[{id:'1',before:original,after:{...original,retailPrice:250}}]});assert.equal(s.state.products[0].retailPrice,250);
  const before=C.clone(s.state.products[0]);s=write(s,worker,{catalogPatch:{products:[{id:'1',before,after:{...before,wholesalePrice:230}}]}});
  assert.equal(s.state.products[0].retailPrice,250);assert.equal(s.state.products[0].wholesalePrice,230);
 });
