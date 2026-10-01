@@ -1,10 +1,10 @@
 {
-  "version": "8.9.78",
+  "version": "8.9.79",
   "platform": "darwin",
   "arch": "arm64",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.78/Uchet-dilerov-macOS-8.9.78-arm64.dmg",
-  "sha256": "2e0ff25b6e0f81c8cce28258abbe39f942efa27dc8b06496533fd6e343842815",
-  "zipUrl": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.78/Uchet-dilerov-macOS-8.9.78-arm64.zip",
-  "zipSha256": "747add0aae5788d3fcffa2d264927f4c6a7e20e934ec63b92f1373105f256d12",
-  "notes": "Сборка «Учёт дилеров» для macOS Apple Silicon (M1/M2/M3)."
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.79/Uchet-dilerov-macOS-8.9.79-arm64.dmg",
+  "sha256": "311a650bf23593d9e8f7bc66fce2501eea48de680fcfdd4e57d90bc2b4cea1fe",
+  "zipUrl": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.79/Uchet-dilerov-macOS-8.9.79-arm64.zip",
+  "zipSha256": "9c026bc44a1fc407e25192c332290da831404c175626c8494a69b6667840aabf",
+  "notes": "# Учёт дилеров 8.9.79\n\n- Переключатель «Складской учёт» в настройках. Выключенный режим сохраняет продажи без изменения остатков и без ограничений по наличию.\n- Приход, расход, возврат, корректировка и однократный ввод начального количества. Правка и удаление продажи пересчитывают остатки.\n- При нехватке товара показаны количество в наличии, объём продажи и будущий остаток. Продажа в минус требует явного подтверждения.\n- Единое компактное оформление и меню правой кнопки для дилеров, товаров, продаж и оплат.\n- Сохранена защита новых цен и остальных полей от старого ответа сервера, кэша и долго выключенного компьютера. Старые цены в продажах остаются прежними.\n- Перед обновлением сохраняется резервная копия базы; отказ резервного копирования останавливает обновление.\n\nПубликация и замена манифестов автообновления допускаются только после успешных проверок обеих платформ."
 }
