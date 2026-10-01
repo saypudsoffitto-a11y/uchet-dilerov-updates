@@ -69,7 +69,61 @@
   }
   const archiveFields=['receiptStates','receiptItemStates'];
   function diffArchives(base,current){return Object.fromEntries(archiveFields.map(field=>{const a=base[field]||{},b=current[field]||{};return [field,[...new Set([...Object.keys(a),...Object.keys(b)])].filter(k=>!same(a[k],b[k])).map(k=>({key:k,before:a[k]||null,after:b[k]||null}))];}));}
-  function quantities(ops){const q={};for(const op of ops||[])if(op.type==='sale')for(const item of op.items||[]){if(item.productId!=null)q[id(item.productId)]=(q[id(item.productId)]||0)+(Number(item.qty)||0);}return q;}
+  const warehouseTypes=['stock_receipt','stock_return','stock_adjustment','stock_opening','stock_expense'];
+  function quantities(ops){
+    const q={};
+    for(const op of ops||[]){
+      if(op.type!=='sale'&&!warehouseTypes.includes(op.type))continue;
+      if(op.type==='sale'&&op.inventoryTracked===false)continue;
+      for(const item of op.items||[]){
+        if(item.productId==null)continue;
+        // Historical NewMatRos service lines never consumed physical stock.
+        if(op.type==='sale'&&op.source==='NewMatRos'&&(item.ceilingNo||/^NM-/.test(item.article||''))&&!item.stockTracked)continue;
+        const sign=(op.type==='sale'||op.type==='stock_expense')?1:-1,k=id(item.productId);
+        q[k]=(q[k]||0)+sign*(Number(item.qty)||0);
+      }
+    }
+    return q;
+  }
+  function enableInventory(state){
+    const consumed=quantities(state.ops);
+    for(const p of state.products||[]){
+      if(p.inventoryVersion===2)continue;
+      // Anchor to the live balance, including legacy edits; never rewrite receipts.
+      p.warehouseOpening=Number(((Number(p.stock)||0)+(consumed[id(p.id)]||0)).toFixed(6));
+      p.inventoryVersion=2;
+    }
+    return recalcInventory(state);
+  }
+  function recalcInventory(state){
+    const consumed=quantities(state.ops),opening={},counts={};
+    for(const op of state.ops||[])if(op.type==='stock_opening')for(const i of op.items||[]){opening[id(i.productId)]=(opening[id(i.productId)]||0)+Number(i.qty);if(Number.isFinite(i.openingCount))counts[id(i.productId)]=i.openingCount;}
+    for(const p of state.products||[])if(p.inventoryVersion===2){
+      p.stock=Number((Number(p.warehouseOpening)-(consumed[id(p.id)]||0)).toFixed(6));
+      p.initialStock=counts[id(p.id)]??Number((Number(p.warehouseOpening)+(opening[id(p.id)]||0)).toFixed(6));
+    }
+    return state;
+  }
+  function inventoryHistory(state,productId){
+    const p=(state.products||[]).find(p=>id(p.id)===id(productId));if(!p)return [];
+    const rows=[{id:'opening:'+id(p.id),type:'initial',date:'Начальный остаток',qty:Number(p.warehouseOpening)||0,note:'Остаток перенесён без изменения истории продаж'}];
+    for(const op of [...(state.ops||[]),...Object.values(state.receiptStates||{}).filter(e=>e.archived).map(e=>({...e.receipt,cancelled:true}))]){
+      if(op.type!=='sale'&&!warehouseTypes.includes(op.type))continue;
+      if(op.type==='sale'&&op.inventoryTracked===false)continue;
+      const qty=-(quantities([op])[id(productId)]||0);
+      if(qty)rows.push({id:op.id,number:op.receiptNo||op.number||String(op.id).slice(-8),type:op.type,date:op.date,ts:op.ts,qty:op.cancelled?0:qty,cancelled:!!op.cancelled,note:op.note||'',items:clone(op.items)});
+    }
+    return [rows[0],...rows.slice(1).sort((a,b)=>(Number(a.ts)||0)-(Number(b.ts)||0))];
+  }
+  const groupKey=v=>String(v??'').normalize('NFKC').trim();
+  function sameGroup(state,productGroup,selected){
+    if(!groupKey(selected))return true;
+    if(groupKey(productGroup)===groupKey(selected))return true;
+    const find=k=>(state.groups||[]).find(g=>groupKey(g.id)===groupKey(k));
+    const a=find(productGroup),b=find(selected);
+    return !!a&&!!b&&normalize(a.name)===normalize(b.name);
+  }
+
   function applyTransaction(state,changes,archives){
     const out=applyOps(state,changes),before=quantities(state.ops),after=quantities(out.ops);
     for(const field of archiveFields){out[field]=out[field]||{};for(const change of archives?.[field]||[]){const current=out[field][change.key]||null;if(same(current,change.after))continue;if(!same(current,change.before))throw new Error('Архив чека изменён на другом компьютере');if(change.after)out[field][change.key]=clone(change.after);else delete out[field][change.key];}}
@@ -77,7 +131,7 @@
       // The archive UI must not apply the same stock return for a second time.
       for(const [receiptId,entry] of Object.entries(out.receiptStates||{}))p.receiptArchiveStock={...p.receiptArchiveStock,[receiptId]:entry.archived?Number(entry.stockQuantities?.[k])||0:0};
     }
-    return out;
+    return recalcInventory(out);
   }
   function catalog(state){return Object.fromEntries(catalogFields.map(k=>[k,clone(state[k]||(k==='dealers'||k==='products'||k==='groups'?[]:{}))]));}
   function definitions(state){const value=catalog(state);for(const p of value.products){delete p.stock;delete p.receiptArchiveStock;}return value;}
@@ -92,5 +146,5 @@
     }
     return canonicalize(next);
   }
-  return {clone,same,normalize,phone,id,catalogFields,catalog,definitions,canonicalize,remap,diffOps,applyOps,applyCatalog,dealerKey,productKey,diffArchives,applyTransaction,quantities};
+  return {clone,same,normalize,phone,id,catalogFields,catalog,definitions,canonicalize,remap,diffOps,applyOps,applyCatalog,dealerKey,productKey,diffArchives,applyTransaction,quantities,warehouseTypes,enableInventory,recalcInventory,inventoryHistory,sameGroup};
 });

@@ -16,6 +16,7 @@
 
     const groupById=(s,id)=>(s?.groups||[]).find(g=>String(g?.id)===String(id));
     const sameGroup=(s,productGroupId,selectedGroupId)=>{
+      if(window.SyncCore8962)return window.SyncCore8962.sameGroup(s,productGroupId,selectedGroupId);
       if(selectedGroupId==null||String(selectedGroupId)==='')return true;
       if(String(productGroupId)===String(selectedGroupId))return true;
       const productName=normGroupName(groupById(s,productGroupId)?.name);
@@ -101,7 +102,7 @@
       return (state.products||[])
         .filter(p=>p&&!p.archived&&sameGroup(state,p.groupId,gid)&&((String(p.name||'')+' '+String(p.article||'')).toLocaleLowerCase('ru-RU').includes(q)))
         .sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''),'ru',{numeric:true,sensitivity:'base'}))
-        .slice(0,160);
+        ;
     };
 
     function renderSaleProducts8942(){

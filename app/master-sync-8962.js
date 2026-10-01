@@ -15,8 +15,10 @@
   let device;
   try{device=JSON.parse(localStorage.getItem(DEVICE)||'null')}catch(_){}
   if(!device?.id){device={id:crypto.randomUUID(),name:'Компьютер '+crypto.randomUUID().slice(0,4)};localStorage.setItem(DEVICE,JSON.stringify(device));}
-  let busy=false,meta=null,online=false;
+  let busy=false,meta=null,online=false,quarantinedThisRun=0;
   const key=()=> 'uchet_sync_baseline_8962:'+String(syncCfg().url||'');
+  const staleKey=()=> 'uchet_stale_products:'+String(syncCfg().url||'');
+  const conflictNote=()=>quarantinedThisRun?' · конфликтующие поля сохранены отдельно':'';
   const recoveryKey=()=> 'uchet_before_master_8962:'+String(syncCfg().url||'');
   const readBaseline=()=>{try{return JSON.parse(localStorage.getItem(key())||'null')}catch(_){return null}};
   const status=text=>{const el=document.getElementById('syncStatus');if(el)el.textContent=text;paint();};
@@ -27,6 +29,7 @@
     const claim=document.getElementById('claimMaster8962');if(claim)claim.hidden=!!meta?.masterId;
     const transfer=document.getElementById('transferMaster8962');if(transfer)transfer.hidden=meta?.masterId!==device.id;
     const select=document.getElementById('computerTarget8962');if(select){const selected=select.value;select.innerHTML='';for(const [id,d] of Object.entries(meta?.devices||{})){if(id===device.id)continue;const option=document.createElement('option');option.value=id;option.textContent=d.name;select.appendChild(option);}select.value=selected||select.options[0]?.value||'';select.hidden=meta?.masterId!==device.id;}
+    const conflicts=document.getElementById('productConflictRecovery');if(conflicts)conflicts.hidden=!localStorage.getItem(staleKey());
     const recovery=document.getElementById('recovery8962');if(recovery)recovery.hidden=!localStorage.getItem(recoveryKey());
   }
   async function request(method,body){
@@ -35,6 +38,7 @@
     if(!r?.ok){online=false;throw new Error(r?.message||'Нет ответа сервера');}
     if(r.protocol!==2)throw new Error('Сервер ещё не обновлён для главного компьютера. Данные сохранены локально.');
     if(r.storage!=='turso')throw new Error('Сервер ещё не подключён к постоянной базе Turso. Локальные данные не отправлены.');
+    if(window.warehouseInstalled&&r.serverVersion&&(r.inventoryProtocol!==2||r.productRevisions!==true))throw new Error('Сервер ещё не обновлён для защищённых цен и склада. Все правки сохранены локально.');
     meta=r.computers;
     const serverName=meta?.devices?.[device.id]?.name;
     if(serverName&&serverName!==device.name){device.name=serverName;localStorage.setItem(DEVICE,JSON.stringify(device));const input=document.getElementById('computerName8962');if(input)input.value=device.name;}
@@ -48,6 +52,9 @@
     if(!p)return null;
     const x=C.clone(p);
     delete x.stock;
+    delete x.inventoryVersion;
+    delete x.warehouseOpening;
+    if(window.warehouseInstalled)delete x.initialStock;
     delete x.receiptArchiveStock;
     return x;
   };
@@ -107,12 +114,14 @@
         const next=C.clone(after);
         if(current){
           next.stock=current.stock;
+          for(const field of ['inventoryVersion','warehouseOpening','initialStock'])if(current[field]!=null)next[field]=current[field];
           if(Object.prototype.hasOwnProperty.call(current,'receiptArchiveStock'))next.receiptArchiveStock=C.clone(current.receiptArchiveStock);
           next.catalogRev=Number(current.catalogRev)||0;
           if(current.catalogUpdatedAt)next.catalogUpdatedAt=current.catalogUpdatedAt;
           if(current.catalogUpdatedBy)next.catalogUpdatedBy=current.catalogUpdatedBy;
         }else{
           next.stock=0;
+          if(window.warehouseInstalled){next.inventoryVersion=2;next.warehouseOpening=0;}
         }
         map.set(id,next);
         delete out.deletedProducts[id];
@@ -124,8 +133,45 @@
     return C.remap(out);
   }
 
+  function freshProductChanges(serverState,changes){
+    const keep=[],stale=[];
+    for(const change of changes){
+      const current=(serverState.products||[]).find(p=>C.id(p.id)===change.id)||null;
+      const cacheRollback=Number(change.after?.catalogRev||0)<Number(change.before?.catalogRev||0);
+      const newerServer=Number(current?.catalogRev||0)>Number(change.before?.catalogRev||0);
+      if(cacheRollback){stale.push(change);continue;}
+      if(newerServer&&current&&change.before&&change.after){
+        // Rebase independent fields. A newer name must not discard a local price edit.
+        const before=productUser(change.before),after=productUser(change.after);
+        const changed=Object.keys({...before,...after}).filter(field=>!C.same(before[field],after[field]));
+        const rebased=productWire(current),conflicts=[];
+        for(const field of changed){
+          if(C.same(current[field],before[field])){
+            if(Object.hasOwn(after,field))rebased[field]=C.clone(after[field]);else delete rebased[field];
+          }else if(!C.same(current[field],after[field]))conflicts.push(field);
+        }
+        if(conflicts.length)stale.push({...change,fields:conflicts});
+        if(!C.same(productUser(current),productUser(rebased)))keep.push({id:change.id,before:productWire(current),after:rebased});
+      }else if(newerServer&&!change.after){stale.push(change);}
+      else keep.push(change);
+    }
+    if(stale.length){
+      quarantinedThisRun+=stale.length;
+      const archiveKey=staleKey();
+      let previous=[];try{previous=JSON.parse(localStorage.getItem(archiveKey)||'[]');}catch(_){}
+      localStorage.setItem(archiveKey,JSON.stringify([...previous,{at:new Date().toISOString(),changes:stale}]));
+      status('Получена новая карточка с сервера. Устаревшие поля сохранены отдельно и не отправлены.');
+    }
+    return keep;
+  }
   function pending(){const base=readBaseline();return base?C.diffOps(base.state.ops,state.ops):[];}
   function accept(r,changes,archives,productChanges,nonProductOverlay){
+    const known=readBaseline();
+    if(known&&Number(r.revision)<Number(known.revision))throw new Error('Получен устаревший ответ сервера. Локальные данные сохранены.');
+    for(const old of known?.state?.products||[]){
+      const incoming=(r.state?.products||[]).find(p=>C.id(p.id)===C.id(old.id));
+      if(incoming&&Number(incoming.catalogRev||0)<Number(old.catalogRev||0))throw new Error('Сервер вернул старую карточку товара '+old.id+'. Локальная цена сохранена.');
+    }
     let merged=C.applyTransaction(r.state||{},changes||[],archives);
     if(productChanges?.length)merged=applyLocalProductChanges(merged,productChanges);
     if(nonProductOverlay)merged=overlayNonProduct(merged,nonProductOverlay);
@@ -134,6 +180,8 @@
     // Baseline is always the exact server snapshot. Local unsent edits live only in visible state.
     localStorage.setItem(key(),JSON.stringify({state:r.state,revision:r.revision,masterId:meta?.masterId}));
     localStorage.setItem(KEY,JSON.stringify(merged));state=norm(merged);
+    if(window.warehouseInstalled)C.enableInventory(state);
+    localStorage.setItem(KEY,JSON.stringify(state));
     render();paint();
   }
   async function backup(){
@@ -142,12 +190,13 @@
     if(window.updateAPI?.saveBackup){const result=await window.updateAPI.saveBackup(data);if(!result?.ok)throw new Error('Не удалось сохранить резервную копию: '+(result?.message||''));}
   }
   async function pull(manual){
-    if(busy||!syncCfg().url)return false;busy=true;
+    if(busy||!syncCfg().url)return false;busy=true;quarantinedThisRun=0;
+    const pullStarted=C.clone(state);
     try{
       const r=await request('GET');
       if(!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');if(manual)alert('Главный компьютер ещё не выбран. Нажмите «Сделать главным» на том компьютере, где данные верные.');return true;}
       const baseline=readBaseline();
-      const productChanges=baseline?diffProductChanges(baseline.state.products,state.products):[];
+      const productChanges=baseline?freshProductChanges(r.state,diffProductChanges(baseline.state.products,state.products)):[];
       const masterCatalogPending=!!(meta.masterId===device.id&&baseline&&nonProductChanged(baseline.state,state));
       if(masterCatalogPending){status('Есть изменения дилеров или групп на главном компьютере. Нажмите «Отправить на сервер».');return true;}
       let firstJoinExactMirror=false;
@@ -156,8 +205,21 @@
         localStorage.setItem(recoveryKey(),JSON.stringify(state));
         firstJoinExactMirror=true;
       }
-      const changes=firstJoinExactMirror?[]:pending(),archives=firstJoinExactMirror?{}:C.diffArchives(readBaseline()?.state||{},state);
-      accept(r,changes,archives,firstJoinExactMirror?[]:productChanges,null);
+      const firstWarehouseChanges=window.warehouseInstalled?(state.ops||[]).filter(op=>C.warehouseTypes.includes(op.type)&&!(r.state.ops||[]).some(old=>C.id(old.id)===C.id(op.id))):[];
+      const changes=firstJoinExactMirror?C.diffOps([],firstWarehouseChanges):pending(),archives=firstJoinExactMirror?{}:C.diffArchives(readBaseline()?.state||{},state);
+      let sessionProductChanges=productChanges;
+      if(firstJoinExactMirror){
+        sessionProductChanges=diffProductChanges(pullStarted.products,state.products).map(change=>{
+          const current=(r.state.products||[]).find(p=>C.id(p.id)===change.id);
+          if(!current||!change.before||!change.after)return change;
+          const before=productUser(change.before),after=productUser(change.after),rebased=productWire(current);
+          for(const field of Object.keys({...before,...after}))if(!C.same(before[field],after[field])){
+            if(Object.hasOwn(after,field))rebased[field]=C.clone(after[field]);else delete rebased[field];
+          }
+          return {id:change.id,before:productWire(current),after:rebased};
+        });
+      }
+      accept(r,changes,archives,sessionProductChanges,null);
       if(!meta.devices?.[device.id]||meta.devices[device.id].name!==device.name){
         const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});
         if(!registered.conflict){
@@ -165,19 +227,24 @@
           accept(registered,pending(),C.diffArchives(b?.state||{},state),b?diffProductChanges(b.state.products,state.products):[],null);
         }
       }
-      status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · точная копия главного; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(changes.length||productChanges.length?' · есть неотправленные изменения':'')));return true;
+      if(changes.length||sessionProductChanges.length)setTimeout(()=>push(false),350);
+      status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · точная копия главного; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(changes.length||productChanges.length?' · есть неотправленные изменения':''))+conflictNote());return true;
     }catch(e){online=false;status(e.message);return false;}finally{busy=false;}
   }
   async function push(manual){
     if(busy||!syncCfg().url||(!manual&&!syncCfg().enabled))return false;
     if(!readBaseline()){await pull(true);return false;}
-    busy=true;
+    busy=true;quarantinedThisRun=0;
     try{
-      const base=readBaseline(),changes=pending(),productChanges=diffProductChanges(base.state.products,state.products),catalogChanged=nonProductChanged(base.state,state),archives=C.diffArchives(base.state,state);
+      // Capture the exact local state used by the payload before any network await.
+      const sentState=C.clone(state),sentOps=sentState.ops;
+      const base=readBaseline(),changes=C.diffOps(base.state.ops,sentOps),allProductChanges=diffProductChanges(base.state.products,sentState.products),catalogChanged=nonProductChanged(base.state,sentState),archives=C.diffArchives(base.state,sentState);
       const expected=C.applyTransaction(base.state,changes,archives);
-      const stockOverrides=(state.products||[]).flatMap(p=>{const old=base.state.products?.find(x=>C.id(x.id)===C.id(p.id)),e=expected.products?.find(x=>C.id(x.id)===C.id(p.id));return old&&e&&Number(p.stock)!==Number(e.stock)?[{id:C.id(p.id),before:Number(old.stock)||0,after:(Number(old.stock)||0)+Number(p.stock)-Number(e.stock)}]:[];});
+      const stockOverrides=(sentState.products||[]).flatMap(p=>{const old=base.state.products?.find(x=>C.id(x.id)===C.id(p.id)),e=expected.products?.find(x=>C.id(x.id)===C.id(p.id));return old&&e&&Number(p.stock)!==Number(e.stock)?[{id:C.id(p.id),before:Number(old.stock)||0,after:(Number(old.stock)||0)+Number(p.stock)-Number(e.stock)}]:[];});
       const r=await request('GET');
       if(!meta?.masterId)throw new Error('Выберите главный компьютер.');
+      if(Number(r.revision)<Number(base.revision))throw new Error('Сервер вернул устаревшую базу. Отправка остановлена.');
+      const productChanges=freshProductChanges(r.state,allProductChanges);
 
       // Проверяем локальные карточки против свежего сервера ДО отправки.
       if(productChanges.length)applyLocalProductChanges(r.state,productChanges);
@@ -193,21 +260,24 @@
       if(catalogChanged&&meta.masterId===device.id&&nonProductChanged(base.state,r.state))throw new Error('Дилеры или группы на сервере изменились. Локальные изменения сохранены; требуется сверка.');
 
       const payload={protocol:2,action:'changes',device,baseRevision:r.revision,changes,archives,productChanges};
-      if(meta.masterId===device.id)payload.stockOverrides=stockOverrides;
-      if(catalogChanged&&meta.masterId===device.id)payload.catalogNonProducts=nonProductCatalog(state);
+      if(window.warehouseInstalled)payload.inventoryProtocol=2;
+      else if(meta.masterId===device.id)payload.stockOverrides=stockOverrides;
+      if(catalogChanged&&meta.masterId===device.id)payload.catalogNonProducts=nonProductCatalog(sentState);
 
-      const sentState=C.clone(state),sentOps=sentState.ops;
       const result=await request('PUT',payload);
       if(result.conflict)throw new Error('База изменилась во время отправки. Изменения сохранены; повторите синхронизацию.');
 
       const duringFlight=C.diffOps(sentOps,state.ops);
-      const productDuringFlight=diffProductChanges(sentState.products,state.products);
+      const productDuringFlight=freshProductChanges(result.state,diffProductChanges(sentState.products,state.products));
       const nonProductDuringFlight=meta.masterId===device.id&&nonProductChanged(sentState,state)?nonProductCatalog(state):null;
 
       // Серверный результат становится новой базой. Только изменения, сделанные
       // пока запрос был в полёте, остаются поверх неё как ещё не отправленные.
-      accept(result,duringFlight,C.diffArchives(sentState,state),productDuringFlight,nonProductDuringFlight);
-      status('Синхронизировано · база '+result.revision);return true;
+      const archivesDuringFlight=C.diffArchives(sentState,state);
+      accept(result,duringFlight,archivesDuringFlight,productDuringFlight,nonProductDuringFlight);
+      // A save timer may have fired while busy; send retained edits again.
+      if(productDuringFlight.length||duringFlight.length||nonProductDuringFlight||Object.values(archivesDuringFlight).some(rows=>rows.length))setTimeout(()=>push(false),350);
+      status('Синхронизировано · база '+result.revision+conflictNote());return true;
     }catch(e){online=false;status(e.message);return false;}finally{busy=false;}
   }
   async function claim(){
@@ -239,11 +309,12 @@
   const host=document.getElementById('sync');
   if(host){
     const box=document.createElement('div');box.className='card';
-    box.innerHTML='<h3>Этот компьютер</h3><label>Название<input id="computerName8962" maxlength="80"></label><p id="masterName8962"></p><div class="actions"><button id="claimMaster8962" class="primary">Сделать главным</button><select id="computerTarget8962" hidden></select><button id="transferMaster8962" hidden>Передать роль главного</button><button id="recovery8962" hidden>Скачать сохранённую локальную базу</button></div><p class="muted">Цены и карточки товаров синхронизируются с любого компьютера. Главный компьютер управляет дилерами и группами. Старые продажи и чеки сохраняют прежние цены.</p>';
+    box.innerHTML='<h3>Этот компьютер</h3><label>Название<input id="computerName8962" maxlength="80"></label><p id="masterName8962"></p><div class="actions"><button id="claimMaster8962" class="primary">Сделать главным</button><select id="computerTarget8962" hidden></select><button id="transferMaster8962" hidden>Передать роль главного</button><button id="recovery8962" hidden>Скачать сохранённую локальную базу</button><button id="productConflictRecovery" hidden>Скачать конфликтующие правки товаров</button></div><p class="muted">Цены и карточки товаров синхронизируются с любого компьютера. Главный компьютер управляет дилерами и группами. Старые продажи и чеки сохраняют прежние цены.</p>';
     host.prepend(box);
     document.getElementById('computerName8962').value=device.name;
     document.getElementById('computerName8962').onchange=e=>{device.name=e.target.value.trim()||device.name;localStorage.setItem(DEVICE,JSON.stringify(device));paint();};
     document.getElementById('claimMaster8962').onclick=claim;document.getElementById('transferMaster8962').onclick=transfer;
+    document.getElementById('productConflictRecovery').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(staleKey())||'[]'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Uchet-product-conflicts.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
     document.getElementById('recovery8962').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(recoveryKey())],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-before-master.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   }
   const badge=document.createElement('button');badge.id='computerBadge8962';badge.className='secondary';badge.onclick=()=>go('sync');document.querySelector('header .actions')?.prepend(badge);

@@ -89,12 +89,14 @@
   }
   function createProductCopy8948(id){
     const p=(state.products||[]).find(x=>String(x.id)===String(id));if(!p)return;
-    const copy={...p,id:Date.now(),name:String(p.name||'Товар')+' (копия)',stock:0,archived:false,createdAt:new Date().toLocaleString('ru-RU')};
+    const copy={...p,id:Date.now(),name:String(p.name||'Товар')+' (копия)',stock:0,initialStock:0,inventoryVersion:2,warehouseOpening:0,receiptArchiveStock:{},archived:false,createdAt:new Date().toLocaleString('ru-RU')};
     delete copy.updatedAt;
+    delete copy.catalogRev;delete copy.catalogUpdatedAt;delete copy.catalogUpdatedBy;
     state.products.push(copy);
     save();
     if(typeof editProduct==='function')editProduct(copy.id);
   }
+  window.createProductCopy8948=createProductCopy8948;
   function createNewProduct8948(){
     if(typeof toggleAddProductForm==='function')toggleAddProductForm(true);
     for(const id of ['pname','particle','pbuy','pretail','pwholesale']){

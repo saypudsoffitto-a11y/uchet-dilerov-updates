@@ -1,12 +1,6 @@
 name: Build and publish macOS Apple Silicon release
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'app/**'
-      - 'scripts/smoke-macos.cjs'
-      - '.github/workflows/macos-release.yml'
   workflow_dispatch:
     inputs:
       source_ref:

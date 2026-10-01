@@ -1,11 +1,15 @@
 'use strict';
 const C=require('./sync-core-8962');
+const {applySharedPatch}=require('./catalog-patch-8975');
 const fail=message=>{throw new Error(message);};
 
 const productWire=p=>{
   if(!p)return null;
   const x=C.clone(p);
   delete x.stock;
+  delete x.inventoryVersion;
+  delete x.warehouseOpening;
+  if(p.inventoryVersion===2)delete x.initialStock;
   delete x.receiptArchiveStock;
   return x;
 };
@@ -35,7 +39,7 @@ function applyNonProductCatalog(previous,incoming){
   synthetic.dealerAliases=value.dealerAliases;
   return C.applyCatalog(previous,synthetic);
 }
-function applyProductChanges(state,changes,device){
+function applyProductChanges(state,changes,device,inventoryProtocol){
   const out=C.clone(state||{});
   out.products=Array.isArray(out.products)?out.products:[];
   out.deletedProducts=out.deletedProducts&&typeof out.deletedProducts==='object'?out.deletedProducts:{};
@@ -45,6 +49,7 @@ function applyProductChanges(state,changes,device){
     const key=C.id(change.id);
     if(change.after&&C.id(change.after.id)!==key)fail('Неверный номер карточки товара');
     const current=map.get(key)||null;
+    if(change.after&&out.deletedProducts[key])fail('Товар удалён на другом компьютере');
     const before=change.before?productWire(change.before):null;
     const after=change.after?productWire(change.after):null;
     const currentWire=current?productWire(current):null;
@@ -56,6 +61,7 @@ function applyProductChanges(state,changes,device){
       continue;
     }
     if(!after&&!current)continue;
+    if(!after&&current?.inventoryVersion===2&&(out.ops||[]).some(op=>(op.items||[]).some(item=>C.id(item.productId)===key)))fail('Товар есть в документах склада. Архивируйте карточку вместо удаления.');
 
     // Старый компьютер не может записать карточку поверх более новой.
     if(!C.same(currentWire,before)){
@@ -66,11 +72,13 @@ function applyProductChanges(state,changes,device){
       const next=C.clone(after);
       if(current){
         next.stock=current.stock;
+        for(const field of ['inventoryVersion','warehouseOpening','initialStock'])if(current[field]!=null)next[field]=current[field];
         if(Object.prototype.hasOwnProperty.call(current,'receiptArchiveStock')){
           next.receiptArchiveStock=C.clone(current.receiptArchiveStock);
         }
       }else{
         next.stock=Number(next.stock)||0;
+        if(inventoryProtocol===2){next.inventoryVersion=2;next.warehouseOpening=0;}
       }
       next.catalogRev=(Number(current?.catalogRev)||0)+1;
       next.catalogUpdatedAt=new Date().toISOString();
@@ -128,24 +136,47 @@ function update(current,body){
   if(body.action==='claim'){
     if(meta.masterId)fail('Главный компьютер уже выбран. Сменить его можно с главного компьютера.');
     if(!body.state||!Array.isArray(body.state.dealers)||!Array.isArray(body.state.products))fail('Не передан выбранный справочник');
-    const selected=C.canonicalize(body.state),remote=C.clone(current.state||{});
-    selected.ops=C.applyOps(remote,C.diffOps([],selected.ops).filter(change=>!remote.ops?.some(o=>C.id(o.id)===change.id))).ops||[];
-    // Equal IDs with unequal contents cannot be silently overwritten at migration.
-    for(const op of body.state.ops||[]){const old=(remote.ops||[]).find(x=>C.id(x.id)===C.id(op.id));if(old&&!C.same(old,op))fail('Перед выбором главного компьютера нужно сверить операцию '+op.id);}
-    for(const field of ['receiptStates','receiptItemStates']){
-      const local=selected[field]||{},other=remote[field]||{};
-      for(const key of Object.keys(local))if(other[key]&&!C.same(other[key],local[key]))fail('Архив чека требует сверки перед назначением главного компьютера');
-      selected[field]={...other,...local};
-    }
-    selected.dealerAliases={...(remote.dealerAliases||{}),...(selected.dealerAliases||{})};
-    for(const old of remote.dealers||[]){
-      if(selected.dealers.some(d=>C.id(d.id)===C.id(old.id)))continue;
-      const matches=selected.dealers.filter(d=>C.dealerKey(d)&&C.dealerKey(d)===C.dealerKey(old));
-      if(matches.length===1)selected.dealerAliases[C.id(old.id)]=C.id(matches[0].id);
-    }
+    const selected=C.canonicalize(body.state);
+    // The first designated master is authoritative. Do not mix any pre-master
+    // server state into it: old workers/test migrations may contain stale ops,
+    // aliases or deletion marks. server.js keeps the whole pre-master store in
+    // beforeMaster so nothing is destroyed.
     C.remap(selected);
-    if(selected.ops.some(op=>!selected.dealers.some(d=>C.id(d.id)===C.id(op.dealerId))))fail('На сервере есть операции дилеров, которых нет в выбранном списке. Сначала нужно сверить эти карточки.');
-    next.state=C.applyCatalog(remote,selected);next.state.ops=selected.ops;next.state.receiptStates=selected.receiptStates;next.state.receiptItemStates=selected.receiptItemStates;C.remap(next.state);
+    const dealerIds=new Set((selected.dealers||[]).map(d=>C.id(d.id)));
+    const orphanOps=(selected.ops||[]).filter(op=>!C.warehouseTypes.includes(op.type)&&!dealerIds.has(C.id(op.dealerId)));
+    selected.ops=(selected.ops||[]).filter(op=>C.warehouseTypes.includes(op.type)||dealerIds.has(C.id(op.dealerId)));
+
+    const orphanReceiptStates={},activeReceiptStates={};
+    for(const [key,entry] of Object.entries(selected.receiptStates||{})){
+      const receipt=entry&&entry.receipt;
+      if(receipt&&receipt.dealerId!=null&&!dealerIds.has(C.id(receipt.dealerId)))orphanReceiptStates[key]=entry;
+      else activeReceiptStates[key]=entry;
+    }
+    const orphanReceiptItemStates={},activeReceiptItemStates={};
+    for(const [key,entry] of Object.entries(selected.receiptItemStates||{})){
+      if(entry&&entry.dealerId!=null&&!dealerIds.has(C.id(entry.dealerId)))orphanReceiptItemStates[key]=entry;
+      else activeReceiptItemStates[key]=entry;
+    }
+    selected.receiptStates=activeReceiptStates;
+    selected.receiptItemStates=activeReceiptItemStates;
+
+    if(orphanOps.length||Object.keys(orphanReceiptStates).length||Object.keys(orphanReceiptItemStates).length){
+      next.claimQuarantine={
+        savedAt:new Date().toISOString(),
+        orphanOps:C.clone(orphanOps),
+        receiptStates:C.clone(orphanReceiptStates),
+        receiptItemStates:C.clone(orphanReceiptItemStates)
+      };
+    }
+
+    // Build the live shared state from the selected master only. In particular,
+    // do not inherit stale remote tombstones that could delete a current card.
+    next.state=C.applyCatalog({ops:[],receiptStates:{},receiptItemStates:{}},selected);
+    next.state.ops=C.clone(selected.ops||[]);
+    next.state.receiptStates=C.clone(selected.receiptStates||{});
+    next.state.receiptItemStates=C.clone(selected.receiptItemStates||{});
+    next.state.receiptSeq=Math.max(Number(selected.receiptSeq)||1,...next.state.ops.map(o=>(Number(o.receiptNo)||0)+1));
+    C.recalcInventory(next.state);C.remap(next.state);
     meta.masterId=device.id;meta.epoch=1;
     meta.devices[device.id].name='Компьютер 1 · Главный';
     meta.devices[device.id].ordinal=1;
@@ -162,12 +193,14 @@ function update(current,body){
     return next;
   }
   if(body.action!=='changes')fail('Неизвестная команда синхронизации');
-  next.state=C.applyTransaction(current.state,body.changes||[],body.archives);
+  const transactionBase=C.clone(current.state);
+  if(body.inventoryProtocol===2)C.enableInventory(transactionBase);
+  next.state=C.applyTransaction(transactionBase,body.changes||[],body.archives);
 
   // 8.9.78: товары изменяются точечно на любом компьютере.
   // Сервер сравнивает "before" с текущей карточкой и сам повышает catalogRev.
   if(Array.isArray(body.productChanges)&&body.productChanges.length){
-    next.state=applyProductChanges(next.state,body.productChanges,device);
+    next.state=applyProductChanges(next.state,body.productChanges,device,body.inventoryProtocol);
     auditProductChanges(next,current,body.productChanges,device);
   }
 
@@ -186,16 +219,41 @@ function update(current,body){
     }
     next.state=applyNonProductCatalog(next.state,body.catalog);
   }
+  if((body.stockOverrides||[]).length&&next.state.products.some(p=>p.inventoryVersion===2))fail('Используйте документ корректировки склада вместо замены остатка');
+  if(body.catalogPatch){
+    const products=body.catalogPatch.products||[];
+    next.state=applyProductChanges(next.state,products,device,body.inventoryProtocol);
+    auditProductChanges(next,current,products,device);
+    next.state=applySharedPatch(next.state,{...body.catalogPatch,products:[]});
+  }
   for(const edit of body.stockOverrides||[]){
     if(device.id!==meta.masterId)fail('Остатки вручную изменяются на главном компьютере.');
     const previous=(current.state.products||[]).find(p=>C.id(p.id)===edit.id),p=next.state.products.find(p=>C.id(p.id)===edit.id);
     if(!previous||!p||Number(previous.stock)!==Number(edit.before)||!Number.isFinite(edit.after))fail('Остаток изменён другим компьютером');
     p.stock+=edit.after-Number(previous.stock);
   }
+  if(body.inventoryProtocol===2)C.enableInventory(next.state);
+  C.recalcInventory(next.state);
   C.remap(next.state);
   for(const change of body.changes||[]){
     if(!change.after)continue;
     const op=next.state.ops.find(o=>C.id(o.id)===change.id);
+    if(C.warehouseTypes.includes(op.type)){
+      if(op.type==='stock_opening'){
+        for(const item of op.items||[]){
+          const count=s=>(s.ops||[]).filter(o=>o.type==='stock_opening'&&o.items?.some(i=>C.id(i.productId)===C.id(item.productId))).length;
+          if(count(next.state)>Math.max(1,count(current.state)))fail('Начальный остаток уже введён. Используйте корректировку');
+        }
+      }
+      if(body.inventoryProtocol!==2)fail('Обновите программу для работы со складом');
+      if(!Array.isArray(op.items)||!op.items.length||!/^\d{4}-\d{2}-\d{2}$/.test(op.date)||(!Number.isFinite(Date.parse(op.date))||new Date(op.date).toISOString().slice(0,10)!==op.date))fail('Неверный складской документ');
+      for(const item of op.items){
+        if(item.openingCount!==undefined&&(!Number.isFinite(item.openingCount)||item.openingCount<0))fail('Неверное начальное количество');
+        if(!next.state.products.some(p=>C.id(p.id)===C.id(item.productId)))fail('Товар складского документа отсутствует');
+        if(!Number.isFinite(item.qty)||(item.qty===0&&op.type!=='stock_opening')||(['stock_receipt','stock_return','stock_expense'].includes(op.type)&&item.qty<=0)||!Number.isFinite(item.buyPrice)||item.buyPrice<0)fail('Неверное количество или закупочная цена');
+      }
+      continue;
+    }
     if(!next.state.dealers.some(d=>C.id(d.id)===C.id(op.dealerId)))fail('Дилер операции '+op.id+' отсутствует в главном справочнике. Операция сохранена на рабочем компьютере.');
     if(!['sale','payment','initial_debt'].includes(op.type)||!Number.isFinite(Number(op.total)))fail('Неверная операция '+op.id);
   }

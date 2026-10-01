@@ -17,6 +17,7 @@ function harness(){
     confirm:()=>true,alert(){},
     document:{addEventListener(){},querySelector(){return null},getElementById(){return null},documentElement:{dataset:{}},body:{appendChild(){}},createElement(){return {style:{},querySelector(){return {onclick:null}},remove(){}}}},
     hideDealerContextMenu(){},closeDealerModal(){},
+    deleteDealerFromList(){},showDealerContextMenu(){},
     addDealer(){},saveDealerEdit(){},saveDealerPhoto(){},
     saveSale(){},makePayment(){},confirmInitialDebt(){},
     showReceiptFromHistory(){},refreshReceiptViews(){},sendWhatsApp(){},

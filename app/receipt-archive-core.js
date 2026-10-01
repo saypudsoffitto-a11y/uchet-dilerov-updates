@@ -52,6 +52,7 @@
 
   function stockQuantities(op){
     const amounts={};
+    if(op.inventoryTracked===false)return amounts;
     for(const i of op.items||[]){
       if(i.productId==null||(op.source==='NewMatRos'&&(i.ceilingNo||/^NM-/.test(i.article||''))&&!i.stockTracked))continue;
       const qty=+i.qty;if(!Number.isFinite(qty)||qty<=0)continue;

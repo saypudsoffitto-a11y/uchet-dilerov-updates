@@ -132,7 +132,7 @@
     }
 
     function repairProductsInState(s){
-      if(!s||typeof s!=='object')return {changed:false,duplicatesRemoved:0,relinked:0,buckets:0};
+      if(!s||typeof s!=='object'||window.masterSync8962)return {changed:false,duplicatesRemoved:0,relinked:0,buckets:0};
       s.groups=Array.isArray(s.groups)?s.groups:[];
       s.products=Array.isArray(s.products)?s.products:[];
       s.ops=Array.isArray(s.ops)?s.ops:[];

@@ -52,14 +52,14 @@
 
   // Для уже существующих товаров текущий остаток становится исходной точкой учёта.
   let migrated=false;
-  (state.products||[]).forEach(p=>{
+  if(!window.warehouseInstalled)(state.products||[]).forEach(p=>{
     if(p.initialStock==null){p.initialStock=Number.isFinite(+p.stock)?+p.stock:0;migrated=true}
     if(p.stock==null){p.stock=+p.initialStock||0;migrated=true}
   });
   if(migrated)save();
 
   const originalAddProduct=window.addProduct;
-  if(typeof originalAddProduct==='function'){
+  if(!window.warehouseInstalled&&typeof originalAddProduct==='function'){
     window.addProduct=async function(){
       const before=new Set((state.products||[]).map(p=>p.id));
       const initial=Math.max(0,Number(String(document.getElementById('pInitialStock')?.value||'0').replace(',','.'))||0);
@@ -83,7 +83,7 @@
   }
 
   const originalSaveProductEdit=window.saveProductEdit;
-  if(typeof originalSaveProductEdit==='function'){
+  if(!window.warehouseInstalled&&typeof originalSaveProductEdit==='function'){
     window.saveProductEdit=function(){
       const id=+document.getElementById('editProductId')?.value;
       const initial=Math.max(0,Number(String(document.getElementById('editPinitialStock')?.value||'0').replace(',','.'))||0);
@@ -96,7 +96,7 @@
 
   // После продажи автоматически уменьшаем остаток по каждой позиции.
   const originalSaveSale=window.saveSale;
-  if(typeof originalSaveSale==='function'){
+  if(!window.warehouseInstalled&&typeof originalSaveSale==='function'){
     window.saveSale=function(){
       const snapshot=(cart||[]).map(i=>({...i}));
       const shortages=snapshot.filter(i=>{

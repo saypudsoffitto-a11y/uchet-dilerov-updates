@@ -10,7 +10,7 @@ const TOKEN_SHA256 = String(process.env.SYNC_TOKEN_SHA256 || '').trim().toLowerC
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.63-sync5';
+const SERVER_VERSION = '8.9.79-sync6';
 const masterProtocol = require('./master-protocol-8962');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -221,7 +221,7 @@ async function writeStore(expectedRevision, nextStore) {
 }
 
 function send(res, status, body) {
-  const data = JSON.stringify(body);
+  const data = JSON.stringify(body?.protocol===2?{...body,inventoryProtocol:2,productRevisions:true}:body);
   res.writeHead(status, {
     'Content-Type': 'application/json; charset=utf-8',
     'Cache-Control': 'no-store',
@@ -266,14 +266,38 @@ function readJsonBody(req) {
   });
 }
 
+function requestPath(req) {
+  try {
+    const pathname = new URL(String(req.url || '/'), 'http://localhost').pathname;
+    if (pathname === '/') return '/';
+    return pathname.replace(/\/+$/, '') || '/';
+  } catch (_) {
+    return String(req.url || '/').split('?')[0].replace(/\/+$/, '') || '/';
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   try {
+    const route = requestPath(req);
     if (req.method === 'OPTIONS') return send(res, 204, {});
-    if (req.url === '/health' && req.method === 'GET') {
+    if (route === '/' && req.method === 'GET') {
       const store = await readStore();
-      return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION, storage: store.storage, protocol: 2 });
+      return send(res, 200, {
+        ok: true,
+        message: 'Сервер «Учёт дилеров» работает',
+        revision: store.revision,
+        serverVersion: SERVER_VERSION,
+        storage: store.storage,
+        protocol: 2,
+        health: '/health',
+        api: '/api/state'
+      });
     }
-    if (req.url !== '/api/state') return send(res, 404, { ok: false, message: 'Маршрут не найден' });
+    if (route === '/health' && req.method === 'GET') {
+      const store = await readStore();
+      return send(res, 200, { ok: true, revision: store.revision, serverVersion: SERVER_VERSION, storage: store.storage, protocol: 2, inventoryProtocol: 2, productRevisions: true });
+    }
+    if (route !== '/api/state') return send(res, 404, { ok: false, message: 'Маршрут не найден', health: '/health', api: '/api/state' });
     if (!authorized(req)) return send(res, 401, { ok: false, message: 'Неверный секретный ключ' });
     if (req.method === 'GET') {
       const store = await readStore();
@@ -366,4 +390,3 @@ server.listen(PORT, HOST, () => {
   console.log(`Учёт дилеров sync server ${SERVER_VERSION}: http://${HOST}:${PORT} · storage=${storeBackend.kind}`);
   console.log(TOKEN || TOKEN_SHA256 ? 'Авторизация по ключу синхронизации включена' : 'ВНИМАНИЕ: ключ синхронизации не задан');
 });
-

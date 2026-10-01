@@ -29,6 +29,7 @@ function coreHarness(){
     closeDealerModal(){},renderDealers(){},
     mergeSyncState(remote,local){return remote||local},
     addEventListener(){},
+    deleteDealerFromList(){},showDealerContextMenu(){},
     addDealer(){},saveDealerEdit(){},saveDealerPhoto(){}
   };
   ctx.window=ctx;
@@ -119,12 +120,12 @@ test('cloud speech keeps the natural OpenAI path when configured',async()=>{
   assert.equal(fallback,0);
 });
 
-test('8.9.33 entry loads final runtime after legacy runtime and exposes Windows speech',()=>{
+test('historical 8.9.33 entry loads final runtime and its Windows speech handler',()=>{
   const main=fs.readFileSync('app/main-8933.js','utf8');
   assert.ok(main.indexOf("require('./release-8930-main.js')")<main.indexOf("require('./release-8933-main.js')"));
   assert.ok(main.includes("require('./speech-fallback-8933.js')"));
-  const preload=fs.readFileSync('app/preload.js','utf8');
-  assert.ok(preload.includes("speakWindows: (text) => ipcRenderer.invoke('assistant:speakWindows', text)"));
+  const speech=fs.readFileSync('app/speech-fallback-8933.js','utf8');
+  assert.ok(speech.includes("ipcMain.handle('assistant:speakWindows'"));
   const finalLoader=fs.readFileSync('app/release-8933-main.js','utf8');
   assert.ok(finalLoader.indexOf("core-fixes-8933.js")<finalLoader.indexOf("audio-fix-8933.js"));
 });

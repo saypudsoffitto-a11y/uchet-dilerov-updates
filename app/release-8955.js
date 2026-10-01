@@ -76,7 +76,7 @@
     const wrapped=function(id){
       const p=(state.products||[]).find(x=>String(x?.id)===String(id));
       if(!p)return;
-      const used=(state.ops||[]).some(o=>o?.type==='sale'&&Array.isArray(o.items)&&o.items.some(i=>String(i?.productId)===String(id)));
+      const used=(state.ops||[]).some(o=>(o?.type==='sale'||window.SyncCore8962?.warehouseTypes?.includes(o?.type))&&Array.isArray(o.items)&&o.items.some(i=>String(i?.productId)===String(id)));
       if(used)return previousDel.apply(this,arguments);
       if(!confirm('Удалить товар «'+String(p.name||'Без названия')+'»?'))return;
       if(!confirm('Подтверди ещё раз: удалить товар без возможности восстановления?'))return;
