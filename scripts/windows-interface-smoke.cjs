@@ -84,13 +84,13 @@ async function main(){
     await evaluate(`(()=>{
       window.confirm=()=>true;window.alert=message=>{throw Error(message)};
       state=norm({dealers:[{id:1,name:'Дилер 01',city:'Махачкала'},{id:2,name:'Дилер 02',city:'Каспийск'},{id:3,name:'Дилер 03',city:'Дербент'}],groups:[{id:1,name:'Профили'}],products:[{id:10,groupId:1,name:'Парящий профиль Fly 01',article:'FLY-01',stock:50,initialStock:52,unit:'пог. м',buyPrice:100,retailPrice:200,wholesalePrice:180}],ops:[{id:100,ts:Date.now(),type:'sale',date:new Date().toLocaleString('ru'),dealerId:1,dealer:'Дилер 01',total:400,profit:200,receiptNo:1,items:[{productId:10,name:'Парящий профиль Fly 01',qty:2,price:200,total:400,profit:200,unit:'пог. м'}]},{id:101,ts:Date.now(),type:'payment',date:new Date().toLocaleString('ru'),dealerId:1,dealer:'Дилер 01',total:100,method:'Наличные'}],receiptSeq:2});
-      save();go('home');return true;
+      const warehouse=document.getElementById('warehouseEnabled');if(!warehouse)throw Error('Warehouse toggle missing');warehouse.checked=true;warehouse.dispatchEvent(new Event('change'));save();go('home');return true;
     })()`);
     const summary=await evaluate(`({version:document.documentElement.dataset.interfaceVersion,today:document.getElementById('todaySales').textContent,rows:document.querySelectorAll('#homeDealerRows tr').length})`);
     assert.equal(summary.version,expectedRuntime);assert.equal(summary.today,'1');assert.equal(summary.rows,3);
     const search=await evaluate(`(()=>{homeSearch.value='02';homeSearch.dispatchEvent(new Event('input'));const n=homeDealerRows.children.length;homeSearch.value='';homeSearch.dispatchEvent(new Event('input'));return n})()`);assert.equal(search,1);
-    const dedupe=await evaluate(`(()=>{const sample=norm({groups:[{id:1,name:'Профили'}],products:[{id:11,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:100,updatedAt:1},{id:22,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:110,updatedAt:2},{id:33,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:120,updatedAt:3}],ops:[{id:1,type:'sale',items:[{productId:22,name:'Багет Premium стеновой'}]}]});const result=window.__dataFix8941.repairProductsInState(sample);return {count:sample.products.length,linked:sample.ops[0].items[0].productId===sample.products[0].id,removed:result.duplicatesRemoved,tombstones:Object.keys(sample.deletedProducts||{}).length}})()`);
-    assert.deepEqual(dedupe,{count:1,linked:true,removed:2,tombstones:2});
+    const dedupe=await evaluate(`(()=>{const sample=norm({groups:[{id:1,name:'Профили'}],products:[{id:11,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:100,updatedAt:1},{id:22,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:110,updatedAt:2},{id:33,groupId:1,name:'Багет Premium стеновой',article:'BP-01',retailPrice:120,updatedAt:3}],ops:[{id:1,type:'sale',items:[{productId:22,name:'Багет Premium стеновой'}]}]});const result=window.__dataFix8941.repairProductsInState(sample);return {count:sample.products.length,linked:sample.ops[0].items[0].productId===22,removed:result.duplicatesRemoved,tombstones:Object.keys(sample.deletedProducts||{}).length}})()`);
+    assert.deepEqual(dedupe,{count:3,linked:true,removed:0,tombstones:0},'Distinct product cards and historical references must be preserved');
     const folder=path.resolve('qa-interface');fs.mkdirSync(folder,{recursive:true});
     async function screenshot(name,width,height){await command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await sleep(200);const result=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(folder,name+'.png'),Buffer.from(result.data,'base64'))}
     await screenshot('home',1440,1000);
@@ -153,7 +153,7 @@ async function main(){
     const failed=await evaluate(`(()=>{const old=Storage.prototype.setItem;const before=JSON.stringify(state);let message='';window.alert=s=>message=s;Storage.prototype.setItem=function(){throw Error('disk full')};try{archiveReceipt(100)}finally{Storage.prototype.setItem=old}return {unchanged:JSON.stringify(state)===before,error:message.includes('disk full')}})()`);assert.deepEqual(failed,{unchanged:true,error:true});
     assert.doesNotMatch(output,/Uncaught Exception|runtime loader error/);
     socket.close();
-    console.log('PASS: Windows dashboard, duplicate products, dealer status colors, receipt context data, NewMatRos actions, archive/restore, sync, scrolling and unobstructed close button');
+    console.log('PASS: Windows dashboard, preserved product cards, dealer status colors, receipt context data, NewMatRos actions, archive/restore, sync, scrolling and unobstructed close button');
   }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F'])}
 }
 main().catch(e=>{console.error(e);process.exitCode=1});
