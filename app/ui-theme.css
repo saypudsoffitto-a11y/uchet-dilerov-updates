@@ -1,0 +1,175 @@
+/* Appearance only. Printed receipts and generated document templates are excluded. */
+@media screen {
+  html[data-ui-compact] body.final-ui {
+    --ui-accent:#2463d6;--ui-soft:#edf4ff;--ui-border:#dce2ec;
+    --ui-danger:#a92336;--ui-danger-bg:#fff0f2;--ui-menu-text:#202b3d;
+  }
+  html[data-ui-compact] body.final-ui nav {
+    width:216px!important;padding:10px 10px 12px!important;gap:3px!important;
+  }
+  html[data-ui-compact] body.final-ui nav .navLabel {
+    margin:7px 8px 2px!important;padding:4px 2px 2px!important;line-height:1.2!important;
+  }
+  html[data-ui-compact] body.final-ui nav button[data-section] {
+    min-height:32px!important;margin:1px 0!important;padding:6px 28px 6px 10px!important;
+    font-size:12px!important;line-height:1.3!important;
+  }
+  html[data-ui-compact] body.final-ui header {
+    height:50px!important;padding:0 16px 0 232px!important;gap:8px;
+  }
+  html[data-ui-compact] body.final-ui main {
+    margin-left:216px!important;padding:66px 16px 16px!important;max-width:none;
+  }
+  html[data-ui-compact] body.final-ui main .card {
+    padding:12px!important;margin-bottom:10px!important;border-radius:10px!important;
+  }
+  html[data-ui-compact] body.final-ui main h2 {font-size:21px!important;margin:0 0 10px!important}
+  html[data-ui-compact] body.final-ui main h3 {font-size:17px!important;margin:0 0 8px!important}
+  html[data-ui-compact] body.final-ui main .grid,
+  html[data-ui-compact] body.final-ui main .form {gap:8px!important}
+  html[data-ui-compact] body.final-ui main .actions {gap:6px!important}
+  html[data-ui-compact] body.final-ui main label {gap:4px!important;font-size:12px}
+  html[data-ui-compact] body.final-ui main .sectionHint {margin:0 0 10px!important;font-size:12px}
+  html[data-ui-compact] body.final-ui main .sortBar {gap:8px!important;margin-bottom:8px!important}
+  html[data-ui-compact] body.final-ui main .quick {gap:8px!important;margin-bottom:10px!important}
+  html[data-ui-compact] body.final-ui main .quick button {padding:12px!important}
+  html[data-ui-compact] body.final-ui main .big {font-size:23px!important;margin-top:4px!important}
+  html[data-ui-compact] body.final-ui .homeHeading {margin-bottom:12px!important;gap:12px!important}
+  html[data-ui-compact] body.final-ui .homeHeading p {font-size:12px!important}
+  html[data-ui-compact] body.final-ui .homeStats {gap:8px!important;margin-bottom:10px!important}
+  html[data-ui-compact] body.final-ui .homeStats .card {gap:10px!important}
+  html[data-ui-compact] body.final-ui .metricIcon {width:34px!important;height:34px!important}
+  html[data-ui-compact] body.final-ui .homeTableHead {gap:12px!important;margin-bottom:10px!important}
+  html[data-ui-compact] body.final-ui .homeFilters {margin-bottom:8px!important}
+  html[data-ui-compact] body.final-ui .homeAvatar {width:24px!important;height:24px!important;font-size:10px!important}
+  html[data-ui-compact] body.final-ui .homeDealer {gap:7px!important}
+  html[data-ui-compact] body.final-ui #products>.actions {margin-bottom:8px!important}
+  html[data-ui-compact] body.final-ui .stockTransferToggle {margin:0!important}
+  html[data-ui-compact] body.final-ui .uiProductFilters {display:grid;grid-template-columns:minmax(170px,.9fr) minmax(240px,1.5fr) minmax(180px,.8fr);gap:8px;align-items:end;margin:8px 0 10px}
+  html[data-ui-compact] body.final-ui .uiProductFilters .sortBar {display:flex;flex-direction:column;align-items:stretch!important;gap:4px!important;margin:0!important}
+  html[data-ui-compact] body.final-ui .uiProductFilters :is(select,#productListSearch) {width:100%!important;max-width:none!important;min-width:0!important;margin:0!important}
+  html[data-ui-compact] body.final-ui main button:not(#receiptPrint button) {
+    min-height:30px!important;padding:5px 9px!important;font-size:12px!important;
+  }
+  html[data-ui-compact] body.final-ui main :is(input:not([type=checkbox]):not([type=radio]),select):not(#receiptPrint *) {
+    min-height:30px!important;padding:5px 8px!important;font-size:12px!important;
+  }
+  html[data-ui-compact] body.final-ui :is(main,.modalBox) table:not(#receiptPrint table) :is(th,td) {
+    padding:3px 6px!important;font-size:11.5px!important;line-height:1.22!important;vertical-align:middle!important;
+  }
+  html[data-ui-compact] body.final-ui :is(main,.modalBox) table:not(#receiptPrint table) tr {
+    height:25px!important;min-height:25px!important;
+  }
+  html[data-ui-compact] body.final-ui :is(main,.modalBox) table:not(#receiptPrint table) th {
+    height:25px!important;font-size:11px!important;
+  }
+  html[data-ui-compact] body.final-ui main table:not(#receiptPrint table) button {
+    min-height:24px!important;padding:3px 6px!important;font-size:11px!important;
+  }
+  html[data-ui-compact] body.final-ui main table:not(#receiptPrint table) :is(input,select) {
+    min-height:24px!important;padding:3px 5px!important;font-size:11px!important;
+  }
+  html[data-ui-compact] body.final-ui .modalBox {padding:16px!important;max-height:92vh!important}
+  html[data-ui-compact] body.final-ui .appearanceCard {max-width:680px}
+  html[data-ui-compact] body.final-ui .appearanceHeading {display:flex;justify-content:space-between;align-items:center;gap:12px}
+  html[data-ui-compact] body.final-ui .appearanceCard select {max-width:360px;margin-top:6px}
+  html[data-ui-compact] body.final-ui .appearanceCard p {margin:8px 0 0;font-size:12px;line-height:1.5}
+  html[data-ui-compact] body.final-ui .appearanceStatus {color:var(--ui-accent);font-weight:650}
+  html[data-ui-compact] body.final-ui .themeSwatches {display:flex;gap:5px}
+  html[data-ui-compact] body.final-ui .themeSwatches i {width:14px;height:14px;border-radius:50%;background:#2463d6}
+  html[data-ui-compact] body.final-ui .themeSwatches i:nth-child(2) {background:#087f78}
+  html[data-ui-compact] body.final-ui .themeSwatches i:nth-child(3) {background:#7551b8}
+  html[data-ui-compact] body.final-ui .themeSwatches i:nth-child(4) {background:#b45b24}
+  html[data-ui-compact] body.final-ui .uiContextMenu {
+    box-sizing:border-box;min-width:208px;max-width:calc(100vw - 8px);max-height:calc(100vh - 8px);
+    overflow:auto;background:#fff!important;border:1px solid var(--ui-border)!important;
+    border-radius:10px!important;padding:5px!important;box-shadow:0 10px 32px #172b4d24!important;z-index:100000;
+  }
+  html[data-ui-compact] body.final-ui .uiContextMenu button {
+    display:block;width:100%;text-align:left;min-height:30px!important;padding:6px 10px!important;
+    margin:0!important;border:0!important;border-radius:6px!important;box-shadow:none!important;
+    background:transparent!important;color:var(--ui-menu-text)!important;font-size:12px!important;line-height:1.4;
+  }
+  html[data-ui-compact] body.final-ui .uiContextMenu button:is(:hover,:focus-visible) {
+    background:var(--ui-soft)!important;outline:2px solid var(--ui-accent);outline-offset:-2px;
+  }
+  html[data-ui-compact] body.final-ui .uiContextMenu .dangerMenuItem {
+    color:var(--ui-danger)!important;border-top:1px solid var(--ui-border)!important;margin-top:4px!important;
+  }
+  html[data-ui-compact] body.final-ui .uiContextMenu .dangerMenuItem:is(:hover,:focus-visible) {background:var(--ui-danger-bg)!important;outline-color:var(--ui-danger)}
+  html[data-ui-compact] body.final-ui :is(button,select,input):focus-visible {outline:2px solid var(--ui-accent);outline-offset:2px}
+
+  /* Optional colorful palette: calm surfaces, saturated controls and readable states. */
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui {
+    --bg:#f1f4f6;--card:#fff;--text:#203044;--muted:#536477;--blue:#08776f;--blue2:#e7f3f0;
+    --red:#ac2940;--green:#12744c;--line:#d5dfe5;--ui-border:#d5dfe5;
+    --ui-accent:#08776f;--ui-soft:#e7f3f0;--ui-menu-text:#203044;
+    --ui-danger:#ac2940;--ui-danger-bg:#ffedf0;background:var(--bg)!important;color:var(--text)!important;
+  }
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui main {background:var(--bg)!important}
+  html[data-ui-compact] body.final-ui .warehouseToggle {flex-direction:row!important;justify-content:flex-start!important;gap:8px!important}
+  html[data-ui-compact] body.final-ui input[type=checkbox] {width:18px!important;flex:0 0 18px;accent-color:var(--ui-accent)!important}
+  html[data-ui-compact] body.final-ui #warehouseModeDescription {font-size:12px;line-height:1.5;margin:8px 0 0}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui nav {background:#183a45!important;border-right-color:#183a45!important;box-shadow:none!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui nav .navLabel {color:#b8cfd3!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui nav button[data-section]:not(.active) {background:#204650!important;color:#eff6f7!important;border-color:transparent!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui nav button[data-section]:not(.active):hover {background:#2b5760!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui nav button[data-section].active {
+    background:#08776f!important;color:#fff!important;border-color:#439a92!important;box-shadow:inset 3px 0 #e5b55a!important;
+  }
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui header {background:#fff!important;border-bottom:1px solid var(--line)!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui main .card {background:#fff!important;border-color:var(--line)!important;box-shadow:0 2px 6px #20304406!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui main .primary {background:var(--ui-accent)!important;border-color:var(--ui-accent)!important;color:#fff!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui main .secondary {background:#edf2f5!important;border-color:#d5dfe5!important;color:#29485d!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui main .dangerBtn {background:var(--ui-danger-bg)!important;border-color:#ecc7cf!important;color:var(--ui-danger)!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui .muted {color:var(--muted)!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui :is(main,.modalBox) table:not(#receiptPrint table) th {background:#e8eef1!important;color:#395063!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui :is(main,.modalBox) table:not(#receiptPrint table) :is(th,td) {border-color:#dbe4e9!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui :is(main,.modalBox) table:not(#receiptPrint table) tr:hover td {background:#edf6f3!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui .choiceRow.active,
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui .choiceRow:hover {background:#e7f3f0!important;box-shadow:inset 3px 0 var(--ui-accent)!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui .danger {color:var(--ui-danger)!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui .ok {color:#12744c!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui :is(input,select,textarea):focus {border-color:var(--ui-accent)!important;box-shadow:0 0 0 3px #08776f1c!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui #home .grid .card:nth-child(1) {border-top:3px solid #306da6!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui #home .grid .card:nth-child(2) {border-top:3px solid #08776f!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui #home .grid .card:nth-child(3) {border-top:3px solid #ac2940!important}
+  html:is([data-ui-theme=colorful],[data-ui-theme=multicolor]) body.final-ui #home .grid .card:nth-child(4) {border-top:3px solid #7551b8!important}
+  /* A separate theme: colored navigation on light, quiet workspace surfaces. */
+  html[data-ui-theme=multicolor] body.final-ui {--ui-accent:#315f9b;--ui-soft:#e9f0fb;--blue:#315f9b;--blue2:#e9f0fb}
+  html[data-ui-theme=multicolor] body.final-ui nav {background:#f5f7fb!important;border-right-color:#dce3ec!important}
+  html[data-ui-theme=multicolor] body.final-ui nav .navLabel {color:#536477!important}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section] {--nav-tone:#526675;--nav-wash:#e3e9ee}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=home] {--nav-tone:#315f9b;--nav-wash:#dce7f7}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=dealers] {--nav-tone:#6b4da3;--nav-wash:#e8dff4}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=sales] {--nav-tone:#18735a;--nav-wash:#d8eee3}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=payments] {--nav-tone:#276b9b;--nav-wash:#dcedf8}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=debts] {--nav-tone:#a33950;--nav-wash:#f4dce4}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=history] {--nav-tone:#89521f;--nav-wash:#f3e4d2}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=products] {--nav-tone:#236f73;--nav-wash:#d4eae9}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=groups] {--nav-tone:#575ca4;--nav-wash:#dedff3}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=newmatros] {--nav-tone:#7d508d;--nav-wash:#e9dff0}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=sync] {--nav-tone:#176b86;--nav-wash:#d9ecf2}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=backup] {--nav-tone:#45657d;--nav-wash:#dfe8ef}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=updates] {--nav-tone:#77549f;--nav-wash:#e8e0f2}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=warehouse] {--nav-tone:#7a542d;--nav-wash:#eee3d5}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section=settings] {--nav-tone:#526675;--nav-wash:#e3e9ee}
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section]:not(.active) {
+    background:var(--nav-wash)!important;color:var(--nav-tone)!important;border-color:transparent!important;
+  }
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section]:not(.active):hover {
+    background:var(--nav-wash)!important;box-shadow:inset 0 0 0 1px var(--nav-tone)!important;
+  }
+  html[data-ui-theme=multicolor] body.final-ui nav button[data-section].active {
+    background:var(--nav-tone)!important;color:#fff!important;border-color:var(--nav-tone)!important;box-shadow:inset 3px 0 #ffffff88!important;
+  }
+  @media (max-width:1100px) {
+    html[data-ui-compact] body.final-ui nav {width:194px!important}
+    html[data-ui-compact] body.final-ui main {margin-left:194px!important;padding-left:12px!important;padding-right:12px!important}
+    html[data-ui-compact] body.final-ui header {padding-left:206px!important}
+    html[data-ui-compact] body.final-ui .uiProductFilters {grid-template-columns:1fr 1.4fr}
+    html[data-ui-compact] body.final-ui .uiProductFilters .sortBar {grid-column:1/-1;flex-direction:row;align-items:center!important}
+    html[data-ui-compact] body.final-ui .uiProductFilters .sortBar select {max-width:260px!important}
+  }
+  @media (prefers-reduced-motion:reduce) {html[data-ui-compact] body.final-ui button{transition:none!important}}
+}

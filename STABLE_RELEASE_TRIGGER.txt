@@ -1,1 +1,1 @@
-8.9.79 — verify preserved cards and enabled warehouse in native Windows smoke
+8.9.80 — three appearance themes; publish after native Windows and macOS checks

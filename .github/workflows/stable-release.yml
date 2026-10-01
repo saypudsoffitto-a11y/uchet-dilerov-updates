@@ -65,6 +65,14 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows interface failed' }
           node scripts/windows-newmatros-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Windows NewMatRos failed' }
+      - name: Upload interface screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: appearance-qa-${{ runner.os }}
+          path: |
+            qa-themes/*.png
+            qa-interface/*.png
+          if-no-files-found: error
       - uses: actions/upload-artifact@v4
         with:
           name: stable-${{ runner.os }}

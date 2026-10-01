@@ -77,6 +77,24 @@ async function main(){
       const handler=e=>{const m=JSON.parse(e.data);if(m.id!==id)return;socket.removeEventListener('message',handler);m.error?reject(Error(JSON.stringify(m.error))):resolve(m.result)};
       socket.addEventListener('message',handler);socket.send(JSON.stringify({id,method,params}));
     });
+    const themeFolder=path.resolve('qa-themes');fs.mkdirSync(themeFolder,{recursive:true});
+    for(const theme of ['standard','colorful','multicolor']){
+      const result=await evaluate("(async()=>{\n  go('settings');\n  const select=document.getElementById('uiThemeSelect');\n  if(!select)throw Error('Theme selector missing');\n  const before=JSON.stringify(state);\n  select.value=THEME;select.dispatchEvent(new Event('change',{bubbles:true}));\n  if(JSON.stringify(state)!==before)throw Error('Theme changed business data');\n  go('products');\n  await new Promise(resolve=>setTimeout(resolve,300));\n  const colors=[...document.querySelectorAll('nav button[data-section]')].map(b=>getComputedStyle(b).backgroundColor);\n  const row=document.querySelector('#products table tr');\n  return {theme:document.documentElement.dataset.uiTheme,stored:localStorage.getItem('uchet-ui-theme'),\n    options:[...select.options].map(o=>o.value),colors:new Set(colors).size,\n    rowHeight:row?.getBoundingClientRect().height,background:getComputedStyle(document.querySelector('main')).backgroundColor};\n})()".replace('THEME',JSON.stringify(theme)));
+      assert.equal(result.theme,theme);assert.equal(result.stored,theme);
+      assert.deepEqual(result.options,['standard','colorful','multicolor']);
+      if(theme==='multicolor'){assert.ok(result.colors>=10);assert.equal(result.background,'rgb(241, 244, 246)')}
+      const shot=await command('Page.captureScreenshot',{format:'png'});
+      fs.writeFileSync(path.join(themeFolder,theme+'.png'),Buffer.from(shot.data,'base64'));
+    }
+    await command('Page.reload');
+    let themeRestored=false;
+    for(let i=0;i<120;i++){
+      try{themeRestored=await evaluate(`document.readyState==='complete'&&document.documentElement.dataset.uiTheme==='multicolor'&&!!document.getElementById('uiThemeSelect')`)}catch{}
+      if(themeRestored)break;await sleep(200);
+    }
+    assert.equal(themeRestored,true,'Theme must survive renderer reload');
+    await evaluate(`(async()=>{if(!window.__pinLock8948.isUnlocked())await window.__pinLock8948.unlock('2468');return true})()`);
+    console.log('PASS: all three themes preserve business data; colored navigation, light surfaces and persisted selection');
     await sleep(7000); // Includes the last legacy merge guard installation.
     const hooks=await evaluate(`(()=>{const b=document.getElementById('nmDraftBanner8926');const open=document.getElementById('nmDraftOpen8926');return {version:document.documentElement.dataset.interfaceVersion,dedupe:document.documentElement.dataset.productDedupe,cancel:!!document.getElementById('nmDraftCancel8926'),openRed:!!open?.classList.contains('nmDraftOpenRed8946'),noticeParent:b?.parentElement?.id||''}})()`);
     assert.deepEqual(hooks,{version:expectedRuntime,dedupe:'8.9.46',cancel:true,openRed:true,noticeParent:'workspaceNotices'});
