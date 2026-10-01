@@ -1,1 +1,1 @@
-8.9.79 — verified warehouse settings and stable release
+8.9.79 — Node 22 compatible verification, warehouse settings and stable release

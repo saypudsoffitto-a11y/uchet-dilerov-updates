@@ -1,14 +1,6 @@
 name: Build and publish Windows 8.9.68 — compact UI + JPEG
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'app/**'
-      - 'tests/**'
-      - 'scripts/**'
-      - 'RELEASE_NOTES.md'
-      - '.github/workflows/publish-8968-windows.yml'
   workflow_dispatch:
 
 permissions:
