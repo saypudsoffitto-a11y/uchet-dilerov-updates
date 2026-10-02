@@ -59,9 +59,11 @@ jobs:
           else
             gh release create 8.9.81 release-assets/* --draft --target a146c7ffdd2b91367c8719c7b2fb035310423dd7 --title 'Учёт дилеров 8.9.81 — Windows' --notes-file windows-release-notes.md
           fi
-          gh api "repos/$GITHUB_REPOSITORY/releases/tags/8.9.81" > published-assets.json
+          gh api "repos/$GITHUB_REPOSITORY/releases?per_page=100" > published-assets.json
           node - <<'JS'
-          const assets=require('./published-assets.json').assets;
+          const release=require('./published-assets.json').find(r=>r.tag_name==='8.9.81'&&r.draft);
+          if(!release) throw Error('Draft release not found');
+          const assets=release.assets;
           const setup=assets.find(a=>a.name==='Uchet-dilerov-Setup-8.9.81-x64.exe');
           if(!setup||setup.digest!=='sha256:0fb71ea40d83aa1fb2b5ad30f266ca09f5789c1cb888d38ae8d2938fd46d37b7') throw Error('Published installer checksum mismatch');
           JS
