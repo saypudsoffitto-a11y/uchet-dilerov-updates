@@ -69,6 +69,7 @@
       "macos-smoke.cjs",
       "sync-core-8962.js",
       "master-sync-8962.js",
+      "entity-id-8981.js",
       "interface-8967.css",
       "release-8967.js",
       "interface-8968.css",
@@ -134,7 +135,7 @@
       ]
     }
   },
-  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.80",
+  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.81",
   "devDependencies": {
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
@@ -154,5 +155,5 @@
     "prebuild:mac": "node ../scripts/run-all-tests.cjs release-8958 release-8959 release-8961 release-8962",
     "test": "node ../scripts/run-all-tests.cjs"
   },
-  "version": "8.9.80"
+  "version": "8.9.81"
 }

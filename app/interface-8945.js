@@ -35,12 +35,13 @@
     if(!indicator)return;
     const text=status?.textContent||'';
     const configured=!!state.sync?.url,enabled=!!state.sync?.enabled;
-    const ok=configured&&!!status?.querySelector('.serverOk'),bad=configured&&!!status?.querySelector('.serverBad');
+    const ok=configured&&(status?.dataset.syncState==='online'||!!status?.querySelector('.serverOk')),
+      bad=configured&&(status?.dataset.syncState==='offline'||!!status?.querySelector('.serverBad'));
     indicator.dataset.status=ok?'online':bad?'offline':'idle';
     indicator.textContent=!configured?'Сервер не настроен':bad?'Нет связи с сервером':ok?(enabled?'Сервер подключён':'Автосинхронизация выключена'):enabled?'Подключение к серверу…':'Автосинхронизация выключена';
     indicator.title=text||'Открыть настройки общего сервера';
   };
-  if(status)new MutationObserver(updateStatus).observe(status,{subtree:true,childList:true,characterData:true});
+  if(status)new MutationObserver(updateStatus).observe(status,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-sync-state']});
 
   const DRAFT_KEY='uchetNewMatRosOpenSale8926';
   function cancelNewMatRosDraft8946(){

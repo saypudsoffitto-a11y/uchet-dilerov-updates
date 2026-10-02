@@ -204,7 +204,7 @@
       let dealer=null;
       if(d.dealerId!=null)dealer=(state.dealers||[]).find(x=>String(x.id)===String(d.dealerId))||null;
       if(!dealer){const p=digits(d.dealerPhone),n=norm(d.dealerName);dealer=(state.dealers||[]).find(x=>(p&&digits(x.phone)===p)||(n&&norm(x.name)===n))||null}
-      if(!dealer){dealer={id:Date.now(),name:d.dealerName||'Дилер NewMatRos',phone:d.dealerPhone||'',city:'',note:'Создан автоматически из NewMatRos'};state.dealers.push(dealer)}
+      if(!dealer){dealer={id:window.nextEntityId(),name:d.dealerName||'Дилер NewMatRos',phone:d.dealerPhone||'',city:'',note:'Создан автоматически из NewMatRos'};state.dealers.push(dealer)}
       const total=draftTotal(d),numReceipt=state.receiptSeq++,now=Date.now(),date=new Date().toLocaleString('ru-RU');
       const flat=[];d.ceilings.forEach((c,idx)=>(c.items||[]).forEach(i=>flat.push({...i,name:'Потолок '+(idx+1)+' · '+String(i.name||''),ceilingNo:idx+1,ceilingIndex:c.ceilingIndex,newmatrosKey:c.key})));
       const first=d.ceilings[0]||{};

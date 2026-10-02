@@ -23,7 +23,8 @@
   document.head.appendChild(style);
 
   function commit(next,id,options={}){
-    localStorage.setItem(KEY,JSON.stringify(next));state=next;
+    if(window.masterSync8962)window.masterSync8962.commitState(next);
+    else{localStorage.setItem(KEY,JSON.stringify(next));state=next;}
     document.querySelectorAll('[data-receipt-op-id]').forEach(el=>{if(String(el.dataset.receiptOpId)===String(id)&&options.removeReceipt)el.remove()});
     if(options.removeReceipt)document.getElementById('receiptViewModal')?.classList.add('hidden');
     if(!options.keepDealerOpen&&options.removeReceipt)document.getElementById('dealerModal')?.classList.add('hidden');

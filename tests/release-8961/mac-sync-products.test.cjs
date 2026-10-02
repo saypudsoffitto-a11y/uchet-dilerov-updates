@@ -55,7 +55,7 @@ test('dash-only and punctuation-only product cards are tombstoned and blocked fr
 
 test('sync server permanently rejects placeholder product rows and carries tombstones',()=>{
   const server=read('server/server.js');
-  assert.match(server,/SERVER_VERSION = '8\.9\.79-sync6'/);
+  assert.match(server,/SERVER_VERSION = '8\.9\.81-sync7'/);
   assert.match(server,/function isPlaceholderProductName/);
   assert.match(server,/state\.deletedProducts\[String\(p\.id\)\]/);
   assert.match(server,/!isPlaceholderProductName\(p\.name\)/);

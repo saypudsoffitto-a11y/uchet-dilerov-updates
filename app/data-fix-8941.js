@@ -65,7 +65,7 @@
           list=list.slice().sort((a,b)=>(usage.get(String(b.id))||0)-(usage.get(String(a.id))||0)||String(a.id).localeCompare(String(b.id)));
           return list[0];
         }
-        const g={id:Date.now()+Math.floor(Math.random()*1000000),name:String(name).trim(),note:'Восстановлено из исходного списка товаров'};
+        const g={id:window.nextEntityId(),name:String(name).trim(),note:'Восстановлено из исходного списка товаров'};
         s.groups.push(g);
         groupsByName.set(key,[g]);
         groupsById.set(String(g.id),g);
@@ -254,7 +254,7 @@
         return alert('Группа «'+(existing.name||n)+'» уже существует. Дубликат не создан.');
       }
       if(originalAdd)return originalAdd();
-      state.groups.push({id:Date.now(),name:n,note:String(window.gnote?.value||'').trim()});
+      state.groups.push({id:window.nextEntityId(),name:n,note:String(window.gnote?.value||'').trim()});
       if(window.gname)gname.value='';
       if(window.gnote)gnote.value='';
       save();

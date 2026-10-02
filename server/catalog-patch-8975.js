@@ -42,14 +42,19 @@ module.exports.applySharedPatch=function(state,patch){
     if(field==='dealers'&&next.deletedDealers?.[ch.id])throw Error('Дилер удалён на другом компьютере');
     if(field==='dealers'&&!current){
      const phone=C.phone(ch.after.phone);
-     if(!phone)throw Error('Укажите телефон нового дилера');
-     if(next.dealers.some(d=>C.phone(d.phone)===phone))throw Error('Дилер с этим телефоном уже есть в общей базе. Откройте его карточку.');
+     if(!C.normalize(ch.after.name))throw Error('Укажите имя нового дилера');
+     if(next.catalogDeletedKeys?.['dealers:'+C.dealerKey(ch.after)])throw Error('Дилер ранее удалён. Старая копия не может восстановить его под новым номером.');
+     if(phone&&next.dealers.some(d=>C.phone(d.phone)===phone))throw Error('Дилер с этим телефоном уже есть в общей базе. Откройте его карточку.');
+     if(!phone&&next.dealers.some(d=>C.normalize(d.name)===C.normalize(ch.after.name)))throw Error('Дилер с этим именем уже есть в общей базе. Откройте его карточку и уточните телефон.');
     }
     if(i<0)next[field].push(C.clone(ch.after));else next[field][i]=C.clone(ch.after);
    }else if(i>=0){
     if(field==='dealers'&&(next.ops||[]).some(o=>C.id(o.dealerId)===C.id(ch.id)))throw Error('У дилера остались документы. Удаление не выполнено.');
     next[field].splice(i,1);
-    if(field==='dealers')next.deletedDealers={...next.deletedDealers,[ch.id]:Date.now()};
+    if(field==='dealers'){
+     next.deletedDealers={...next.deletedDealers,[ch.id]:Date.now()};
+     const identity=C.dealerKey(current);if(identity)next.catalogDeletedKeys={...next.catalogDeletedKeys,['dealers:'+identity]:true};
+    }
    }
   }
  }
@@ -60,7 +65,7 @@ module.exports.applySharedPatch=function(state,patch){
    // Locally generated deletion timestamps may differ; keep the server tombstone.
    if(field.startsWith('deleted')&&current&&ch.after)continue;
    if(!C.same(current,ch.before??null))throw Error('Справочник изменён на другом компьютере');
-   if(ch.after==null){if(field.startsWith('deleted'))throw Error('Нельзя отменить удаление старой копией');delete map[ch.key];}
+   if(ch.after==null){if(field.startsWith('deleted')||field==='catalogDeletedKeys')throw Error('Нельзя отменить удаление старой копией');delete map[ch.key];}
    else map[ch.key]=C.clone(ch.after);
   }
  }

@@ -12,10 +12,14 @@ module.exports=async context=>{
 
   const appPath=path.join(context.appOutDir,appName);
   // Remove inherited Finder metadata from this newly built bundle before signing.
-  execFileSync('/usr/bin/xattr',['-cr',appPath],{stdio:'inherit'});
+  const cleanFinderMetadata=()=>{
+    for(const attribute of ['com.apple.FinderInfo','com.apple.ResourceFork'])execFileSync('/usr/bin/xattr',['-dr',attribute,appPath],{stdio:'inherit'});
+  };
+  cleanFinderMetadata();
   // ARM64 V8 needs MAP_JIT permission even for an ad-hoc signature.
   const entitlements=path.join(__dirname,'entitlements-macos.plist');
   execFileSync('/usr/bin/codesign',['--force','--deep','--sign','-','--entitlements',entitlements,appPath],{stdio:'inherit'});
   execFileSync('/usr/bin/codesign',['--display','--entitlements','-',appPath],{stdio:'inherit'});
+  cleanFinderMetadata();
   execFileSync('/usr/bin/codesign',['--verify','--deep','--strict',appPath],{stdio:'inherit'});
 };

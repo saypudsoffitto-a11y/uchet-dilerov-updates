@@ -14,7 +14,8 @@
  $('receiptAddCommit').onclick=()=>{if(busy)return;busy=true;$('receiptAddCommit').disabled=true;try{if(selected===null)throw Error('Выбери товар.');if(!$('receiptAddPrice').value.trim())throw Error('Укажи цену.');const qty=Number($('receiptAddQty').value),value=Number($('receiptAddPrice').value);const p=state.products.find(p=>p.id===selected);if(p&&qty>(+p.stock||0)&&!confirm('Товара недостаточно на складе. Добавить его с отрицательным остатком?'))return;
  const result=window.receiptAddCore.append(state,opId,selected,qty,value);const id=opId;
  // Persist the operation and stock change together before updating the visible state.
- localStorage.setItem(KEY,JSON.stringify(result.state));state=result.state;close();
+ if(window.masterSync8962)window.masterSync8962.commitState(result.state);
+ else{localStorage.setItem(KEY,JSON.stringify(result.state));state=result.state;}close();
  try{render();refreshReceiptViews(id)}catch(e){console.error('Обновление вида накладной',e)}
  if(!syncApplying&&state.sync?.enabled){clearTimeout(syncSaveTimer);syncSaveTimer=setTimeout(()=>syncPush(false),350)}
  }catch(e){error(e.message||'Не удалось сохранить товар.')}finally{busy=false;$('receiptAddCommit').disabled=false}};

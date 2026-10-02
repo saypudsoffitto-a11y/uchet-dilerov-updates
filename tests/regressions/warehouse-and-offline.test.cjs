@@ -222,7 +222,7 @@ test('CSV reimport cannot restore old prices or quantities; new products use an 
   const html=fs.readFileSync(path.join(__dirname,'../../app/index.html'),'utf8');
   const start=html.indexOf('function importStockProductRows(rows){'),end=html.indexOf('async function getCsvPayload',start);
   const state={groups:[{id:1,name:'Полотно'}],products:[{...product(),name:'Old',article:'OLD',inventoryVersion:2,warehouseOpening:50}],ops:[]};
-  const ctx={state,window:{warehouseInstalled:true,warehouseImportOpening:items=>{
+  const ctx={state,window:{nextEntityId:require('../../app/entity-id-8981')(require('node:crypto').webcrypto,{getItem:()=>null,setItem:()=>{}},()=>state),warehouseInstalled:true,warehouseImportOpening:items=>{
     state.ops.push(op('stock-csv','stock_opening',items));C.recalcInventory(state);
   }},csvNum:Number,ensureGroupByName:()=>state.groups[0],save:()=>C.recalcInventory(state)};
   vm.createContext(ctx);vm.runInContext(html.slice(start,end),ctx);

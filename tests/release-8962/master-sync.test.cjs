@@ -31,9 +31,16 @@ test('conflicting edits are rejected, not silently overwritten',()=>{
  const a=put(s,main,{changes:C.diffOps([op],[{...op,total:40}])});assert.throws(()=>put(a,worker,{changes:C.diffOps([op],[{...op,total:50}])}),/изменена/);
 });
 test('deletion cannot be undone by stale snapshots or new imported IDs',()=>{
- const s=store(),deleted=state();deleted.dealers=[];const a=put(s,main,{catalog:deleted});
+ const s=store(),dealer=s.state.dealers[0];const a=put(s,worker,{catalogPatch:{dealers:[{id:'1',before:dealer,after:null}]}});
  assert.equal(a.state.dealers.length,0);assert.throws(()=>put(a,worker,{catalog:state()}),/главном/);
- const imported=state();imported.dealers[0].id=123;const b=put(a,main,{catalog:imported});assert.equal(b.state.dealers.length,0);
+ assert.throws(()=>put(a,main,{catalogPatch:{dealers:[{id:'123',before:null,after:{...dealer,id:123}}]}}),/удалён/);
+ assert.throws(()=>put(a,main,{catalogPatch:{mapChanges:{catalogDeletedKeys:[{key:'dealers:'+C.dealerKey(dealer),before:true,after:null}]}}}),/отменить удаление/);
+ assert.equal(a.state.dealers.length,0);
+});
+test('even a former master cannot replace the shared catalog with a local snapshot',()=>{
+ const s=store(),stale=state();stale.dealers=[];
+ for(const field of ['catalog','catalogNonProducts'])assert.throws(()=>put(s,main,{[field]:stale}),/Полная замена/);
+ assert.equal(s.state.dealers.length,1);
 });
 test('dedupe deletion markers never remove the surviving card with the same identity',()=>{
  const s=state();s.dealers.push({...s.dealers[0],id:10});const next=C.applyCatalog(s,C.canonicalize(s));assert.equal(next.dealers.length,1);

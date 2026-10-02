@@ -16,20 +16,41 @@
   try{device=JSON.parse(localStorage.getItem(DEVICE)||'null')}catch(_){}
   if(!device?.id){device={id:crypto.randomUUID(),name:'Компьютер '+crypto.randomUUID().slice(0,4)};localStorage.setItem(DEVICE,JSON.stringify(device));}
   let busy=false,meta=null,online=false,quarantinedThisRun=0;
+  let queuedWrite=false,queuedManual=false,pushTimer=null;
+  function queuePush(manual,conflictAttempt=0){
+    queuedManual=queuedManual||!!manual;
+    if(pushTimer!==null)return;
+    pushTimer=setTimeout(async()=>{
+      pushTimer=null;
+      const runManual=queuedManual;queuedManual=false;
+      return push(runManual,conflictAttempt);
+    },350);
+  }
+  function finishExchange(){
+    busy=false;
+    if(queuedWrite){queuedWrite=false;queuePush(queuedManual);}
+  }
   const key=()=> 'uchet_sync_baseline_8962:'+String(syncCfg().url||'');
   const staleKey=()=> 'uchet_stale_products:'+String(syncCfg().url||'');
+  const catalogConflictKey=()=> 'uchet_catalog_conflicts_8981:'+String(syncCfg().url||'');
   const conflictNote=()=>quarantinedThisRun?' · конфликтующие поля сохранены отдельно':'';
   const recoveryKey=()=> 'uchet_before_master_8962:'+String(syncCfg().url||'');
-  const readBaseline=()=>{try{return JSON.parse(localStorage.getItem(key())||'null')}catch(_){return null}};
-  const status=text=>{const el=document.getElementById('syncStatus');if(el)el.textContent=text;paint();};
+  const readBaseline=()=>{
+    // Visible data and its server baseline share one atomic localStorage write.
+    // The old separate key is read only to migrate an existing installation.
+    const embedded=state._syncBaseline8981;
+    if(embedded?.url===String(syncCfg().url||''))return embedded.baseline;
+    try{return JSON.parse(localStorage.getItem(key())||'null')}catch(_){return null}
+  };
+  const status=(text,connection=online?'online':'offline')=>{const el=document.getElementById('syncStatus');if(el){el.dataset.syncState=connection;el.textContent=text;}paint();};
   function paint(){
-    const role=meta?.masterId===device.id?'Главный':meta?.masterId?'Рабочий':'Роль не выбрана';
-    const badge=document.getElementById('computerBadge8962');if(badge)badge.textContent=device.name+' · '+role+' · '+(online?'связь есть':'нет связи');
-    const master=document.getElementById('masterName8962');if(master)master.textContent=meta?.masterId?'Главный: '+(meta.devices?.[meta.masterId]?.name||'компьютер'):'Выберите главный компьютер там, где правильные дилеры и товары.';
+    const badge=document.getElementById('computerBadge8962');if(badge)badge.textContent=device.name.replace(/\s*·\s*Главный/g,'')+' · '+(online?'связь есть':'нет связи');
+    const master=document.getElementById('masterName8962');if(master)master.textContent=meta?.masterId?'Общая серверная база. Все компьютеры могут создавать документы и изменять справочники.':'Общая база ещё не настроена.';
     const claim=document.getElementById('claimMaster8962');if(claim)claim.hidden=!!meta?.masterId;
-    const transfer=document.getElementById('transferMaster8962');if(transfer)transfer.hidden=meta?.masterId!==device.id;
-    const select=document.getElementById('computerTarget8962');if(select){const selected=select.value;select.innerHTML='';for(const [id,d] of Object.entries(meta?.devices||{})){if(id===device.id)continue;const option=document.createElement('option');option.value=id;option.textContent=d.name;select.appendChild(option);}select.value=selected||select.options[0]?.value||'';select.hidden=meta?.masterId!==device.id;}
+    const transfer=document.getElementById('transferMaster8962');if(transfer)transfer.hidden=true;
+    const select=document.getElementById('computerTarget8962');if(select)select.hidden=true;
     const conflicts=document.getElementById('productConflictRecovery');if(conflicts)conflicts.hidden=!localStorage.getItem(staleKey());
+    const catalogConflicts=document.getElementById('catalogConflictRecovery');if(catalogConflicts)catalogConflicts.hidden=!localStorage.getItem(catalogConflictKey());
     const recovery=document.getElementById('recovery8962');if(recovery)recovery.hidden=!localStorage.getItem(recoveryKey());
   }
   async function request(method,body){
@@ -80,14 +101,98 @@
     dealerAliases:C.clone(s?.dealerAliases||{})
   });
   const nonProductChanged=(a,b)=>!C.same(nonProductCatalog(a||{}),nonProductCatalog(b||{}));
-  function overlayNonProduct(target,source){
-    const next=C.clone(target||{});
-    const value=nonProductCatalog(source||{});
-    next.dealers=value.dealers;
-    next.groups=value.groups;
-    next.deletedDealers=value.deletedDealers;
-    next.dealerAliases=value.dealerAliases;
-    return next;
+  function diffCatalog(base,current){
+    const patch={dealers:C.diffOps(base?.dealers,current?.dealers),groupChanges:C.diffOps(base?.groups,current?.groups),mapChanges:{}};
+    for(const field of ['deletedDealers','dealerAliases']){
+      const a=base?.[field]||{},b=current?.[field]||{};
+      patch.mapChanges[field]=[...new Set([...Object.keys(a),...Object.keys(b)])]
+        .filter(key=>!C.same(a[key],b[key])).map(key=>({key,before:a[key]??null,after:b[key]??null}));
+    }
+    return patch;
+  }
+  const catalogPending=patch=>patch.dealers.length||patch.groupChanges.length||Object.values(patch.mapChanges).some(rows=>rows.length);
+  function applyLocalCatalog(server,patch){
+    const next=C.clone(server);
+    for(const [field,changes] of [['dealers',patch.dealers],['groups',patch.groupChanges]]){
+      const rows=new Map((next[field]||[]).map(row=>[C.id(row.id),row]));
+      for(const ch of changes){
+        const current=rows.get(ch.id)||null;
+        if(C.same(current,ch.after))continue;
+        if(!C.same(current,ch.before))throw new Error('Карточка '+field+' '+ch.id+' изменена на другом компьютере. Правка сохранена.');
+        if(ch.after)rows.set(ch.id,C.clone(ch.after));else rows.delete(ch.id);
+      }
+      next[field]=[...rows.values()];
+    }
+    for(const [field,changes] of Object.entries(patch.mapChanges)){
+      const map=next[field]||(next[field]={});
+      for(const ch of changes){
+        if(C.same(map[ch.key]??null,ch.after))continue;
+        if(!C.same(map[ch.key]??null,ch.before))throw new Error('Справочник изменён на другом компьютере. Правка сохранена.');
+        if(ch.after==null)delete map[ch.key];else map[ch.key]=C.clone(ch.after);
+      }
+    }
+    return C.remap(next);
+  }
+  function freshCatalog(server,patch){
+    const kept={dealers:[],groupChanges:[],mapChanges:{}},conflicts=[];
+    for(const [field,key] of [['dealers','dealers'],['groups','groupChanges']])for(const ch of patch[key]){
+      const current=(server[field]||[]).find(row=>C.id(row.id)===ch.id)||null;
+      if(C.same(current,ch.after))continue;
+      const deleted=field==='dealers'&&server.deletedDealers?.[ch.id];
+      if(!deleted&&C.same(current,ch.before)){kept[key].push(ch);continue;}
+      // Rebase only fields still equal to the user's actual starting value.
+      // A fresh server snapshot never becomes permission to overwrite a conflict.
+      if(!deleted&&current&&ch.before&&ch.after){
+        const after=C.clone(current),fields=[];
+        for(const name of Object.keys({...ch.before,...ch.after}))if(!C.same(ch.before[name],ch.after[name])){
+          if(C.same(current[name],ch.before[name])){
+            if(Object.hasOwn(ch.after,name))after[name]=C.clone(ch.after[name]);else delete after[name];
+          }else if(!C.same(current[name],ch.after[name]))fields.push(name);
+        }
+        if(!C.same(current,after))kept[key].push({id:ch.id,before:C.clone(current),after});
+        if(fields.length)conflicts.push({field,...ch,fields});
+      }else conflicts.push({field,...ch});
+    }
+    for(const [field,changes] of Object.entries(patch.mapChanges)){
+      kept.mapChanges[field]=[];
+      for(const ch of changes){
+        const current=server[field]?.[ch.key]??null;
+        if(C.same(current,ch.after)||field.startsWith('deleted')&&current&&ch.after)continue;
+        if(C.same(current,ch.before)&&!(field.startsWith('deleted')&&ch.after==null))kept.mapChanges[field].push(ch);
+        else conflicts.push({field,...ch});
+      }
+    }
+    if(conflicts.length){
+      let previous=[];try{previous=JSON.parse(localStorage.getItem(catalogConflictKey())||'[]');}catch(_){}
+      localStorage.setItem(catalogConflictKey(),JSON.stringify([...previous,{at:new Date().toISOString(),changes:conflicts}]));
+      quarantinedThisRun+=conflicts.length;
+    }
+    return kept;
+  }
+  let lastSaved=C.clone(state);
+  function combineChanges(previous,changes,field='id'){
+    const rows=new Map((previous||[]).map(ch=>[ch[field],C.clone(ch)]));
+    for(const ch of changes||[]){const old=rows.get(ch[field]);rows.set(ch[field],old?{...ch,before:old.before}:C.clone(ch));}
+    return [...rows.values()].filter(ch=>!C.same(ch.before,ch.after));
+  }
+  const firstOutbox=()=>state._syncPending8981?.url===String(syncCfg().url||'')?state._syncPending8981:null;
+  function recordSave(){
+    if(readBaseline())return;
+    const previous=firstOutbox()||{},catalog=diffCatalog(lastSaved,state);
+    const archives=C.diffArchives(lastSaved,state);
+    // Only actual saves after startup enter the first-connection outbox.
+    // An unknown imported cache is never treated as a server write.
+    state._syncPending8981={url:String(syncCfg().url||''),
+      changes:combineChanges(previous.changes,C.diffOps(lastSaved.ops,state.ops)),
+      products:combineChanges(previous.products,diffProductChanges(lastSaved.products,state.products)),
+      catalog:{dealers:combineChanges(previous.catalog?.dealers,catalog.dealers),groupChanges:combineChanges(previous.catalog?.groupChanges,catalog.groupChanges),mapChanges:Object.fromEntries(Object.entries(catalog.mapChanges).map(([field,rows])=>[field,combineChanges(previous.catalog?.mapChanges?.[field],rows,'key')]))},
+      archives:Object.fromEntries(Object.entries(archives).map(([field,rows])=>[field,combineChanges(previous.archives?.[field],rows,'key')]))};
+  }
+  function markSaved(){lastSaved=C.clone(state);}
+  function commitState(next){
+    const previous=state;state=next;
+    try{recordSave();localStorage.setItem(KEY,JSON.stringify(state));markSaved();}
+    catch(error){state=previous;throw error;}
   }
   function applyLocalProductChanges(serverState,changes){
     const out=C.clone(serverState||{});
@@ -165,6 +270,11 @@
     return keep;
   }
   function pending(){const base=readBaseline();return base?C.diffOps(base.state.ops,state.ops):[];}
+  function hasPending(){
+    const base=readBaseline();
+    return !!base&&(pending().length||diffProductChanges(base.state.products,state.products).length||
+      nonProductChanged(base.state,state)||Object.values(C.diffArchives(base.state,state)).some(rows=>rows.length));
+  }
   function accept(r,changes,archives,productChanges,nonProductOverlay){
     const known=readBaseline();
     if(known&&Number(r.revision)<Number(known.revision))throw new Error('Получен устаревший ответ сервера. Локальные данные сохранены.');
@@ -174,14 +284,19 @@
     }
     let merged=C.applyTransaction(r.state||{},changes||[],archives);
     if(productChanges?.length)merged=applyLocalProductChanges(merged,productChanges);
-    if(nonProductOverlay)merged=overlayNonProduct(merged,nonProductOverlay);
+    if(nonProductOverlay)merged=applyLocalCatalog(merged,nonProductOverlay);
     const local=state;
     merged.sync={...local.sync,revision:r.revision};merged.update=local.update;merged.newmatros=local.newmatros;
+    if(local._syncPending8981&&local._syncPending8981.url!==String(syncCfg().url||''))merged._syncPending8981=C.clone(local._syncPending8981);
     // Baseline is always the exact server snapshot. Local unsent edits live only in visible state.
-    localStorage.setItem(key(),JSON.stringify({state:r.state,revision:r.revision,masterId:meta?.masterId}));
-    localStorage.setItem(KEY,JSON.stringify(merged));state=norm(merged);
-    if(window.warehouseInstalled)C.enableInventory(state);
-    localStorage.setItem(KEY,JSON.stringify(state));
+    merged._syncBaseline8981={url:String(syncCfg().url||''),baseline:{state:r.state,revision:r.revision,masterId:meta?.masterId}};
+    merged=norm(merged);
+    if(window.warehouseInstalled)C.enableInventory(merged);
+    localStorage.setItem(KEY,JSON.stringify(merged));state=merged;
+    markSaved();
+    // Keep compatibility for diagnostic exports; failure cannot advance the
+    // baseline independently from the saved visible database.
+    try{localStorage.setItem(key(),JSON.stringify(merged._syncBaseline8981.baseline));}catch(_){}
     render();paint();
   }
   async function backup(){
@@ -197,8 +312,6 @@
       if(!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');if(manual)alert('Главный компьютер ещё не выбран. Нажмите «Сделать главным» на том компьютере, где данные верные.');return true;}
       const baseline=readBaseline();
       const productChanges=baseline?freshProductChanges(r.state,diffProductChanges(baseline.state.products,state.products)):[];
-      const masterCatalogPending=!!(meta.masterId===device.id&&baseline&&nonProductChanged(baseline.state,state));
-      if(masterCatalogPending){status('Есть изменения дилеров или групп на главном компьютере. Нажмите «Отправить на сервер».');return true;}
       let firstJoinExactMirror=false;
       if(!baseline){
         if(!localStorage.getItem(recoveryKey()))await backup();
@@ -206,39 +319,41 @@
         firstJoinExactMirror=true;
       }
       const firstWarehouseChanges=window.warehouseInstalled?(state.ops||[]).filter(op=>C.warehouseTypes.includes(op.type)&&!(r.state.ops||[]).some(old=>C.id(old.id)===C.id(op.id))):[];
-      const changes=firstJoinExactMirror?C.diffOps([],firstWarehouseChanges):pending(),archives=firstJoinExactMirror?{}:C.diffArchives(readBaseline()?.state||{},state);
+      // Old, unverified cache stays in recovery. Documents created or edited by
+      // the user during this exchange are new work, never an old cache upload.
+      const outbox=firstOutbox();
+      const sessionOps=combineChanges(outbox?.changes,C.diffOps(pullStarted.ops,state.ops));
+      const changes=firstJoinExactMirror?[...new Map([...C.diffOps([],firstWarehouseChanges),...sessionOps].map(c=>[c.id,c])).values()]:pending();
+      const sessionArchives=C.diffArchives(pullStarted,state);
+      const archives=firstJoinExactMirror?Object.fromEntries(Object.entries(sessionArchives).map(([field,rows])=>[field,combineChanges(outbox?.archives?.[field],rows,'key')])):C.diffArchives(readBaseline()?.state||{},state);
       let sessionProductChanges=productChanges;
       if(firstJoinExactMirror){
-        sessionProductChanges=diffProductChanges(pullStarted.products,state.products).map(change=>{
-          const current=(r.state.products||[]).find(p=>C.id(p.id)===change.id);
-          if(!current||!change.before||!change.after)return change;
-          const before=productUser(change.before),after=productUser(change.after),rebased=productWire(current);
-          for(const field of Object.keys({...before,...after}))if(!C.same(before[field],after[field])){
-            if(Object.hasOwn(after,field))rebased[field]=C.clone(after[field]);else delete rebased[field];
-          }
-          return {id:change.id,before:productWire(current),after:rebased};
-        });
+        sessionProductChanges=freshProductChanges(r.state,combineChanges(outbox?.products,diffProductChanges(pullStarted.products,state.products)));
       }
-      accept(r,changes,archives,sessionProductChanges,null);
+      let catalogPatch=diffCatalog(firstJoinExactMirror?pullStarted:baseline.state,state);
+      if(firstJoinExactMirror&&outbox?.catalog)catalogPatch={dealers:combineChanges(outbox.catalog.dealers,catalogPatch.dealers),groupChanges:combineChanges(outbox.catalog.groupChanges,catalogPatch.groupChanges),mapChanges:Object.fromEntries(Object.entries(catalogPatch.mapChanges).map(([field,rows])=>[field,combineChanges(outbox.catalog.mapChanges[field],rows,'key')]))};
+      const catalogChanges=freshCatalog(r.state,catalogPatch);
+      accept(r,changes,archives,sessionProductChanges,catalogChanges);
       if(!meta.devices?.[device.id]||meta.devices[device.id].name!==device.name){
         const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});
         if(!registered.conflict){
           const b=readBaseline();
-          accept(registered,pending(),C.diffArchives(b?.state||{},state),b?diffProductChanges(b.state.products,state.products):[],null);
+          accept(registered,pending(),C.diffArchives(b?.state||{},state),b?diffProductChanges(b.state.products,state.products):[],freshCatalog(registered.state,diffCatalog(b?.state,state)));
         }
       }
-      if(changes.length||sessionProductChanges.length)setTimeout(()=>push(false),350);
-      status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · точная копия главного; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(changes.length||productChanges.length?' · есть неотправленные изменения':''))+conflictNote());return true;
-    }catch(e){online=false;status(e.message);return false;}finally{busy=false;}
+      if(hasPending()&&syncCfg().enabled)queuePush(false);
+      status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · получена серверная база; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(hasPending()?' · есть неотправленные изменения':''))+conflictNote());return true;
+    }catch(e){online=false;status(e.message);return false;}finally{finishExchange();}
   }
-  async function push(manual){
-    if(busy||!syncCfg().url||(!manual&&!syncCfg().enabled))return false;
+  async function push(manual,conflictAttempt=0){
+    if(!syncCfg().url||(!manual&&!syncCfg().enabled))return false;
+    if(busy){queuedWrite=true;queuedManual=queuedManual||!!manual;return false;}
     if(!readBaseline()){await pull(true);return false;}
     busy=true;quarantinedThisRun=0;
     try{
       // Capture the exact local state used by the payload before any network await.
       const sentState=C.clone(state),sentOps=sentState.ops;
-      const base=readBaseline(),changes=C.diffOps(base.state.ops,sentOps),allProductChanges=diffProductChanges(base.state.products,sentState.products),catalogChanged=nonProductChanged(base.state,sentState),archives=C.diffArchives(base.state,sentState);
+      const base=readBaseline(),changes=C.diffOps(base.state.ops,sentOps),allProductChanges=diffProductChanges(base.state.products,sentState.products),archives=C.diffArchives(base.state,sentState);
       const expected=C.applyTransaction(base.state,changes,archives);
       const stockOverrides=(sentState.products||[]).flatMap(p=>{const old=base.state.products?.find(x=>C.id(x.id)===C.id(p.id)),e=expected.products?.find(x=>C.id(x.id)===C.id(p.id));return old&&e&&Number(p.stock)!==Number(e.stock)?[{id:C.id(p.id),before:Number(old.stock)||0,after:(Number(old.stock)||0)+Number(p.stock)-Number(e.stock)}]:[];});
       const r=await request('GET');
@@ -249,36 +364,37 @@
       // Проверяем локальные карточки против свежего сервера ДО отправки.
       if(productChanges.length)applyLocalProductChanges(r.state,productChanges);
 
-      if(catalogChanged&&meta.masterId!==device.id){
-        await backup();
-        state=norm(overlayNonProduct(state,r.state));
-        localStorage.setItem(KEY,JSON.stringify(state));render();
-        status('Изменения дилеров/групп сохранены в локальной копии. Товары можно изменять на любом компьютере.');
-      }
+      const catalogChanges=freshCatalog(r.state,diffCatalog(base.state,sentState));
+      applyLocalCatalog(r.state,catalogChanges);
       // Three-way operation conflict detection; no silent last-writer-wins.
       C.applyTransaction(r.state,changes,archives);
-      if(catalogChanged&&meta.masterId===device.id&&nonProductChanged(base.state,r.state))throw new Error('Дилеры или группы на сервере изменились. Локальные изменения сохранены; требуется сверка.');
 
       const payload={protocol:2,action:'changes',device,baseRevision:r.revision,changes,archives,productChanges};
       if(window.warehouseInstalled)payload.inventoryProtocol=2;
       else if(meta.masterId===device.id)payload.stockOverrides=stockOverrides;
-      if(catalogChanged&&meta.masterId===device.id)payload.catalogNonProducts=nonProductCatalog(sentState);
+      if(catalogPending(catalogChanges))payload.catalogPatch=catalogChanges;
 
       const result=await request('PUT',payload);
-      if(result.conflict)throw new Error('База изменилась во время отправки. Изменения сохранены; повторите синхронизацию.');
+      if(result.conflict){
+        if(conflictAttempt<3)queuePush(manual,conflictAttempt+1);
+        status('База изменилась во время отправки. Изменения сохранены; повторная отправка выполняется автоматически.');
+        return false;
+      }
+      // Older servers must not acknowledge an ignored delta and erase local work.
+      if(payload.catalogPatch&&!C.same(nonProductCatalog(applyLocalCatalog(result.state,catalogChanges)),nonProductCatalog(result.state)))throw new Error('Сервер не подтвердил правки справочника. Они сохранены локально; обновите сервер.');
 
       const duringFlight=C.diffOps(sentOps,state.ops);
       const productDuringFlight=freshProductChanges(result.state,diffProductChanges(sentState.products,state.products));
-      const nonProductDuringFlight=meta.masterId===device.id&&nonProductChanged(sentState,state)?nonProductCatalog(state):null;
+      const nonProductDuringFlight=freshCatalog(result.state,diffCatalog(sentState,state));
 
       // Серверный результат становится новой базой. Только изменения, сделанные
       // пока запрос был в полёте, остаются поверх неё как ещё не отправленные.
       const archivesDuringFlight=C.diffArchives(sentState,state);
       accept(result,duringFlight,archivesDuringFlight,productDuringFlight,nonProductDuringFlight);
       // A save timer may have fired while busy; send retained edits again.
-      if(productDuringFlight.length||duringFlight.length||nonProductDuringFlight||Object.values(archivesDuringFlight).some(rows=>rows.length))setTimeout(()=>push(false),350);
+      if(productDuringFlight.length||duringFlight.length||catalogPending(nonProductDuringFlight)||Object.values(archivesDuringFlight).some(rows=>rows.length))queuePush(false);
       status('Синхронизировано · база '+result.revision+conflictNote());return true;
-    }catch(e){online=false;status(e.message);return false;}finally{busy=false;}
+    }catch(e){online=false;status(e.message);return false;}finally{finishExchange();}
   }
   async function claim(){
     if(busy)return;busy=true;
@@ -311,6 +427,10 @@
     const box=document.createElement('div');box.className='card';
     box.innerHTML='<h3>Этот компьютер</h3><label>Название<input id="computerName8962" maxlength="80"></label><p id="masterName8962"></p><div class="actions"><button id="claimMaster8962" class="primary">Сделать главным</button><select id="computerTarget8962" hidden></select><button id="transferMaster8962" hidden>Передать роль главного</button><button id="recovery8962" hidden>Скачать сохранённую локальную базу</button><button id="productConflictRecovery" hidden>Скачать конфликтующие правки товаров</button></div><p class="muted">Цены и карточки товаров синхронизируются с любого компьютера. Главный компьютер управляет дилерами и группами. Старые продажи и чеки сохраняют прежние цены.</p>';
     host.prepend(box);
+    const hiddenStyle=document.createElement('style');hiddenStyle.textContent='[hidden]{display:none!important}';host.prepend(hiddenStyle);
+    const info=box.querySelector('.muted');if(info)info.textContent='Документы и справочники синхронизируются с любого компьютера. Сервер хранит общую базу; конфликтующие правки сохраняются отдельно. Старые продажи и чеки сохраняют прежние цены.';
+    const catalogRecovery=document.createElement('button');catalogRecovery.id='catalogConflictRecovery';catalogRecovery.hidden=true;catalogRecovery.textContent='Скачать конфликтующие правки дилеров и групп';box.querySelector('.actions').appendChild(catalogRecovery);
+    catalogRecovery.onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(catalogConflictKey())||'[]'],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-catalog-conflicts.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
     document.getElementById('computerName8962').value=device.name;
     document.getElementById('computerName8962').onchange=e=>{device.name=e.target.value.trim()||device.name;localStorage.setItem(DEVICE,JSON.stringify(device));paint();};
     document.getElementById('claimMaster8962').onclick=claim;document.getElementById('transferMaster8962').onclick=transfer;
@@ -318,6 +438,6 @@
     document.getElementById('recovery8962').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(recoveryKey())],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-before-master.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   }
   const badge=document.createElement('button');badge.id='computerBadge8962';badge.className='secondary';badge.onclick=()=>go('sync');document.querySelector('header .actions')?.prepend(badge);
-  window.masterSync8962={pull,push,claim,transfer,device};paint();
+  window.masterSync8962={pull,push,claim,transfer,device,recordSave,markSaved,commitState};paint();
   setTimeout(()=>{try{if(syncCfg().enabled&&syncCfg().url)pull(false)}catch(_){}},500);
 })();

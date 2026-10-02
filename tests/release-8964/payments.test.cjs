@@ -30,11 +30,11 @@ test('first worker connection mirrors master exactly and quarantines old local p
  assert.equal(data.has('uchet_sync_baseline_8962:https://test.invalid'),true);
 });
 
-test('payment entered while backup is saving is kept in recovery but cannot alter master debt',async()=>{
+test('new payment entered while first-connection backup is saving remains visible and recoverable',async()=>{
  const remote=base();remote.ops=[{id:10,ts:10,type:'sale',dealerId:1,total:300,items:[]}];
  const {s,data}=harness(base(),remote,s=>s.state.ops.push({id:2,ts:2,type:'payment',dealerId:1,total:75}));
  assert.equal(await s.masterSync8962.pull(true),true);
- assert.equal(s.state.ops.some(o=>o.id===2),false);
+ assert.equal(s.state.ops.some(o=>o.id===2&&o.total===75),true);
  assert.equal(s.state.ops.some(o=>o.id===10&&o.total===300),true);
  const recovery=JSON.parse(data.get('uchet_before_master_8962:https://test.invalid'));
  assert.equal(recovery.ops.some(o=>o.id===2&&o.total===75),true);
