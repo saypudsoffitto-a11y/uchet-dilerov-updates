@@ -1,13 +1,18 @@
 {
   "name": "uchet-dilerov-sync-server",
-  "version": "1.0.0",
+  "version": "8.9.82",
   "private": true,
-  "description": "Общий сервер базы для приложения Учёт дилеров",
+  "description": "Общий сервер Учёт дилеров: равноправные компьютеры, проверяемые изменения и постоянная база Turso",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --check server.js && node --check store.js && node --check master-protocol-8962.js && node --check sync-core-8962.js && node --test *.test.cjs ../tests/release-8962/*.test.cjs ../tests/release-8963/*.test.cjs",
+    "prestart": "node backup-before-upgrade.cjs && npm test"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@tursodatabase/serverless": "^1.4.0"
   }
 }

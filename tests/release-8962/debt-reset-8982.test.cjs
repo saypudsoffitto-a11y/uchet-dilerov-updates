@@ -1,0 +1,24 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {prepareDebtReset}=require('../../server/debt-reset-8982');
+const P=require('../../server/master-protocol-8962');
+const balance=(s,id)=>Number(s.ops.filter(o=>o.dealerId===id).reduce((sum,o)=>sum+(o.type==='payment'?-o.total:['sale','initial_debt'].includes(o.type)?o.total:0),0).toFixed(2));
+test('debt reset preserves contacts, products, stock and every historical operation',()=>{
+ const state={dealers:[{id:1,name:'Дилер',phone:'70000000000',email:'test@example.invalid'},{id:2,name:'Переплата',phone:'70000000001'}],groups:[{id:3,name:'Группа'}],products:[{id:4,name:'Товар',article:'A',buyPrice:20,retailPrice:30,stock:10}],ops:[{id:'sale',type:'sale',dealerId:1,total:100,items:[]},{id:'payment',type:'payment',dealerId:1,total:25},{id:'prepayment',type:'payment',dealerId:2,total:40}],receiptStates:{archived:{receipt:{id:5,total:10}}}};
+ state.products[0].receiptArchiveStock={archived:0};
+ const original=structuredClone(state);
+ const reset=prepareDebtReset(state,'reset-0000000000000000',1234567890000);
+ assert.ok(reset.changes.every(ch=>Number.isSafeInteger(ch.after.id)));
+ assert.deepEqual(state,original);
+ const store={state,computers:{masterId:'device-0000000000000000',devices:{}}};
+ const body={protocol:2,action:'changes',device:{id:'device-0000000000000000',name:'Подключение'},changes:reset.changes};
+ const result=P.update(store,body);
+ for(const field of ['dealers','products','groups','receiptStates'])assert.deepEqual(result.state[field],original[field]);
+ for(const op of original.ops)assert.deepEqual(result.state.ops.find(o=>o.id===op.id),op);
+ assert.equal(balance(result.state,1),0);assert.equal(balance(result.state,2),0);
+ assert.deepEqual(prepareDebtReset(result.state,'reset-0000000000000000').changes,[]);
+ assert.deepEqual(P.update(result,body).state,result.state);
+ const next=P.update(result,{...body,changes:[{id:'new-sale',before:null,after:{id:'new-sale',type:'sale',dealerId:1,total:12.5,items:[]}}]});
+ assert.equal(balance(next.state,1),12.5);
+});
