@@ -1,10 +1,10 @@
 {
-  "version": "8.9.82",
+  "version": "8.9.83",
   "platform": "darwin",
   "arch": "arm64",
-  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.82/Uchet-dilerov-macOS-8.9.82-arm64.dmg",
-  "sha256": "4c578be73fe036695a7a86dfe5ea2e3438dcbfdec42a6cbcf723adc73a544f46",
-  "zipUrl": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.82/Uchet-dilerov-macOS-8.9.82-arm64.zip",
-  "zipSha256": "4d335de15a2ac6b243d320457ec9cdf792297e5fe7d056242588e11c8513404e",
-  "notes": "# Учёт дилеров 8.9.82\n\n- Единая общая база без выбора главного компьютера и названий компьютеров в рабочем интерфейсе.\n- Исправлена остановка всего обмена при добавлении отдельного дилера без телефона с совпадающим именем: карточка сохраняется отдельно, продажи и оплаты передаются.\n- Сохраняются карточки, контакты, цены и история. Правки передаются точечно, повторная отправка не создаёт дублей.\n- Обнуление тестовой задолженности выполняется отдельными корректировками с сохранением истории."
+  "url": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.83/Uchet-dilerov-macOS-8.9.83-arm64.dmg",
+  "sha256": "455b87b960a2e631ca095f82380ccefb616a4ff93eaef47fd75770a2356c4ed0",
+  "zipUrl": "https://github.com/saypudsoffitto-a11y/uchet-dilerov-updates/releases/download/8.9.83/Uchet-dilerov-macOS-8.9.83-arm64.zip",
+  "zipSha256": "8ef1131942199a45aa25ce1a1528a60b26b65875f29a57652020ea4c97f16f44",
+  "notes": "# Учёт дилеров 8.9.83\n\n- В накладных NewMatRos название полотна сокращено до материала и ширины рулона.\n- Дополнительные углы всех потолков одного чека отображаются одной строкой «Доп. углы» с общим количеством и суммой.\n- В программе исходные строки углов можно раскрыть кнопкой «Изменить». Правки и удаление обращаются к правильным строкам заказа.\n- Печать, PDF и JPEG для WhatsApp используют тот же формат. Исходные документы, суммы продаж, долги и складские данные сохраняются."
 }
