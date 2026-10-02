@@ -24,7 +24,7 @@ function applyCatalogPatch(state,patch){
   if(!current)next.groups.push(C.clone(group));
   else if(!C.same(current,group))throw Error('Группа изменена на другом компьютере');
  }
- return C.canonicalize(next);
+ return C.canonicalize(next,{preserveProductIds:(state.products||[]).map(p=>p.id)});
 }
 module.exports={applyCatalogPatch};
 
@@ -45,7 +45,8 @@ module.exports.applySharedPatch=function(state,patch){
      if(!C.normalize(ch.after.name))throw Error('Укажите имя нового дилера');
      if(next.catalogDeletedKeys?.['dealers:'+C.dealerKey(ch.after)])throw Error('Дилер ранее удалён. Старая копия не может восстановить его под новым номером.');
      if(phone&&next.dealers.some(d=>C.phone(d.phone)===phone))throw Error('Дилер с этим телефоном уже есть в общей базе. Откройте его карточку.');
-     if(!phone&&next.dealers.some(d=>C.normalize(d.name)===C.normalize(ch.after.name)))throw Error('Дилер с этим именем уже есть в общей базе. Откройте его карточку и уточните телефон.');
+     // A name without a phone is not a unique identity. Keep this card separate;
+     // rejecting it would also block unrelated sales and payments in the batch.
     }
     if(i<0)next[field].push(C.clone(ch.after));else next[field][i]=C.clone(ch.after);
    }else if(i>=0){
@@ -69,5 +70,5 @@ module.exports.applySharedPatch=function(state,patch){
    else map[ch.key]=C.clone(ch.after);
   }
  }
- return C.canonicalize(next);
+ return C.canonicalize(next,{preserveProductIds:(state.products||[]).map(p=>p.id)});
 };

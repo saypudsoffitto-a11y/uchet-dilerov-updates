@@ -44,9 +44,9 @@
   };
   const status=(text,connection=online?'online':'offline')=>{const el=document.getElementById('syncStatus');if(el){el.dataset.syncState=connection;el.textContent=text;}paint();};
   function paint(){
-    const badge=document.getElementById('computerBadge8962');if(badge)badge.textContent=device.name.replace(/\s*·\s*Главный/g,'')+' · '+(online?'связь есть':'нет связи');
-    const master=document.getElementById('masterName8962');if(master)master.textContent=meta?.masterId?'Общая серверная база. Все компьютеры могут создавать документы и изменять справочники.':'Общая база ещё не настроена.';
-    const claim=document.getElementById('claimMaster8962');if(claim)claim.hidden=!!meta?.masterId;
+    const badge=document.getElementById('computerBadge8962');if(badge)badge.hidden=true;
+    const master=document.getElementById('masterName8962');if(master)master.textContent='Одна общая база. Все подключённые компьютеры равноправны.';
+    const claim=document.getElementById('claimMaster8962');if(claim)claim.hidden=true;
     const transfer=document.getElementById('transferMaster8962');if(transfer)transfer.hidden=true;
     const select=document.getElementById('computerTarget8962');if(select)select.hidden=true;
     const conflicts=document.getElementById('productConflictRecovery');if(conflicts)conflicts.hidden=!localStorage.getItem(staleKey());
@@ -57,7 +57,7 @@
     const r=await syncRequest(method,body);
     if(r?.conflict)return r;
     if(!r?.ok){online=false;throw new Error(r?.message||'Нет ответа сервера');}
-    if(r.protocol!==2)throw new Error('Сервер ещё не обновлён для главного компьютера. Данные сохранены локально.');
+    if(r.protocol!==2)throw new Error('Сервер ещё не обновлён для общей базы. Данные сохранены локально.');
     if(r.storage!=='turso')throw new Error('Сервер ещё не подключён к постоянной базе Turso. Локальные данные не отправлены.');
     if(window.warehouseInstalled&&r.serverVersion&&(r.inventoryProtocol!==2||r.productRevisions!==true))throw new Error('Сервер ещё не обновлён для защищённых цен и склада. Все правки сохранены локально.');
     meta=r.computers;
@@ -309,7 +309,7 @@
     const pullStarted=C.clone(state);
     try{
       const r=await request('GET');
-      if(!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');if(manual)alert('Главный компьютер ещё не выбран. Нажмите «Сделать главным» на том компьютере, где данные верные.');return true;}
+      if(!meta?.shared&&!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');if(manual)alert('Главный компьютер ещё не выбран. Нажмите «Сделать главным» на том компьютере, где данные верные.');return true;}
       const baseline=readBaseline();
       const productChanges=baseline?freshProductChanges(r.state,diffProductChanges(baseline.state.products,state.products)):[];
       let firstJoinExactMirror=false;
@@ -357,7 +357,7 @@
       const expected=C.applyTransaction(base.state,changes,archives);
       const stockOverrides=(sentState.products||[]).flatMap(p=>{const old=base.state.products?.find(x=>C.id(x.id)===C.id(p.id)),e=expected.products?.find(x=>C.id(x.id)===C.id(p.id));return old&&e&&Number(p.stock)!==Number(e.stock)?[{id:C.id(p.id),before:Number(old.stock)||0,after:(Number(old.stock)||0)+Number(p.stock)-Number(e.stock)}]:[];});
       const r=await request('GET');
-      if(!meta?.masterId)throw new Error('Выберите главный компьютер.');
+      if(!meta?.shared&&!meta?.masterId)throw new Error('Подключите общую базу.');
       if(Number(r.revision)<Number(base.revision))throw new Error('Сервер вернул устаревшую базу. Отправка остановлена.');
       const productChanges=freshProductChanges(r.state,allProductChanges);
 
@@ -396,48 +396,18 @@
       status('Синхронизировано · база '+result.revision+conflictNote());return true;
     }catch(e){online=false;status(e.message);return false;}finally{finishExchange();}
   }
-  async function claim(){
-    if(busy)return;busy=true;
-    try{
-      const r=await request('GET');
-      if(meta?.masterId){status('Главный компьютер уже назначен: '+(meta.devices?.[meta.masterId]?.name||'другой компьютер')+'.');alert('Главный компьютер уже назначен: '+(meta.devices?.[meta.masterId]?.name||'другой компьютер')+'. Если нужно назначить этот компьютер, сначала передайте роль главного с текущего главного компьютера.');return;}
-      const askText='Сделать «'+device.name+'» главным? Его список станет основным: '+state.dealers.length+' дилеров, '+state.products.length+' товаров. Будет создана резервная копия.';
-      let proceed=false;
-      try{proceed=confirm(askText);}catch(_){status('Не удалось открыть подтверждение. Действие отменено.');return;}
-      if(!proceed)return;
-      await backup();
-      const result=await request('PUT',{protocol:2,action:'claim',device,baseRevision:r.revision,state:C.clone(state)});
-      if(result.conflict){status('База изменилась. Повторите выбор главного компьютера.');alert('База изменилась. Повторите выбор главного компьютера.');return;}
-      localStorage.removeItem(key());accept(result,[],{},[],null);
-      status('Этот компьютер — главный. Остальные получат его справочники.');
-      alert('Готово. Этот компьютер назначен главным. На остальных компьютерах откройте раздел «Общий сервер» — они получат этот список автоматически.');
-    }catch(e){status(e.message);alert('Не удалось назначить главный компьютер: '+e.message);}finally{busy=false;}
-  }
-  async function transfer(){
-    if(busy)return;const targetId=document.getElementById('computerTarget8962').value;if(!targetId)return;
-    if(!await push(true))return;
-    let proceed=false;
-    try{proceed=confirm('Передать роль главного компьютеру «'+meta.devices[targetId].name+'»? Текущий общий справочник сохранится.');}catch(_){status('Не удалось открыть подтверждение. Действие отменено.');return;}
-    if(!proceed)return;
-    busy=true;
-    try{const r=await request('GET');const result=await request('PUT',{protocol:2,action:'transfer',device,targetId,baseRevision:r.revision});if(result.conflict){status('База изменилась. Повторите передачу роли.');alert('База изменилась. Повторите передачу роли.');return;}accept(result,pending(),C.diffArchives(readBaseline().state,state),diffProductChanges(readBaseline().state.products,state.products),null);status('Главный компьютер изменён.');alert('Готово. Роль главного передана компьютеру «'+meta.devices[targetId].name+'».');}catch(e){status(e.message);alert('Не удалось передать роль главного: '+e.message);}finally{busy=false;}
-  }
   const host=document.getElementById('sync');
   if(host){
     const box=document.createElement('div');box.className='card';
-    box.innerHTML='<h3>Этот компьютер</h3><label>Название<input id="computerName8962" maxlength="80"></label><p id="masterName8962"></p><div class="actions"><button id="claimMaster8962" class="primary">Сделать главным</button><select id="computerTarget8962" hidden></select><button id="transferMaster8962" hidden>Передать роль главного</button><button id="recovery8962" hidden>Скачать сохранённую локальную базу</button><button id="productConflictRecovery" hidden>Скачать конфликтующие правки товаров</button></div><p class="muted">Цены и карточки товаров синхронизируются с любого компьютера. Главный компьютер управляет дилерами и группами. Старые продажи и чеки сохраняют прежние цены.</p>';
+    box.innerHTML='<h3>Общая база</h3><p id="masterName8962"></p><div class="actions"><button id="recovery8962" hidden>Скачать сохранённую локальную базу</button><button id="productConflictRecovery" hidden>Скачать конфликтующие правки товаров</button></div><p class="muted">Изменения дилеров, товаров, продаж и оплат автоматически передаются на сервер и поступают на остальные компьютеры.</p>';
     host.prepend(box);
     const hiddenStyle=document.createElement('style');hiddenStyle.textContent='[hidden]{display:none!important}';host.prepend(hiddenStyle);
     const info=box.querySelector('.muted');if(info)info.textContent='Документы и справочники синхронизируются с любого компьютера. Сервер хранит общую базу; конфликтующие правки сохраняются отдельно. Старые продажи и чеки сохраняют прежние цены.';
     const catalogRecovery=document.createElement('button');catalogRecovery.id='catalogConflictRecovery';catalogRecovery.hidden=true;catalogRecovery.textContent='Скачать конфликтующие правки дилеров и групп';box.querySelector('.actions').appendChild(catalogRecovery);
     catalogRecovery.onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(catalogConflictKey())||'[]'],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-catalog-conflicts.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
-    document.getElementById('computerName8962').value=device.name;
-    document.getElementById('computerName8962').onchange=e=>{device.name=e.target.value.trim()||device.name;localStorage.setItem(DEVICE,JSON.stringify(device));paint();};
-    document.getElementById('claimMaster8962').onclick=claim;document.getElementById('transferMaster8962').onclick=transfer;
     document.getElementById('productConflictRecovery').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(staleKey())||'[]'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Uchet-product-conflicts.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
     document.getElementById('recovery8962').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(recoveryKey())],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-before-master.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   }
-  const badge=document.createElement('button');badge.id='computerBadge8962';badge.className='secondary';badge.onclick=()=>go('sync');document.querySelector('header .actions')?.prepend(badge);
-  window.masterSync8962={pull,push,claim,transfer,device,recordSave,markSaved,commitState};paint();
+  window.masterSync8962={pull,push,device,recordSave,markSaved,commitState};paint();
   setTimeout(()=>{try{if(syncCfg().enabled&&syncCfg().url)pull(false)}catch(_){}},500);
 })();

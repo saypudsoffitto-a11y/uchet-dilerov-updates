@@ -10,7 +10,7 @@ const TOKEN_SHA256 = String(process.env.SYNC_TOKEN_SHA256 || '').trim().toLowerC
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.81-sync7';
+const SERVER_VERSION = '8.9.82-sync8';
 const masterProtocol = require('./master-protocol-8962');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -211,7 +211,10 @@ async function readStore() {
   return {
     ...parsed,
     revision: Number(parsed.revision || 0),
-    state: parsed.computers?.masterId ? rawState : sanitizeState(rawState, rawState),
+    // Existing cards and documents are retained byte for byte. Device identity
+    // remains for retries/audit; the legacy master ID grants no authority.
+    state: rawState,
+    computers: {...parsed.computers,shared:true,masterId:parsed.computers?.masterId||'shared-database',devices:parsed.computers?.devices||{}},
     storage: storeBackend.kind
   };
 }

@@ -1,1 +1,1 @@
-8.9.80 — three appearance themes; publish after native Windows and macOS checks
+8.9.82 shared database; preserve all dealer/contact/product/history records; verified optional-phone synchronization.

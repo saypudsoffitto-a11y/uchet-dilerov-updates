@@ -115,9 +115,13 @@ test('an equal peer can synchronize a dealer without a phone as supported by the
  assert.equal(await h.ctx.window.masterSync8962.push(false),true);
  assert.equal(h.server().state.ops[0].dealerId,2);
  h.ctx.state.dealers.push({id:3,name:'Dealer without a phone',phone:''});
- assert.equal(await h.ctx.window.masterSync8962.push(false),false);
- assert.equal(h.server().state.dealers.length,2,'ambiguous duplicate stays local and cannot multiply server cards');
- assert.equal(h.ctx.state.dealers.length,3,'rejected user work remains available');
+ h.ctx.state.ops.push({...operation('second-phone-optional-receipt'),dealerId:3});
+ assert.equal(await h.ctx.window.masterSync8962.push(false),true);
+ assert.equal(h.server().state.dealers.length,3,'same name without phone is not proof of a duplicate identity');
+ assert.equal(h.server().state.ops[1].dealerId,3);
+ assert.equal(await h.ctx.window.masterSync8962.pull(false),true);
+ await h.flush();
+ assert.equal(h.server().state.ops.length,2,'retry cannot multiply documents');
 });
 test('dealer edit made while PUT is pending remains queued on an equal peer',async()=>{
  const h=harness(),g=gate(h,'PUT');h.ctx.state.ops.push(operation('inflight-sale'));

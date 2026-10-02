@@ -32,6 +32,9 @@
     for(const p of s.products){
       if(!p)continue;
       if(!isPlaceholderProductName(p.name)){keep.push(p);continue}
+      // Existing shared cards are preserved during upgrades; invalid new CSV
+      // rows remain blocked by the import guard below.
+      if(s._syncBaseline8981?.baseline?.state?.products?.some(old=>String(old.id)===String(p.id))){keep.push(p);continue}
       if(p.id!==undefined&&p.id!==null&&String(p.id)!==''){
         marks[String(p.id)]=Math.max(Number(marks[String(p.id)]||0),now());
       }

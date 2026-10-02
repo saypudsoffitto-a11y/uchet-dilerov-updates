@@ -122,10 +122,10 @@ function update(current,body){
   const next=C.clone(current),meta=next.computers||{masterId:null,devices:{}};
   meta.devices=meta.devices||{};
   const existingDevice=meta.devices[device.id];
-  const ordinal=existingDevice?.ordinal||Math.max(1,...Object.values(meta.devices).map(d=>Number(d?.ordinal)||0))+1;
+  const ordinal=existingDevice?.ordinal||Math.max(meta.shared?0:1,...Object.values(meta.devices).map(d=>Number(d?.ordinal)||0))+1;
   let displayName=existingDevice?.name||String(device.name).trim().slice(0,80);
   if(!existingDevice){
-    displayName=body.action==='claim'&&!meta.masterId?'Компьютер 1 · Главный':'Компьютер '+ordinal;
+    displayName=meta.shared?String(device.name).trim().slice(0,80):body.action==='claim'&&!meta.masterId?'Компьютер 1 · Главный':'Компьютер '+ordinal;
   }else if(String(device.name||'').trim()&&String(device.name).trim()!==existingDevice.clientName){
     const incoming=String(device.name).trim().slice(0,80);
     if(!/^Компьютер [a-z0-9-]{4,}$/i.test(incoming)&&!/^Компьютер \d+(?: · Главный)?$/u.test(incoming))displayName=incoming;
@@ -134,6 +134,7 @@ function update(current,body){
   next.computers=meta;
   if(body.action==='register')return next;
   if(body.action==='claim'){
+    if(meta.shared)fail('Общая база уже подключена. Все компьютеры равноправны.');
     if(meta.masterId)fail('Главный компьютер уже выбран. Сменить его можно с главного компьютера.');
     if(!body.state||!Array.isArray(body.state.dealers)||!Array.isArray(body.state.products))fail('Не передан выбранный справочник');
     const selected=C.canonicalize(body.state);
@@ -182,8 +183,9 @@ function update(current,body){
     meta.devices[device.id].ordinal=1;
     return next;
   }
-  if(!meta.masterId)fail('Сначала выберите главный компьютер с правильным списком дилеров и товаров.');
+  if(!meta.shared&&!meta.masterId)fail('Сначала выберите главный компьютер с правильным списком дилеров и товаров.');
   if(body.action==='transfer'){
+    if(meta.shared)fail('В общей базе нет главного компьютера.');
     if(meta.masterId!==device.id)fail('Сменить главный компьютер можно только с текущего главного.');
     if(!meta.devices[body.targetId])fail('Сначала подключите выбранный компьютер');
     const oldMaster=meta.masterId;
@@ -206,14 +208,14 @@ function update(current,body){
 
   // Дилеры/группы пока остаются под контролем главного компьютера.
   if(body.catalogNonProducts){
-    if(device.id!==meta.masterId)fail('Дилеры и группы изменяются на главном компьютере.');
+    if(!meta.shared&&device.id!==meta.masterId)fail('Дилеры и группы изменяются на главном компьютере.');
     fail('Полная замена справочника локальной копией запрещена. Обновите программу: изменения отправляются точечно.');
   }
 
   // Совместимость со старыми клиентами: разрешаем им обновлять дилеров/группы,
   // но не позволяем старому полному catalog вернуть прежнюю цену товара.
   if(body.catalog){
-    if(device.id!==meta.masterId)fail('Справочники изменяются на главном компьютере.');
+    if(!meta.shared&&device.id!==meta.masterId)fail('Справочники изменяются на главном компьютере.');
     if(!C.same(productListView(body.catalog.products||[]),productListView(next.state.products||[]))){
       fail('Старая версия программы попыталась заменить каталог товаров. Обновите программу перед изменением цен.');
     }
@@ -227,7 +229,7 @@ function update(current,body){
     next.state=applySharedPatch(next.state,{...body.catalogPatch,products:[]});
   }
   for(const edit of body.stockOverrides||[]){
-    if(device.id!==meta.masterId)fail('Остатки вручную изменяются на главном компьютере.');
+    if(!meta.shared&&device.id!==meta.masterId)fail('Остатки вручную изменяются на главном компьютере.');
     const previous=(current.state.products||[]).find(p=>C.id(p.id)===edit.id),p=next.state.products.find(p=>C.id(p.id)===edit.id);
     if(!previous||!p||Number(previous.stock)!==Number(edit.before)||!Number.isFinite(edit.after))fail('Остаток изменён другим компьютером');
     p.stock+=edit.after-Number(previous.stock);
@@ -254,7 +256,14 @@ function update(current,body){
       }
       continue;
     }
-    if(!next.state.dealers.some(d=>C.id(d.id)===C.id(op.dealerId)))fail('Дилер операции '+op.id+' отсутствует в главном справочнике. Операция сохранена на рабочем компьютере.');
+    if(!next.state.dealers.some(d=>C.id(d.id)===C.id(op.dealerId))){
+      // Deleted cards retain their historical documents. Never infer identity
+      // from a matching name or resurrect a card to upload an old receipt.
+      const deletedAt=Number(next.state.deletedDealers?.[C.id(op.dealerId)]);
+      const createdAt=Number(op.ts);
+      if(!(deletedAt>0&&createdAt>0&&createdAt<=deletedAt&&C.normalize(op.dealer)))
+        fail('Дилер операции '+op.id+' отсутствует в общей базе. Операция сохранена на рабочем компьютере.');
+    }
     if(!['sale','payment','initial_debt'].includes(op.type)||!Number.isFinite(Number(op.total)))fail('Неверная операция '+op.id);
   }
   next.state.receiptSeq=Math.max(Number(next.state.receiptSeq)||1,...next.state.ops.map(o=>(Number(o.receiptNo)||0)+1));
