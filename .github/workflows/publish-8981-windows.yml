@@ -1,0 +1,78 @@
+name: Publish verified Windows sync repair
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/publish-8981-windows.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: stable-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify previously tested candidate
+        run: |
+          set -euo pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/37005352227" > candidate-run.json
+          node - <<'JS'
+          const run=require('./candidate-run.json');
+          if(run.conclusion!=='success'||run.head_sha!=='a146c7ffdd2b91367c8719c7b2fb035310423dd7') throw Error('Candidate verification does not match');
+          if(require('./app/package.json').version!=='8.9.81') throw Error('Incorrect source version');
+          JS
+      - uses: actions/download-artifact@v4
+        with:
+          name: sync-repair-windows-candidate
+          run-id: 37005352227
+          github-token: ${{ github.token }}
+          path: release-assets
+      - name: Verify installer and compatible server
+        run: |
+          set -euo pipefail
+          echo '0fb71ea40d83aa1fb2b5ad30f266ca09f5789c1cb888d38ae8d2938fd46d37b7  release-assets/Uchet-dilerov-Setup-8.9.81-x64.exe' | sha256sum --check
+          node scripts/verify-release-server.cjs
+      - name: Generate Windows update manifest
+        run: |
+          node - <<'JS'
+          const fs=require('fs');
+          const notes='Исправлена автоматическая синхронизация дилеров и групп. Сохранение офлайн-изменений и защита справочников от устаревших копий. После обновления проверьте обмен между компьютерами.';
+          const manifest={version:'8.9.81',url:'https://github.com/'+process.env.GITHUB_REPOSITORY+'/releases/download/8.9.81/Uchet-dilerov-Setup-8.9.81-x64.exe',sha256:'0fb71ea40d83aa1fb2b5ad30f266ca09f5789c1cb888d38ae8d2938fd46d37b7',notes};
+          fs.writeFileSync('release-assets/latest.json',JSON.stringify(manifest,null,2)+'\n');
+          fs.writeFileSync('windows-release-notes.md','# Учёт дилеров 8.9.81 — Windows\n\n'+notes+'\n\nУстановщик прошёл сборку, установку и проверки запуска, групп и интерфейса на Windows. Сервер обновлён. Проверка обмена на двух рабочих компьютерах выполняется после установки.\n');
+          JS
+          cp latest-macos.json release-assets/latest-macos.json
+      - name: Publish verified installer
+        run: |
+          set -euo pipefail
+          if gh release view 8.9.81 --json isDraft --jq '.isDraft' > release-draft.txt 2>/dev/null; then
+            test "$(cat release-draft.txt)" = true
+            gh release upload 8.9.81 release-assets/* --clobber
+          else
+            gh release create 8.9.81 release-assets/* --draft --target a146c7ffdd2b91367c8719c7b2fb035310423dd7 --title 'Учёт дилеров 8.9.81 — Windows' --notes-file windows-release-notes.md
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/8.9.81" > published-assets.json
+          node - <<'JS'
+          const assets=require('./published-assets.json').assets;
+          const setup=assets.find(a=>a.name==='Uchet-dilerov-Setup-8.9.81-x64.exe');
+          if(!setup||setup.digest!=='sha256:0fb71ea40d83aa1fb2b5ad30f266ca09f5789c1cb888d38ae8d2938fd46d37b7') throw Error('Published installer checksum mismatch');
+          JS
+          gh release edit 8.9.81 --draft=false --latest
+      - name: Enable the existing Windows update button
+        run: |
+          set -euo pipefail
+          cp release-assets/latest.json latest.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add latest.json
+          git commit -m 'Enable verified 8.9.81 Windows update [skip ci]'
+          git pull --rebase origin main
+          git push origin HEAD:main
