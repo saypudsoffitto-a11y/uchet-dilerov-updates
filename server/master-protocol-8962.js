@@ -207,7 +207,7 @@ function update(current,body){
   // Дилеры/группы пока остаются под контролем главного компьютера.
   if(body.catalogNonProducts){
     if(device.id!==meta.masterId)fail('Дилеры и группы изменяются на главном компьютере.');
-    next.state=applyNonProductCatalog(next.state,body.catalogNonProducts);
+    fail('Полная замена справочника локальной копией запрещена. Обновите программу: изменения отправляются точечно.');
   }
 
   // Совместимость со старыми клиентами: разрешаем им обновлять дилеров/группы,
@@ -217,7 +217,7 @@ function update(current,body){
     if(!C.same(productListView(body.catalog.products||[]),productListView(next.state.products||[]))){
       fail('Старая версия программы попыталась заменить каталог товаров. Обновите программу перед изменением цен.');
     }
-    next.state=applyNonProductCatalog(next.state,body.catalog);
+    fail('Полная замена справочника локальной копией запрещена. Обновите программу: изменения отправляются точечно.');
   }
   if((body.stockOverrides||[]).length&&next.state.products.some(p=>p.inventoryVersion===2))fail('Используйте документ корректировки склада вместо замены остатка');
   if(body.catalogPatch){
