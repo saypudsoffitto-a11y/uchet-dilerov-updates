@@ -113,11 +113,13 @@
       }
       [...table.querySelectorAll('tbody tr')].forEach((tr,index)=>{
         if(tr.querySelector('[data-line-action]'))return;
+        if(tr.dataset.cornerSummary)return;
+        const itemIndex=tr.dataset.receiptItemIndex==null?index:Number(tr.dataset.receiptItemIndex);
         const td=document.createElement('td');td.dataset.lineAction='1';td.className='receiptLineAction';
         const btn=document.createElement('button');btn.type='button';btn.className='dangerBtn receiptLineDelete';btn.textContent='Удалить товар';
         btn.disabled=(op.items||[]).length<=1;
         btn.title=btn.disabled?'В чеке одна позиция — используй «Удалить чек»':'Удалить только эту позицию из чека';
-        btn.onclick=()=>deleteReceiptItem(receiptId,index);
+        btn.onclick=()=>deleteReceiptItem(receiptId,itemIndex);
         td.appendChild(btn);tr.appendChild(td);
       });
     });

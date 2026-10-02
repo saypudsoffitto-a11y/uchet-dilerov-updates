@@ -1,1 +1,1 @@
-8.9.82 shared database; preserve all dealer/contact/product/history records; verified optional-phone synchronization.
+Release 8.9.83: compact NewMatRos material names and one extra-corners total per receipt.

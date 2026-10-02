@@ -5,13 +5,27 @@
   const h=v=>typeof esc==='function'?esc(v):String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const rub=v=>typeof money==='function'?money(v):(Number(v||0).toLocaleString('ru-RU')+' ₽');
 
+  const expandedCorners8983=new Set();
+  window.toggleReceiptCorners8983=id=>{
+    const key=String(id);if(expandedCorners8983.has(key))expandedCorners8983.delete(key);else expandedCorners8983.add(key);
+    window.refreshReceiptViews(id);
+  };
+  const cornerStyle=document.createElement('style');cornerStyle.textContent='@media print{.receiptCornerDetail8983{display:none!important}}';document.head.appendChild(cornerStyle);
+
   function compactReceiptHtml8951(op,d){
-    const rows=(op.items||[]).map((i,n)=>'<tr><td>'+(n+1)+'</td><td><b>'+h(i.name||'Товар')+'</b></td><td><input class="receiptEditInput" type="number" min="0.01" step="0.01" value="'+(+i.qty||0)+'" onchange="editReceiptItem('+op.id+','+n+',&quot;qty&quot;,this.value)"> '+h(i.unit||'шт')+'</td><td><input class="receiptEditInput" type="number" min="0" step="0.01" value="'+(+i.price||0)+'" onchange="editReceiptItem('+op.id+','+n+',&quot;price&quot;,this.value)"></td><td>'+rub(i.total)+'</td></tr>').join('');
+    let line=0;
+    const rows=window.receiptDisplay8983.rows(op,{cornerDetails:expandedCorners8983.has(String(op.id))}).map(i=>{
+      const index=i._receiptItemIndex,summary=i._receiptCornerSummary;
+      const qty=summary?h(i.qty):'<input class="receiptEditInput" type="number" min="0.01" step="0.01" value="'+(+i.qty||0)+'" onchange="editReceiptItem('+op.id+','+index+',&quot;qty&quot;,this.value)">';
+      const price=summary?(i.price===null?'—':rub(i.price)):'<input class="receiptEditInput" type="number" min="0" step="0.01" value="'+(+i.price||0)+'" onchange="editReceiptItem('+op.id+','+index+',&quot;price&quot;,this.value)">';
+      const action=summary?'<td class="receiptLineAction" data-line-action="1"><button class="secondary miniBtn" type="button" onclick="toggleReceiptCorners8983('+op.id+')">'+(expandedCorners8983.has(String(op.id))?'Свернуть':'Изменить')+'</button></td>':'';
+      return '<tr'+(summary?' data-corner-summary="1"':' data-receipt-item-index="'+index+'"')+(i._receiptCornerDetail?' class="receiptCornerDetail8983"':'')+'><td>'+(i._receiptCornerDetail?'':(++line))+'</td><td><b>'+h(i.name||'Товар')+'</b></td><td>'+qty+' '+h(i.unit||'шт')+'</td><td>'+price+'</td><td>'+rub(i.total)+'</td>'+action+'</tr>';
+    }).join('');
     return '<div class="receipt receipt8951" id="receiptPrint" data-receipt-op-id="'+op.id+'"><h2>ТОВАРНАЯ НАКЛАДНАЯ № '+h(op.receiptNo)+' от '+h(op.date)+'</h2><div class="meta"><div><b>Поставщик:</b> ____________________</div><div><b>Покупатель:</b> '+h(d?.name||op.dealer||'')+'</div></div><p class="receiptEditHelp">Количество и цену можно изменить прямо в накладной — сумма и долг пересчитаются автоматически.</p><table><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total">Итого: '+rub(op.total)+'</div><p><b>Остаток долга:</b> '+rub(debtOf(op.dealerId))+'</p><div class="sign"><span>Отпустил: ____________</span><span>Получил: ____________</span></div><div class="actions"><button class="primary" onclick="printReceipt()">Распечатать</button><button class="primary" onclick="downloadReceipt('+op.id+')">Скачать накладную</button><button class="primary" onclick="sendWhatsApp('+op.id+')">Отправить в WhatsApp</button><button class="primary" type="button" onclick="openReceiptAdd('+op.id+')">Добавить товар</button><button class="dangerBtn" type="button" onclick="archiveReceipt('+op.id+')">Удалить этот чек</button></div></div>';
   }
 
   function compactReceiptImage8951(op,d){
-    const rows=(op.items||[]).map((i,n)=>'<tr><td>'+(n+1)+'</td><td><b>'+h(i.name||'Товар')+'</b></td><td>'+h(i.qty)+' '+h(i.unit||'шт')+'</td><td>'+rub(i.price)+'</td><td>'+rub(i.total)+'</td></tr>').join('');
+    const rows=window.receiptDisplay8983.rows(op).map((i,n)=>'<tr><td>'+(n+1)+'</td><td><b>'+h(i.name||'Товар')+'</b></td><td>'+h(i.qty)+' '+h(i.unit||'шт')+'</td><td>'+(i.price===null?'—':rub(i.price))+'</td><td>'+rub(i.total)+'</td></tr>').join('');
     return '<!doctype html><html lang="ru"><head><meta charset="utf-8"><style>*{box-sizing:border-box}html,body{margin:0;background:#fff}body{font-family:Arial,sans-serif;color:#111;width:820px;padding:22px;font-size:14px}h1{text-align:center;font-size:19px;margin:0 0 10px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:5px 14px;margin-bottom:9px}table{width:100%;border-collapse:collapse;margin-top:7px;table-layout:fixed}th,td{border:1px solid #222;padding:5px 6px;text-align:left;vertical-align:top}th{background:#f3f3f3;font-size:12px}th:nth-child(1){width:42px}th:nth-child(2){width:auto}th:nth-child(3){width:105px}th:nth-child(4),th:nth-child(5){width:110px}.total{text-align:right;font-size:17px;font-weight:700;margin-top:9px}.debt{text-align:right;margin-top:5px}.sign{display:flex;justify-content:space-between;margin-top:17px;padding-bottom:2px;font-size:12px}</style></head><body><h1>ТОВАРНАЯ НАКЛАДНАЯ № '+h(op.receiptNo)+' от '+h(op.date)+'</h1><div class="meta"><div><b>Поставщик:</b> ____________________</div><div><b>Покупатель:</b> '+h(d?.name||op.dealer||'')+'</div></div><table><thead><tr><th>№</th><th>Наименование</th><th>Кол-во</th><th>Цена</th><th>Сумма</th></tr></thead><tbody>'+rows+'</tbody></table><div class="total">Итого: '+rub(op.total)+'</div><div class="debt"><b>Остаток долга:</b> '+rub(debtOf(op.dealerId))+'</div><div class="sign"><span>Отпустил: ____________________</span><span>Получил: ____________________</span></div></body></html>';
   }
 
@@ -24,7 +38,7 @@
   window.showReceiptFromHistory=id=>{const op=(state.ops||[]).find(x=>String(x.id)===String(id)&&x.type==='sale'),d=op&&(state.dealers||[]).find(x=>String(x.id)===String(op.dealerId));if(!op||!d)return;const body=document.getElementById('receiptViewBody'),modal=document.getElementById('receiptViewModal');if(body)body.innerHTML=compactReceiptHtml8951(op,d);modal?.classList.remove('hidden')};
   try{showReceiptFromHistory=window.showReceiptFromHistory}catch(_){}
 
-  window.receiptText=op=>{const d=(state.dealers||[]).find(x=>String(x.id)===String(op.dealerId)),lines=['ТОВАРНАЯ НАКЛАДНАЯ № '+op.receiptNo+' от '+op.date,'Покупатель: '+(d?.name||op.dealer),''];(op.items||[]).forEach((i,n)=>lines.push((n+1)+'. '+(i.name||'Товар')+' — '+i.qty+' '+(i.unit||'шт')+' × '+rub(i.price)+' = '+rub(i.total)));lines.push('','ИТОГО: '+rub(op.total),'Остаток долга: '+rub(debtOf(op.dealerId)));return lines.join('\\n')};
+  window.receiptText=op=>{const d=(state.dealers||[]).find(x=>String(x.id)===String(op.dealerId)),lines=['ТОВАРНАЯ НАКЛАДНАЯ № '+op.receiptNo+' от '+op.date,'Покупатель: '+(d?.name||op.dealer),''];window.receiptDisplay8983.rows(op).forEach((i,n)=>lines.push((n+1)+'. '+(i.name||'Товар')+' — '+i.qty+' '+(i.unit||'шт')+' × '+(i.price===null?'—':rub(i.price))+' = '+rub(i.total)));lines.push('','ИТОГО: '+rub(op.total),'Остаток долга: '+rub(debtOf(op.dealerId)));return lines.join('\\n')};
   try{receiptText=window.receiptText}catch(_){}
 
   window.sendWhatsApp=async id=>{
