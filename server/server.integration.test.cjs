@@ -41,7 +41,7 @@ const localState=()=>({
   groups:[],ops:[],receiptStates:{},receiptItemStates:{}
 });
 
-test('8.9.63 server blocks legacy uploads and keeps master/device metadata', async t=>{
+test('shared server blocks legacy replacements and retains device metadata', async t=>{
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'uchet-server-'));
   const port=await freePort(),base='http://127.0.0.1:'+port;
   const env={...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:tmp,SYNC_TOKEN:'test-sync-key'};
@@ -57,15 +57,14 @@ test('8.9.63 server blocks legacy uploads and keeps master/device metadata', asy
   assert.match(legacy.data.message,/8\.9\.63/);
 
   const claim=await api(base,'PUT',{protocol:2,action:'claim',device:main,baseRevision:0,state:localState()});
-  assert.equal(claim.status,200);
-  assert.equal(claim.data.revision,1);
-  assert.equal(claim.data.computers.masterId,main.id);
-  assert.equal(claim.data.computers.devices[main.id].name,'Компьютер 1 · Главный');
-
+  assert.equal(claim.status,422);
+  const seeded=await api(base,'PUT',{protocol:2,action:'changes',device:main,baseRevision:0,changes:[],catalogPatch:{dealers:[{id:'1',before:null,after:localState().dealers[0]}]}});
+  assert.equal(seeded.status,200);assert.equal(seeded.data.revision,1);
+  assert.equal(seeded.data.computers.shared,true);
   const reg=await api(base,'PUT',{protocol:2,action:'register',device:worker,baseRevision:1});
   assert.equal(reg.status,200);
   assert.equal(reg.data.revision,2);
-  assert.equal(reg.data.computers.devices[worker.id].name,'Компьютер 2');
+  assert.equal(reg.data.computers.devices[worker.id].name,worker.name);
 
   const stale=await api(base,'PUT',{protocol:2,action:'register',device:worker,baseRevision:1});
   assert.equal(stale.status,409);
@@ -73,7 +72,7 @@ test('8.9.63 server blocks legacy uploads and keeps master/device metadata', asy
   const loaded=await api(base,'GET');
   assert.equal(loaded.status,200);
   assert.equal(loaded.data.state.dealers.length,1);
-  assert.equal(loaded.data.computers.masterId,main.id);
+  assert.equal(loaded.data.computers.shared,true);
   assert.equal(loaded.data.computers.devices[worker.id].ordinal,2);
 });
 
@@ -94,8 +93,7 @@ test('server accepts legacy client key through SHA-256 verifier without storing 
   assert.equal(bad.status,401);
 });
 
-
-test('first master is authoritative and orphan dealer operations are quarantined', async t=>{
+test('shared database rejects master selection without losing documents', async t=>{
   const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'uchet-server-claim-quarantine-'));
   const port=await freePort(),base='http://127.0.0.1:'+port;
   const env={...process.env,PORT:String(port),HOST:'127.0.0.1',DATA_DIR:tmp,SYNC_TOKEN:'test-sync-key'};
@@ -109,10 +107,10 @@ test('first master is authoritative and orphan dealer operations are quarantined
     {id:11,type:'sale',dealerId:999,dealer:'Удалённый дубль',total:50,receiptNo:7,items:[]}
   ];
   const claim=await api(base,'PUT',{protocol:2,action:'claim',device:main,baseRevision:0,state});
-  assert.equal(claim.status,200);
-  assert.equal(claim.data.computers.masterId,main.id);
-  assert.deepEqual(claim.data.state.ops.map(x=>x.id),[10]);
-  const disk=JSON.parse(fs.readFileSync(path.join(tmp,'state.json'),'utf8'));
-  assert.equal(disk.claimQuarantine.orphanOps.length,1);
-  assert.equal(disk.claimQuarantine.orphanOps[0].id,11);
+  assert.equal(claim.status,422);
+  const loaded=await api(base,'GET');
+  assert.equal(loaded.data.computers.shared,true);
+  assert.equal(loaded.data.revision,0);
+  assert.equal((loaded.data.state.ops||[]).length,0);
+  assert.equal(fs.existsSync(path.join(tmp,'state.json')),false);
 });

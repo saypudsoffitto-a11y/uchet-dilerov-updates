@@ -20,9 +20,10 @@
     }
     return state;
   }
-  function canonicalize(input){
+  function canonicalize(input,options={}){
+    const preserveProducts=new Set((options.preserveProductIds||[]).map(id));
     const s=clone(input);s.dealerAliases=s.dealerAliases||{};s.productAliases=s.productAliases||{};s.deletedDealers=s.deletedDealers||{};s.deletedProducts=s.deletedProducts||{};
-    s.products=(s.products||[]).filter(p=>{if(!normalize(p.name)||/^[\s\-‐‑‒–—―−_.,·•:;|/\\]+$/u.test(normalize(p.name))){s.deletedProducts[id(p.id)]=Date.now();return false;}return !s.deletedProducts[id(p.id)];});
+    s.products=(s.products||[]).filter(p=>{if(!preserveProducts.has(id(p.id))&&(!normalize(p.name)||/^[\s\-‐‑‒–—―−_.,·•:;|/\\]+$/u.test(normalize(p.name)))){s.deletedProducts[id(p.id)]=Date.now();return false;}return !s.deletedProducts[id(p.id)];});
     for(const [field,key,alias,marks] of [['dealers',dealerKey,'dealerAliases','deletedDealers'],['products',productKey,'productAliases','deletedProducts']]){
       const buckets=new Map(),removed=new Set();
       for(const row of s[field]||[]){const k=key(row);if(!k)continue;if(!buckets.has(k))buckets.set(k,[]);buckets.get(k).push(row);}
