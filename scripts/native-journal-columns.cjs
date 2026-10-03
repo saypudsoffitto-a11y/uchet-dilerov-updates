@@ -99,8 +99,13 @@ const progress=message=>{events.push({check:message});console.log(message)};
  for(const win of clients)assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');
  progress('Offline payment survived restart and was delivered exactly once');
  lostAck.add('qa-pc1');
- await evaluate(clients[0],`payDealer.value='1';payAmount.value='5';payMethod.value='Наличные';makePayment();`);await pause(1400);
- assert.equal(store.state.ops.length,4);await restartAll();lostAck.clear();await converge(80);
+ await evaluate(clients[0],`payDealer.value='1';payAmount.value='5';payMethod.value='Наличные';makePayment();`);
+ // Restart only after the server committed the PUT whose acknowledgement is lost.
+ // Fixed delays can expire before the save timer on a busy CI runner.
+ for(let attempt=0;attempt<40&&store.state.ops.length<4;attempt++){
+  await evaluate(clients[0],'window.masterSync8962.push(false)');await pause(250);
+ }
+ assert.equal(store.state.ops.length,4,'The lost-ack payment must reach the server before restart');await restartAll();lostAck.clear();await converge(80);
  assert.equal(store.state.ops.length,4);progress('Lost PUT acknowledgement followed by restart created no duplicate; debt = 80');
  await evaluate(clients[0],`closeReceiptView();go('debts');openDealer(1)`);await pause(150);
  for(let i=0;i<clients.length;i++)fs.writeFileSync(path.join(output,'pc'+(i+1)+'.png'),(await clients[i].webContents.capturePage()).toPNG());
