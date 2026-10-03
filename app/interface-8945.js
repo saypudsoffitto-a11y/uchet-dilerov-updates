@@ -103,6 +103,7 @@
       const big=summary[2].querySelector('.big');if(big){big.classList.toggle('danger',debt>0);big.classList.toggle('ok',debt<=0)}
     }
     root.querySelectorAll('.dealerHistoryDetail tbody tr').forEach(row=>{
+      if(row.dataset.documentRow)return;
       const label=row.cells?.[1]?.textContent||'',match=label.match(/Накладная\s*№\s*(.+)/i);if(!match)return;
       const receiptNo=match[1].trim();
       const op=(state.ops||[]).find(o=>o.type==='sale'&&String(o.dealerId)===String(id)&&String(o.receiptNo)===receiptNo);if(!op)return;

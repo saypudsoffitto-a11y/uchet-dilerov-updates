@@ -1,0 +1,77 @@
+/* Theme 4 follows the approved dealer-card mockup. Screen styles never enter generated JPEG/PDF templates. */
+@media screen {
+ html[data-ui-theme="dark"][data-ui-compact] {color-scheme:dark}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui {
+  --bg:#101722;--card:#182334;--text:#e4ebf5;--muted:#97a9c0;--line:#304159;
+  --ui-accent:#2563d9;--ui-soft:#21334c;--ui-border:#33445b;
+  --ui-danger:#ffadb5;--ui-danger-bg:#422936;--ui-menu-text:#dce8fa;
+  background:#101722!important;color:#e4ebf5!important;
+ }
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui nav {background:#131d2b!important;border-color:#29364a!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui header {background:#182334!important;border-color:#29364a!important;color:#e4ebf5!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui main {background:#101722!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(h1,h2,h3,h4,label,b) {color:#e4ebf5}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.muted,.navLabel,.sectionHint,.dealerMeta div,.dealerSheetMeta,.receiptEditHelp) {color:#97a9c0!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui nav button[data-section] {background:#1b283b!important;color:#c7d4e8!important;border-color:#2c3e56!important;box-shadow:none!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui nav button[data-section].active {background:#2563d9!important;color:white!important;border-color:#3578ef!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui nav svg {stroke:currentColor!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.card,.modalBox,.receipt,.dealerSheet,.dealerSummary) {background:#182334!important;border-color:#33445b!important;color:#e4ebf5!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui .modal {background:rgba(7,12,20,.6)!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui .modalBox>.actions:first-child {background:#182334!important;border-color:#304159!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(input,select,textarea) {background:#111c2b!important;border-color:#354761!important;color:#dce7f8!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(input,textarea)::placeholder {color:#91a3be!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui table {background:#182334!important;border-color:#304159!important;color:#e4ebf5!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui th {background:#202e43!important;color:#a9bbd3!important;border-color:#304159!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui td {background:transparent!important;color:#e4ebf5;border-color:#304159!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui tbody tr {background:#182334!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui tbody tr:hover {background:#21334c!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(button.secondary,button.initialDebt,.dealerPhotoUpload,.photoLabel,.statusPill,.tag) {background:#243650!important;color:#d4e1f7!important;border-color:#3a5070!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(button.primary,.primary) {background:#2563eb!important;color:white!important;border-color:#3578ef!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui .connectionIndicator {background:#23334c!important;color:#b4c9e5!important;border-color:#3a5070!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui .connectionIndicator[data-sync-state="online"] {color:#abeac5!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.danger,.dangerBtn) {color:#ffadb5!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui .dangerBtn {background:#422936!important;border-color:#754251!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui .ok {color:#9ee0bb!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui .big {color:#86b5ff!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) {background:#1e2c42!important;border:1px solid #435875!important;box-shadow:0 15px 48px #080d1688!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) button {background:transparent!important;color:#dce8fa!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) button:hover,
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) button:focus-visible {background:#2d4161!important;outline:1px solid #7396c9!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(#dealerOpMenu8967,#finalContextMenu) button.journalMenuRecorded {color:#abeac5!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(#dealerOpMenu8967,#finalContextMenu) button.journalMenuUnrecorded {color:#ffb6be!important}
+ html[data-ui-compact] body.final-ui :is(#dealerOpMenu8967,#finalContextMenu) button.journalMenuRecorded {color:#23563d}
+ html[data-ui-compact] body.final-ui :is(#dealerOpMenu8967,#finalContextMenu) button.journalMenuUnrecorded {color:#8b3041}
+ /* Entire marked rows, including hover and selected states, remain legible in every theme. */
+ html[data-ui-compact] body.final-ui table tbody tr.journal-unrecorded,
+ html[data-ui-compact] body.final-ui table tbody tr.journal-unrecorded:hover {background:#f6d8dd!important}
+ html[data-ui-compact] body.final-ui table tbody tr.journal-recorded,
+ html[data-ui-compact] body.final-ui table tbody tr.journal-recorded:hover {background:#d8eee0!important}
+ html[data-ui-compact] body.final-ui table tbody tr.journal-unrecorded :is(td,td b,td .muted) {background:transparent!important;color:#6c2736!important}
+ html[data-ui-compact] body.final-ui table tbody tr.journal-recorded :is(td,td b,td .muted) {background:transparent!important;color:#23563d!important}
+ body.final-ui table[data-column-layout] {table-layout:fixed!important;max-width:none!important;min-width:0!important}
+ body.final-ui table[data-column-layout] :is(th,td) {box-sizing:border-box;overflow-wrap:anywhere;overflow:hidden}
+ body.final-ui table[data-column-layout] th {position:relative;cursor:grab;user-select:none;padding-right:12px!important}
+ body.final-ui table[data-column-layout] .colResize {position:absolute;right:0;top:0;width:8px;height:100%;z-index:4;cursor:col-resize;touch-action:none}
+ body.final-ui table[data-column-layout] .colResize:hover {background:#5189db66}
+ body.final-ui table[data-column-layout] input {max-width:100%!important;min-width:0!important;box-sizing:border-box}
+ body.final-ui :is(.tableWrap,.paymentTableWrap,.receipt) {overflow-x:auto!important}
+ body.final-ui .journalValue {white-space:normal!important}
+}
+@media print {
+ .colResize {display:none!important}
+ table[data-column-layout] {width:100%!important;table-layout:auto!important}
+ table[data-column-layout] :is(th,td) {width:auto!important;min-width:0!important;max-width:none!important}
+}
+@media screen {
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModal .modalBox {padding:18px!important;width:1100px!important;max-width:calc(100vw - 48px)!important;max-height:94vh!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModal .modalBox>.actions:first-child {padding:0 0 12px!important;position:static!important;border-bottom:1px solid #304159!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody .dealerSummary {padding:14px!important;min-height:0!important;margin:0 0 12px!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody .grid {margin:12px 0!important;gap:10px!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody .card {padding:12px!important;min-height:0!important;margin-bottom:0!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody .big {font-size:24px!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody .actions {margin:10px 0!important;gap:8px!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody h3 {font-size:16px!important;margin:8px 0!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody>br {display:none!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody .dealerHistoryDetail td {padding:6px 8px!important}
+ html[data-ui-theme="dark"][data-ui-compact] body.final-ui #dealerModalBody label {background:#243650!important;color:#d4e1f7!important}
+}

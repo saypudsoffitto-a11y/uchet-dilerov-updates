@@ -57,6 +57,26 @@
     const a=new Map((base||[]).map(o=>[id(o.id),o])),b=new Map((current||[]).map(o=>[id(o.id),o]));
     return [...new Set([...a.keys(),...b.keys()])].filter(k=>!same(a.get(k),b.get(k))).map(k=>({id:k,before:a.get(k)||null,after:b.get(k)||null}));
   }
+  // Rebase only the new journal field against an independent receipt edit.
+  // Concurrent financial edits, deletions and conflicting journal choices retain strict CAS.
+  function rebaseJournalChanges(state,changes){
+    const ops=new Map((state.ops||[]).map(o=>[id(o.id),o]));
+    return (changes||[]).map(change=>{
+      const current=ops.get(change.id),before=change.before,after=change.after;
+      if(!current||!before||!after||current.type!=='sale'||before.type!=='sale'||after.type!=='sale'||same(current,before)||same(current,after))return change;
+      const withoutJournal=o=>{const value=clone(o);delete value.journalStatus;return value};
+      const localJournalOnly=same(withoutJournal(before),withoutJournal(after));
+      const remoteJournalOnly=same(withoutJournal(before),withoutJournal(current));
+      const localJournalChanged=!same(before.journalStatus,after.journalStatus);
+      const remoteJournalChanged=!same(before.journalStatus,current.journalStatus);
+      if(!(localJournalOnly||remoteJournalOnly)||!localJournalChanged&&!remoteJournalChanged)return change;
+      if(localJournalChanged&&remoteJournalChanged&&!same(after.journalStatus,current.journalStatus))return change;
+      const merged=clone(localJournalOnly?current:after);
+      const source=localJournalChanged?after:current;
+      if(Object.hasOwn(source,'journalStatus'))merged.journalStatus=source.journalStatus;else delete merged.journalStatus;
+      return {...change,before:clone(current),after:merged};
+    });
+  }
   function applyOps(state,changes){
     const out=clone(state),map=new Map((out.ops||[]).map(o=>[id(o.id),o]));
     for(const change of changes||[]){
@@ -147,5 +167,5 @@
     }
     return canonicalize(next);
   }
-  return {clone,same,normalize,phone,id,catalogFields,catalog,definitions,canonicalize,remap,diffOps,applyOps,applyCatalog,dealerKey,productKey,diffArchives,applyTransaction,quantities,warehouseTypes,enableInventory,recalcInventory,inventoryHistory,sameGroup};
+  return {clone,same,normalize,phone,id,catalogFields,catalog,definitions,canonicalize,remap,diffOps,rebaseJournalChanges,applyOps,applyCatalog,dealerKey,productKey,diffArchives,applyTransaction,quantities,warehouseTypes,enableInventory,recalcInventory,inventoryHistory,sameGroup};
 });

@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="receipt-display-8983.js"></script>
+<script src="receipt-journal.js"></script>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Учёт дилеров</title>
 <style>
@@ -137,6 +138,7 @@ th[draggable="true"]{cursor:grab;user-select:none;position:relative}.colResize{p
 <link rel="stylesheet" href="interface-8967.css">
 <link rel="stylesheet" href="interface-8968.css">
 <link rel="stylesheet" href="ui-theme.css">
+<link rel="stylesheet" href="interface-8984.css">
 <script src="ui-theme.js"></script>
 </head>
 <body>
@@ -603,7 +605,7 @@ function dealerHistoryRows(ops,d){
 function openDealer(id){let d=state.dealers.find(x=>x.id==id);if(!d)return;modalTitle.textContent=d.name;let ops=state.ops.filter(o=>o.dealerId==id).slice().sort((a,b)=>opTime(b)-opTime(a));let avatar=d.photo?'<img class="dealerAvatar" src="'+d.photo+'">':'<div class="dealerAvatar dealerAvatarPlaceholder">👤</div>';let html='<div class="card dealerSummary">'+avatar+'<div class="dealerMeta"><b>'+esc(d.name)+'</b><div>'+esc(d.phone||'Телефон не указан')+'</div><div>'+esc(d.city||'')+(d.company?' · '+esc(d.company):'')+'</div></div><div class="actions"><button class="secondary" onclick="toggleDealerEdit('+d.id+')">Изменить карточку</button><label class="btn secondary">Фото / логотип<input type="file" accept="image/*" style="display:none" onchange="saveDealerPhoto('+d.id+',event)"></label></div></div><br>';
 html+='<div id="dealerEditPanel" class="card form hidden"><label>Имя / название<input id="dealerEditName" value="'+esc(d.name)+'"></label><label>Телефон<input id="dealerEditPhone" value="'+esc(d.phone||'')+'"></label><label>Город<input id="dealerEditCity" value="'+esc(d.city||'')+'"></label><label>Компания<input id="dealerEditCompany" value="'+esc(d.company||'')+'"></label><label>ФИО<input id="dealerEditFio" value="'+esc(d.fio||'')+'"></label><label>Адрес<input id="dealerEditAddress" value="'+esc(d.address||'')+'"></label><label>E-mail<input id="dealerEditEmail" value="'+esc(d.email||'')+'"></label><label>Сайт<input id="dealerEditWww" value="'+esc(d.www||'')+'"></label><label>Группа клиента<input id="dealerEditGroup" value="'+esc(d.clientGroup||'')+'"></label><label>Способ оплаты<input id="dealerEditPay" value="'+esc(d.paymentMethod||'')+'"></label><label>Способ отгрузки<input id="dealerEditShip" value="'+esc(d.shippingMethod||'')+'"></label><label>Примечание<input id="dealerEditNote" value="'+esc(d.note||'')+'"></label><div class="full actions"><button class="primary" onclick="saveDealerEdit('+d.id+')">Сохранить карточку</button><button class="secondary" onclick="toggleDealerEdit('+d.id+',false)">Отмена</button></div></div><br>';
 html+='<div class="grid" style="grid-template-columns:repeat(3,1fr)"><div class="card">Продажи<div class="big">'+money(salesOf(id))+'</div></div><div class="card">Оплачено<div class="big ok">'+money(paidOf(id))+'</div></div><div class="card">Долг<div class="big danger">'+money(debtOf(id))+'</div><div class="muted" style="margin-top:6px">Начальный долг: '+money(initialDebtOf(id))+'</div></div></div><br>';
-html+='<div class="actions"><button class="initialDebt" onclick="addInitialDebt('+d.id+')">＋ Внести начальный долг</button><button class="secondary" onclick="showDebtReport('+d.id+')">Отчёт по долгу</button></div><br><h3>Все покупки, чеки и оплаты</h3><div class="tableWrap"><table class="historyGrid dealerHistoryDetail"><thead><tr><th>Дата</th><th>Тип / документ</th><th>Описание</th><th>Сумма</th><th>Действие</th></tr></thead><tbody>'+dealerHistoryRows(ops,d)+'</tbody></table></div>';dealerModalBody.innerHTML=html;dealerModal.classList.remove('hidden')}
+html+='<div class="actions"><button class="initialDebt" onclick="addInitialDebt('+d.id+')">＋ Внести начальный долг</button><button class="secondary" onclick="showDebtReport('+d.id+')">Отчёт по долгу</button></div><br><h3>Все покупки, чеки и оплаты</h3><div class="tableWrap"><table class="historyGrid dealerHistoryDetail"><thead><tr><th>Дата</th><th>Тип / документ</th><th>Описание</th><th>Сумма</th><th>Журнал</th><th>Действие</th></tr></thead><tbody>'+dealerHistoryRows(ops,d)+'</tbody></table></div>';dealerModalBody.innerHTML=html;dealerModal.classList.remove('hidden')}
 function toggleDealerEdit(id,force){let el=document.getElementById('dealerEditPanel');if(!el)return;let show=force===undefined?el.classList.contains('hidden'):!!force;el.classList.toggle('hidden',!show);if(show)setTimeout(()=>dealerEditName.focus(),50)}
 async function saveDealerPhoto(id,e){let d=state.dealers.find(x=>x.id==id),f=e&&e.target&&e.target.files&&e.target.files[0];if(!d||!f)return;try{d.photo=await imageToDataURL(f);save();openDealer(id)}catch(_){alert('Не удалось сохранить изображение')}}
 let initialDebtDealerId=null;
@@ -741,39 +743,8 @@ async function autoImportBundledStockOnce(){
   }catch(e){console.error('Stock auto import',e)}
 }
 
-function tableStorageKey(table){return 'uchet_columns_'+(table.dataset.tableKey||'')}
-function widthStorageKey(table){return 'uchet_widths_'+(table.dataset.tableKey||'')}
-function setColumnWidth(table,key,w){w=Math.max(24,Math.round(+w||24));let th=[...table.querySelectorAll('thead th')].find(x=>x.dataset.colKey===key);if(th){th.style.width=w+'px';th.style.minWidth=w+'px';th.style.maxWidth=w+'px'}table.querySelectorAll('tbody tr').forEach(row=>{assignOriginalCellKeys(table,row);let td=[...row.children].find(x=>x.dataset.colKey===key);if(td){td.style.width=w+'px';td.style.minWidth=w+'px';td.style.maxWidth=w+'px'}})}
-function syncTableWidth(table){if(!table.classList.contains('productTable'))return;let total=[...table.querySelectorAll('thead th')].reduce((sum,x)=>sum+Math.round(x.getBoundingClientRect().width),0);if(total>0)table.style.width=Math.max(total,420)+'px'}
-function loadColumnWidths(table){let w={};try{w=JSON.parse(localStorage.getItem(widthStorageKey(table))||'{}')||{}}catch(_){};[...table.querySelectorAll('thead th')].forEach(th=>{let v=+w[th.dataset.colKey];if(v>=24)setColumnWidth(table,th.dataset.colKey,v)});syncTableWidth(table)}
-function setupColumnResize(table,th){if(th.querySelector('.colResize'))return;let h=document.createElement('span');h.className='colResize';h.title='Потяни, чтобы изменить ширину';h.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();th.draggable=false;document.body.classList.add('resizingCol');let start=e.clientX,startW=th.getBoundingClientRect().width,key=th.dataset.colKey;let move=ev=>{let w=Math.max(24,Math.round(startW+ev.clientX-start));setColumnWidth(table,key,w);syncTableWidth(table)};let up=()=>{document.removeEventListener('pointermove',move,true);document.removeEventListener('pointerup',up,true);document.body.classList.remove('resizingCol');th.draggable=true;let all={};[...table.querySelectorAll('thead th')].forEach(x=>all[x.dataset.colKey]=Math.round(x.getBoundingClientRect().width));localStorage.setItem(widthStorageKey(table),JSON.stringify(all));syncTableWidth(table)};document.addEventListener('pointermove',move,true);document.addEventListener('pointerup',up,true)});th.appendChild(h)}
-function setupReorderableTables(){
-  document.querySelectorAll('main table').forEach((table,ti)=>{
-    if(table.dataset.reorderReady)return;
-    const section=table.closest('section');table.dataset.tableKey=(section?section.id:'table')+'_'+ti;table.dataset.reorderReady='1';
-    const ths=[...table.querySelectorAll('thead th')];
-    const keys=ths.map((th,i)=>{let key=(th.textContent.trim()||'col'+i).replace(/\s+/g,'_')+'_'+i;th.dataset.colKey=key;th.draggable=true;return key});
-    table.dataset.originalKeys=JSON.stringify(keys);
-    ths.forEach(th=>{setupColumnResize(table,th);
-      th.addEventListener('dragstart',e=>{th.classList.add('dragging');e.dataTransfer.setData('text/plain',th.dataset.colKey)});
-      th.addEventListener('dragend',()=>{th.classList.remove('dragging');table.querySelectorAll('th').forEach(x=>x.classList.remove('dragOver'))});
-      th.addEventListener('dragover',e=>{e.preventDefault();th.classList.add('dragOver')});
-      th.addEventListener('dragleave',()=>th.classList.remove('dragOver'));
-      th.addEventListener('drop',e=>{e.preventDefault();th.classList.remove('dragOver');let src=e.dataTransfer.getData('text/plain'),dst=th.dataset.colKey;if(!src||src===dst)return;let order=currentColumnOrder(table),a=order.indexOf(src),b=order.indexOf(dst);if(a<0||b<0)return;order.splice(a,1);order.splice(b,0,src);localStorage.setItem(tableStorageKey(table),JSON.stringify(order));applyColumnOrder(table,order)});
-    });
-    new MutationObserver(()=>applyStoredColumnOrder(table)).observe(table.querySelector('tbody'),{childList:true});
-    applyStoredColumnOrder(table);loadColumnWidths(table);
-  });
-}
-function currentColumnOrder(table){return [...table.querySelectorAll('thead th')].map(x=>x.dataset.colKey)}
-function assignOriginalCellKeys(table,row){let keys=JSON.parse(table.dataset.originalKeys||'[]');[...row.children].forEach((td,i)=>{if(!td.dataset.colKey)td.dataset.colKey=keys[i]||('col_'+i)})}
-function applyColumnOrder(table,order){
-  let head=table.querySelector('thead tr');if(!head)return;
-  let hmap=new Map([...head.children].map(x=>[x.dataset.colKey,x]));order.forEach(k=>{if(hmap.get(k))head.appendChild(hmap.get(k))});
-  table.querySelectorAll('tbody tr').forEach(row=>{assignOriginalCellKeys(table,row);let map=new Map([...row.children].map(x=>[x.dataset.colKey,x]));order.forEach(k=>{if(map.get(k))row.appendChild(map.get(k))})});
-}
-function applyStoredColumnOrder(table){let order;try{order=JSON.parse(localStorage.getItem(tableStorageKey(table))||'null')}catch(_){order=null}if(!Array.isArray(order))order=currentColumnOrder(table);applyColumnOrder(table,order)}
-function applyStoredColumnOrders(){document.querySelectorAll('main table[data-reorder-ready]').forEach(table=>{applyStoredColumnOrder(table);loadColumnWidths(table)})}
+function setupReorderableTables(){window.tableLayout?.scan()}
+function applyStoredColumnOrders(){window.tableLayout?.scan()}
 function focusFirstRow(tbody){let row=tbody&&tbody.querySelector('tr');if(!row)return;document.querySelectorAll('.searchHit').forEach(x=>x.classList.remove('searchHit'));row.classList.add('searchHit');row.tabIndex=-1;row.focus({preventScroll:true});row.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(()=>row.classList.remove('searchHit'),1800)}
 function activeSectionId(){let s=[...document.querySelectorAll('main>section')].find(x=>!x.classList.contains('hidden'));return s&&s.id}
 function setupQuickKeyboardSearch(){const map={dealers:'dealerSearch',debts:'debtSearch',products:'productListSearch',payments:'paymentDealerSearch'};document.addEventListener('keydown',e=>{if(e.ctrlKey||e.metaKey||e.altKey||e.key.length!==1)return;let t=e.target;if(t&&(t.matches('input,textarea,select')||t.isContentEditable))return;if(document.querySelector('.modal:not(.hidden)'))return;let iid=map[activeSectionId()];if(!iid)return;let inp=document.getElementById(iid);if(!inp||inp.closest('.hidden'))return;e.preventDefault();inp.focus();inp.value+=e.key;inp.dispatchEvent(new Event('input',{bubbles:true}))},true)}
@@ -859,5 +830,6 @@ if(window.newmatrosAPI&&window.newmatrosAPI.setWatch){state.newmatros.watching=t
 </script>
 <script src="warehouse-ui.js"></script>
 <script src="final-interface.js"></script>
+<script src="table-layout.js"></script>
 </body>
 </html>

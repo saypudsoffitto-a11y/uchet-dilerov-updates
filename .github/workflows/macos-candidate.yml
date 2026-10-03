@@ -41,6 +41,9 @@ jobs:
           GITHUB_TOKEN: ''
         run: npm run build:mac -- --publish never
 
+      - name: Verify journal and table layout across three native clients
+        run: node app/node_modules/electron/cli.js scripts/native-journal-columns.cjs
+
       - name: Verify Apple Silicon artifacts
         shell: bash
         run: |
