@@ -61,6 +61,7 @@ const progress=message=>{events.push({check:message});console.log(message)};
  const receiptId=store.state.ops.find(o=>o.type==='sale').id;
  assert.equal(store.state.ops[0].journalStatus,undefined);
  await evaluate(clients[0],`go('debts');openDealer(1);document.querySelector('[data-op-id="${receiptId}"]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:700,clientY:400}));`);
+ assert.equal(await evaluate(clients[0],`document.querySelector('[data-op-id="${receiptId}"]').dataset.receiptId`),String(receiptId));
  assert.deepEqual(await evaluate(clients[0],`[...document.querySelectorAll('#finalContextMenu button')].map(b=>b.textContent).filter(s=>s.includes('журнал'))`),['Внесено в журнал','Не внесено в журнал']);
  await evaluate(clients[0],`[...document.querySelectorAll('#finalContextMenu button')].find(b=>b.textContent==='Не внесено в журнал').click()`);
  await pause(1000);await converge(120);
