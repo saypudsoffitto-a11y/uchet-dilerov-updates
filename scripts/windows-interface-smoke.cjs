@@ -46,11 +46,13 @@ async function main(){
         const m=JSON.parse(e.data);
         if(m.id!==id)return;
         socket.removeEventListener('message',handler);
-        if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));
+        if(m.error)reject(Error(JSON.stringify(m.error)));
+        else if(m.result?.exceptionDetails)reject(Error(JSON.stringify(m.result.exceptionDetails)));
         else resolve(m.result?.result?.value);
       };
       socket.addEventListener('message',handler);
-      socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression,returnByValue:true,awaitPromise:true}}));
+      // Keep async evaluations reachable while CDP awaits WebCrypto and IPC.
+      socket.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression:`(window.__qaWindowsEvaluation = (${expression}))`,returnByValue:true,awaitPromise:true}}));
     });
 
     let ready;
