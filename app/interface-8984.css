@@ -37,17 +37,12 @@
  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) button {background:transparent!important;color:#dce8fa!important}
  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) button:hover,
  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) button:focus-visible {background:#2d4161!important;outline:1px solid #7396c9!important}
- html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(#dealerOpMenu8967,#finalContextMenu) button.journalMenuRecorded {color:#abeac5!important}
  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(#dealerOpMenu8967,#finalContextMenu) button.journalMenuUnrecorded {color:#ffb6be!important}
- html[data-ui-compact] body.final-ui :is(#dealerOpMenu8967,#finalContextMenu) button.journalMenuRecorded {color:#23563d}
  html[data-ui-compact] body.final-ui :is(#dealerOpMenu8967,#finalContextMenu) button.journalMenuUnrecorded {color:#8b3041}
  /* Entire marked rows, including hover and selected states, remain legible in every theme. */
  html[data-ui-compact] body.final-ui table tbody tr.journal-unrecorded,
  html[data-ui-compact] body.final-ui table tbody tr.journal-unrecorded:hover {background:#f6d8dd!important}
- html[data-ui-compact] body.final-ui table tbody tr.journal-recorded,
- html[data-ui-compact] body.final-ui table tbody tr.journal-recorded:hover {background:#d8eee0!important}
  html[data-ui-compact] body.final-ui table tbody tr.journal-unrecorded :is(td,td b,td .muted) {background:transparent!important;color:#6c2736!important}
- html[data-ui-compact] body.final-ui table tbody tr.journal-recorded :is(td,td b,td .muted) {background:transparent!important;color:#23563d!important}
  body.final-ui table[data-column-layout] {table-layout:fixed!important;max-width:none!important;min-width:0!important}
  body.final-ui table[data-column-layout] :is(th,td) {box-sizing:border-box;overflow-wrap:anywhere;overflow:hidden}
  body.final-ui table[data-column-layout] th {position:relative;cursor:grab;user-select:none;padding-right:12px!important}
@@ -55,7 +50,6 @@
  body.final-ui table[data-column-layout] .colResize:hover {background:#5189db66}
  body.final-ui table[data-column-layout] input {max-width:100%!important;min-width:0!important;box-sizing:border-box}
  body.final-ui :is(.tableWrap,.paymentTableWrap,.receipt) {overflow-x:auto!important}
- body.final-ui .journalValue {white-space:normal!important}
 }
 @media print {
  .colResize {display:none!important}

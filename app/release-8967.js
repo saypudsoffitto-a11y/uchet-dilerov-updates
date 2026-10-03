@@ -49,9 +49,9 @@
     const d=dealerById(dealerId),ui=historySetup8967();if(!d||!ui)return renderHistoryDealers8967();
     historyDealer8967=d.id;
     ui.bar.innerHTML='<div><button class="secondary miniBtn" type="button" onclick="backHistoryDealers8967()">← К списку дилеров</button><b>'+h(d.name||'')+'</b></div><span class="muted">Двойной клик по накладной — открыть готовый чек</span>';
-    const head=ui.table.querySelector('thead tr');if(head)head.innerHTML='<th>Дата</th><th>Накладная</th><th>Позиций</th><th>Сумма</th><th>Журнал</th><th>Действие</th>';
+    const head=ui.table.querySelector('thead tr');if(head)head.innerHTML='<th>Дата</th><th>Накладная</th><th>Позиций</th><th>Сумма</th><th>Действие</th>';
     const body=document.getElementById('historyRows'),sales=historySales8967(d.id);
-    if(body)body.innerHTML=sales.map(o=>'<tr data-op-id="'+h(o.id)+'" data-receipt-id="'+h(o.id)+'" class="clickable historyReceiptRow8967'+window.receiptJournal.rowClass(o)+'" oncontextmenu="showDealerOpMenu8967(event,'+Number(o.id)+','+Number(d.id)+')" tabindex="0" ondblclick="showReceiptFromHistory('+Number(o.id)+')" onkeydown="if(event.key===&quot;Enter&quot;)showReceiptFromHistory('+Number(o.id)+')"><td>'+h(o.date||'')+'</td><td>Накладная № '+h(o.receiptNo||'')+'</td><td>'+((o.items||[]).length)+'</td><td>'+rub(o.total)+'</td>'+window.receiptJournal.cell(o)+'<td><button class="secondary miniBtn" type="button" onclick="event.stopPropagation();showReceiptFromHistory('+Number(o.id)+')">Открыть чек</button></td></tr>').join('');
+    if(body)body.innerHTML=sales.map(o=>'<tr data-op-id="'+h(o.id)+'" data-receipt-id="'+h(o.id)+'" class="clickable historyReceiptRow8967'+window.receiptJournal.rowClass(o)+'" oncontextmenu="showDealerOpMenu8967(event,'+Number(o.id)+','+Number(d.id)+')" tabindex="0" ondblclick="showReceiptFromHistory('+Number(o.id)+')" onkeydown="if(event.key===&quot;Enter&quot;)showReceiptFromHistory('+Number(o.id)+')"><td>'+h(o.date||'')+'</td><td>Накладная № '+h(o.receiptNo||'')+'</td><td>'+((o.items||[]).length)+'</td><td>'+rub(o.total)+'</td><td><button class="secondary miniBtn" type="button" onclick="event.stopPropagation();showReceiptFromHistory('+Number(o.id)+')">Открыть чек</button></td></tr>').join('');
   }
   window.openHistoryDealer8967=id=>renderHistoryDealerReceipts8967(id);
   window.backHistoryDealers8967=()=>renderHistoryDealers8967();
@@ -88,10 +88,10 @@
   function dealerHistoryRows8967(ops,d){
     return (ops||[]).map(o=>{
       const common=(o.type==='sale'?' data-receipt-id="'+h(o.id)+'"':'')+' data-document-row="true" data-op-id="'+h(o.id)+'" data-op-type="'+h(o.type||'')+'" oncontextmenu="showDealerOpMenu8967(event,'+Number(o.id)+','+Number(d.id)+')"';
-      if(o.type==='sale')return '<tr class="clickable'+window.receiptJournal.rowClass(o)+'"'+common+' ondblclick="showReceiptFromHistory('+Number(o.id)+')"><td>'+h(o.date||'')+'</td><td>Накладная № '+h(o.receiptNo||'')+'</td><td>'+((o.items||[]).length)+' поз.</td><td>'+rub(o.total)+'</td>'+window.receiptJournal.cell(o)+'<td><button class="secondary miniBtn" type="button" onclick="showReceiptFromHistory('+Number(o.id)+')">Открыть чек</button></td></tr>';
-      if(o.type==='payment')return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>Оплата</td><td>'+h(o.method||'Оплата')+(o.note?' · '+h(o.note):'')+'</td><td>'+rub(o.total)+'</td><td>—</td><td><button class="secondary miniBtn" type="button" onclick="showDebtReport('+Number(d.id)+','+Number(o.id)+')">Отчёт по долгу</button></td></tr>';
-      if(o.type==='initial_debt')return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>Начальный долг</td><td>'+h(o.note||'Перенесено из прежнего учёта')+'</td><td>'+rub(o.total)+'</td><td>—</td><td></td></tr>';
-      return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>'+h(o.type||'Операция')+'</td><td>'+h(o.note||'')+'</td><td>'+rub(o.total)+'</td><td>—</td><td></td></tr>';
+      if(o.type==='sale')return '<tr class="clickable'+window.receiptJournal.rowClass(o)+'"'+common+' ondblclick="showReceiptFromHistory('+Number(o.id)+')"><td>'+h(o.date||'')+'</td><td>Накладная № '+h(o.receiptNo||'')+'</td><td>'+((o.items||[]).length)+' поз.</td><td>'+rub(o.total)+'</td><td><button class="secondary miniBtn" type="button" onclick="showReceiptFromHistory('+Number(o.id)+')">Открыть чек</button></td></tr>';
+      if(o.type==='payment')return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>Оплата</td><td>'+h(o.method||'Оплата')+(o.note?' · '+h(o.note):'')+'</td><td>'+rub(o.total)+'</td><td><button class="secondary miniBtn" type="button" onclick="showDebtReport('+Number(d.id)+','+Number(o.id)+')">Отчёт по долгу</button></td></tr>';
+      if(o.type==='initial_debt')return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>Начальный долг</td><td>'+h(o.note||'Перенесено из прежнего учёта')+'</td><td>'+rub(o.total)+'</td><td></td></tr>';
+      return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>'+h(o.type||'Операция')+'</td><td>'+h(o.note||'')+'</td><td>'+rub(o.total)+'</td><td></td></tr>';
     }).join('');
   }
   window.dealerHistoryRows=dealerHistoryRows8967;

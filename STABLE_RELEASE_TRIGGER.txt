@@ -1,1 +1,1 @@
-Release 8.9.84: receipt journal, approved dark theme 4 and movable/resizable table columns.
+Release 8.9.85: manual receipt journal flags, red-only receipt and home dealer rows, no journal column.

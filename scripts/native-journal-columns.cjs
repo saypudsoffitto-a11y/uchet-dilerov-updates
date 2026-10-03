@@ -52,7 +52,17 @@ const progress=message=>{events.push({check:message});console.log(message)};
    for(let attempt=0;attempt<20&&!received;attempt++){received=await evaluate(win,'window.masterSync8962.pull(false)');if(!received)await pause(200);}
    assert.equal(received,true,await evaluate(win,'document.getElementById("syncStatus").textContent'));await pause(450);
   }
-  for(const win of clients){const value=await evaluate(win,'({debt:debtOf(1),ids:state.ops.map(o=>o.id),status:document.getElementById("syncStatus").dataset.syncState})');assert.equal(value.debt,debt);assert.equal(new Set(value.ids).size,value.ids.length);assert.equal(value.status,'online');}
+  for(const win of clients){
+   let value;
+   // Startup exchanges and periodic requests can still be completing after a pull.
+   // Wait for the observable connected state, while retaining a bounded failure.
+   for(let attempt=0;attempt<20;attempt++){
+    value=await evaluate(win,'({debt:debtOf(1),ids:state.ops.map(o=>o.id),status:document.getElementById("syncStatus").dataset.syncState,message:document.getElementById("syncStatus").textContent})');
+    if(value.status==='online'&&value.debt===debt)break;
+    await evaluate(win,'window.masterSync8962.pull(false)');await pause(250);
+   }
+   assert.equal(value.debt,debt);assert.equal(new Set(value.ids).size,value.ids.length);assert.equal(value.status,'online',value.message);
+  }
  }
  await converge(0);
  await evaluate(clients[0],`selectSaleDealer(1);cart=[{productId:1,name:'Тестовый товар',qty:1,price:120,buyPrice:70,total:120,profit:50,unit:'шт'}];saveSale();`);
@@ -60,17 +70,34 @@ const progress=message=>{events.push({check:message});console.log(message)};
 
  const receiptId=store.state.ops.find(o=>o.type==='sale').id;
  assert.equal(store.state.ops[0].journalStatus,undefined);
- await evaluate(clients[0],`go('debts');openDealer(1);document.querySelector('[data-op-id="${receiptId}"]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:700,clientY:400}));`);
- assert.equal(await evaluate(clients[0],`document.querySelector('[data-op-id="${receiptId}"]').dataset.receiptId`),String(receiptId));
- assert.deepEqual(await evaluate(clients[0],`[...document.querySelectorAll('#finalContextMenu button')].map(b=>b.textContent).filter(s=>s.includes('журнал'))`),['Внесено в журнал','Не внесено в журнал']);
- await evaluate(clients[0],`[...document.querySelectorAll('#finalContextMenu button')].find(b=>b.textContent==='Не внесено в журнал').click()`);
- await pause(1000);await converge(120);
- for(const win of clients)assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');
- assert.equal(await evaluate(clients[0],`getComputedStyle(document.querySelector('[data-op-id="${receiptId}"]')).backgroundColor`),'rgb(246, 216, 221)');
- await evaluate(clients[1],`window.receiptJournal.set(${receiptId},'recorded')`);await pause(1000);await converge(120);
- for(const win of clients)assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'recorded');
- assert.equal(await evaluate(clients[0],`getComputedStyle(document.querySelector('[data-op-id="${receiptId}"]')).backgroundColor`),'rgb(216, 238, 224)');
- progress('Right-click journal choices update all three real renderers; amounts and debt remain 120');
+ async function journalAppearance(win){
+  return evaluate(win,`(()=>{closeDealerModal();go('home');renderHomeDashboard();const dealer=document.querySelector('#homeDealerRows tr[data-dealer-id="1"]');const home={marked:dealer.classList.contains('journal-unrecorded'),color:getComputedStyle(dealer).backgroundColor};dealer.click();const row=document.querySelector('#dealerModalBody [data-op-id="${receiptId}"]'),table=row.closest('table');return {home,receipt:{marked:row.classList.contains('journal-unrecorded'),green:row.classList.contains('journal-recorded'),color:getComputedStyle(row).backgroundColor},headers:[...table.tHead.rows[0].cells].map(c=>c.textContent.trim()),cells:row.cells.length}})()`);
+ }
+ const ordinary=await journalAppearance(clients[0]);
+ assert.equal(ordinary.home.marked,false);assert.equal(ordinary.receipt.marked,false);assert.equal(ordinary.receipt.green,false);
+ assert.equal(ordinary.headers.includes('Журнал'),false);assert.equal(ordinary.cells,5);assert.equal(ordinary.headers.length,5);
+ async function chooseJournal(win,label){
+  await evaluate(win,`document.querySelector('#dealerModalBody [data-op-id="${receiptId}"]').dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,clientX:700,clientY:400}));`);
+  assert.equal(await evaluate(win,`document.querySelector('[data-op-id="${receiptId}"]').dataset.receiptId`),String(receiptId));
+  assert.deepEqual(await evaluate(win,`[...document.querySelectorAll('#finalContextMenu button')].map(b=>b.textContent).filter(s=>s.includes('журнал'))`),['Внесено в журнал','Не внесено в журнал']);
+  await evaluate(win,`[...document.querySelectorAll('#finalContextMenu button')].find(b=>b.textContent===${JSON.stringify(label)}).click()`);
+ }
+ await chooseJournal(clients[0],'Не внесено в журнал');await pause(1000);await converge(120);
+ for(const win of clients){
+  assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');
+  const appearance=await journalAppearance(win);assert.equal(appearance.home.marked,true);assert.equal(appearance.home.color,'rgb(246, 216, 221)');assert.equal(appearance.receipt.color,'rgb(246, 216, 221)');
+ }
+ fs.writeFileSync(path.join(output,'journal-red-home.png'),(await clients[0].webContents.capturePage()).toPNG());
+ await chooseJournal(clients[0],'Внесено в журнал');await pause(1000);await converge(120);
+ for(const win of clients){
+  assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'recorded');
+  assert.deepEqual(await journalAppearance(win),ordinary);
+ }
+ // History uses the same receipt identity and five-column schema.
+ await evaluate(clients[0],`closeDealerModal();go('history');openHistoryDealer8967(1)`);
+ assert.equal(await evaluate(clients[0],`document.querySelector('#historyRows [data-op-id="${receiptId}"]').cells.length`),5);
+ assert.equal(await evaluate(clients[0],`document.querySelector('#historyRows [data-op-id="${receiptId}"]').classList.contains('journal-recorded')`),false);
+ progress('Full right-click scenario passed on three clients: red receipt and home dealer, then both return to their original appearance without a journal column or green highlight');
  await evaluate(clients[0],`go('settings');uiThemeSelect.value='dark';uiThemeSelect.dispatchEvent(new Event('change',{bubbles:true}));showReceiptFromHistory(${receiptId});`);await pause(150);
  const moved=await evaluate(clients[0],`(()=>{const table=document.querySelector('#receiptViewBody .receipt table');const th=[...table.tHead.rows[0].cells],name=th.find(h=>h.textContent.includes('Наименование')),price=th.find(h=>h.textContent==='Цена');const dt=new DataTransfer();name.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:dt}));price.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:dt}));return [...table.tHead.rows[0].cells].map(h=>h.textContent)})()`);
  assert.ok(moved.indexOf('Наименование')>moved.indexOf('Цена'));
@@ -94,7 +121,7 @@ const progress=message=>{events.push({check:message});console.log(message)};
  }
  await restartAll();await converge(95);progress('All three profiles reopened with the same receipt, payment and debt');
  assert.equal(await evaluate(clients[0],`document.documentElement.dataset.uiTheme`),'dark');
- for(const win of clients)assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'recorded');
+ for(const win of clients){assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'recorded');const appearance=await journalAppearance(win);assert.equal(appearance.home.marked,false);assert.equal(appearance.receipt.marked,false);assert.equal(appearance.receipt.green,false);}
  await evaluate(clients[0],`showReceiptFromHistory(${receiptId})`);await pause(100);
  assert.deepEqual(await evaluate(clients[0],`[...document.querySelector('#receiptViewBody .receipt table').tHead.rows[0].cells].map(h=>h.textContent)`),layout.headers);
  assert.equal(await evaluate(clients[0],`parseFloat([...document.querySelector('#receiptViewBody .receipt table').tHead.rows[0].cells].find(h=>h.textContent==='Наименование').style.width)`),layout.width);
@@ -106,7 +133,7 @@ const progress=message=>{events.push({check:message});console.log(message)};
  assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  await restartAll();assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  offline.clear();await converge(85);
- for(const win of clients)assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');
+ for(const win of clients){assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');const appearance=await journalAppearance(win);assert.equal(appearance.home.color,'rgb(246, 216, 221)');assert.equal(appearance.receipt.color,'rgb(246, 216, 221)');}
  progress('Offline payment survived restart and was delivered exactly once');
  lostAck.add('qa-pc1');
  await evaluate(clients[0],`payDealer.value='1';payAmount.value='5';payMethod.value='Наличные';makePayment();`);
@@ -117,7 +144,9 @@ const progress=message=>{events.push({check:message});console.log(message)};
  }
  assert.equal(store.state.ops.length,4,'The lost-ack payment must reach the server before restart');await restartAll();lostAck.clear();await converge(80);
  assert.equal(store.state.ops.length,4);progress('Lost PUT acknowledgement followed by restart created no duplicate; debt = 80');
- await evaluate(clients[0],`closeReceiptView();go('debts');openDealer(1)`);await pause(150);
+ await evaluate(clients[0],`closeReceiptView();closeDealerModal();go('home');renderHomeDashboard()`);await pause(150);
+ fs.writeFileSync(path.join(output,'journal-red-home.png'),(await clients[0].webContents.capturePage()).toPNG());
+ await evaluate(clients[0],`openDealer(1)`);await pause(150);
  for(let i=0;i<clients.length;i++)fs.writeFileSync(path.join(output,'pc'+(i+1)+'.png'),(await clients[i].webContents.capturePage()).toPNG());
  fs.writeFileSync(path.join(output,'result.json'),JSON.stringify({ok:true,clientCount:3,realComputers:false,operations:store.state.ops.length,debt:80,events,errors},null,2));
  assert.deepEqual(errors,[]);server.close();app.exit(0);
