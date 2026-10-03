@@ -251,11 +251,10 @@ th[draggable="true"]{cursor:grab;user-select:none;position:relative}.colResize{p
 <div class="paymentTableWrap"><table><thead><tr><th>Дилер</th><th>Телефон</th><th>Текущий долг</th><th>Последняя оплата</th><th>Дата последней операции</th><th></th></tr></thead><tbody id="paymentDealerList"></tbody></table></div><br></div>
 <div id="paymentSelected" class="card hidden" style="margin-bottom:14px"></div>
 <div id="paymentForm" class="card form hidden">
-<select id="payDealer"></select>
 <input id="payAmount" type="number" step=".01" min="0" placeholder="Сумма оплаты">
 <select id="payMethod"><option value="">Выберите способ оплаты</option><option value="Наличные">Наличные</option><option value="Перевод">Перевод</option></select>
 <input id="payNote" placeholder="Примечание">
-<button class="primary" onclick="makePayment()">Сохранить оплату</button>
+<button id="paymentSave" class="primary" onclick="makePayment()">Сохранить оплату</button>
 </div>
 </section>
 
@@ -547,9 +546,40 @@ function renderSaleProductGroups(){const saleProductGroup=document.getElementByI
 function renderProducts(){let q=(productListSearch?.value||'').toLowerCase();let selectedGroup=document.getElementById('productGroupFilter')?.value||'';let arr=state.products.filter(p=>{let g=state.groups.find(x=>x.id==p.groupId);return window.SyncCore8962.sameGroup(state,p.groupId,selectedGroup)&& (p.name+' '+(p.article||'')+' '+(g?.name||'')).toLowerCase().includes(q)});let mode=(window.productSort&&productSort.value)||'name';arr.sort((a,b)=>{let ga=state.groups.find(x=>x.id==a.groupId)?.name||'',gb=state.groups.find(x=>x.id==b.groupId)?.name||'';if(mode==='group')return ga.localeCompare(gb,'ru')||String(a.name||'').localeCompare(String(b.name||''),'ru');if(mode==='article')return String(a.article||'').localeCompare(String(b.article||''),'ru',{numeric:true});if(mode==='retail_desc')return (+b.retailPrice||0)-(+a.retailPrice||0);if(mode==='retail_asc')return (+a.retailPrice||0)-(+b.retailPrice||0);if(mode==='wholesale_desc')return (+b.wholesalePrice||0)-(+a.wholesalePrice||0);if(mode==='stock_desc')return (+b.stock||0)-(+a.stock||0);return String(a.name||'').localeCompare(String(b.name||''),'ru',{numeric:true,sensitivity:'base'})});productRows.innerHTML=arr.map(p=>{let g=state.groups.find(x=>x.id==p.groupId);return '<tr class="clickable" onclick="editProduct('+p.id+')"><td>'+esc(g?.name||'')+'</td><td>'+esc(p.article||'')+'</td><td><b>'+esc(p.name)+'</b>'+(p.extraInfo?'<br><span class="muted">'+esc(p.extraInfo)+'</span>':'')+(p.archived?' <span class="tag">Архив</span>':'')+'</td><td>'+((+p.stock||0).toLocaleString('ru-RU',{maximumFractionDigits:3}))+'</td><td>'+esc(p.unit||'шт')+'</td><td>'+money(p.buyPrice)+'</td><td>'+money(p.retailPrice)+'</td><td>'+money(p.wholesalePrice)+'</td><td><div class="actions"><button class="secondary" onclick="event.stopPropagation();editProduct('+p.id+')">Открыть</button>'+(p.archived?'<span class="muted">В архиве</span>':'<button class="dangerBtn" onclick="event.stopPropagation();delProduct('+p.id+')">Удалить</button>')+'</div></td></tr>'}).join('');applyStoredColumnOrders()}
 
 function renderPaymentDealers(){let q=(paymentDealerSearch?.value||'').toLowerCase();let list=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q));list=sortDealers(list,(window.paymentSort&&paymentSort.value)||'recent');paymentDealerList.innerHTML=list.map(d=>{let pops=state.ops.filter(o=>o.dealerId==d.id&&o.type==='payment').slice().sort((a,b)=>opTime(b)-opTime(a)),lastPay=pops[0],lastAct=lastDealerActivity(d.id);return '<tr class="clickable" onclick="selectPayDealer('+d.id+')"><td><b>'+esc(d.name)+'</b></td><td>'+esc(d.phone||'')+'</td><td class="'+(debtOf(d.id)>0?'danger':'ok')+'"><b>'+money(debtOf(d.id))+'</b></td><td>'+(lastPay?money(lastPay.total):'—')+'</td><td>'+(lastAct?new Date(lastAct).toLocaleString('ru-RU'):'—')+'</td><td><button class="primary miniBtn" onclick="event.stopPropagation();selectPayDealer('+d.id+')">Выбрать</button></td></tr>'}).join('')}
-function selectPayDealer(id){let d=state.dealers.find(x=>x.id==id);if(!d)return;payDealer.value=String(id);paymentChooser.classList.add('hidden');paymentSelected.classList.remove('hidden');paymentForm.classList.remove('hidden');paymentSelected.innerHTML='<div class="actions" style="justify-content:space-between"><div><b>'+esc(d.name)+'</b><br><span class="muted">'+esc(d.phone||'')+' · долг: '+money(debtOf(d.id))+'</span></div><button class="secondary" onclick="clearPayDealer()">Назад к выбору дилера</button></div>';setTimeout(()=>payAmount.focus(),50)}
-function clearPayDealer(){payDealer.value='';paymentChooser.classList.remove('hidden');paymentSelected.classList.add('hidden');paymentForm.classList.add('hidden');paymentSelected.innerHTML='';setTimeout(()=>paymentDealerSearch.focus(),50)}
-function makePayment(){let d=state.dealers.find(x=>x.id==payDealer.value),a=+payAmount.value,m=payMethod.value;if(!d)return alert('Выбери дилера');if(!a||a<=0)return alert('Укажи сумму оплаты');if(!m)return alert('Выбери способ оплаты');let beforeDebt=debtOf(d.id);if(a>beforeDebt&&beforeDebt>0&&!confirm('Оплата больше текущего долга на '+money(a-beforeDebt)+'. Всё равно сохранить?'))return;let op={id:window.nextEntityId(),ts:Date.now(),type:'payment',date:new Date().toLocaleString('ru-RU'),dealerId:d.id,dealer:d.name,total:a,method:m,note:payNote.value.trim(),beforeDebt:beforeDebt,afterDebt:beforeDebt-a};state.ops.push(op);payAmount.value='';payMethod.value='';payNote.value='';save();showDebtReport(d.id,op.id)}
+// Payment identity belongs to the explicit user selection, never to a rendered control.
+let selectedPayDealerId=null,selectedPayDealerName='';
+function renderPaymentSelection(){
+ const selected=selectedPayDealerId!==null;
+ const d=selected?state.dealers.find(x=>String(x.id)===String(selectedPayDealerId)):null;
+ paymentChooser.classList.toggle('hidden',selected);
+ paymentSelected.classList.toggle('hidden',!selected);
+ paymentForm.classList.toggle('hidden',!selected);
+ paymentSave.disabled=!d;
+ paymentSelected.innerHTML=selected?'<div class="actions" style="justify-content:space-between"><div><b>'+esc(d?.name||selectedPayDealerName)+'</b><br><span class="muted">'+(d?esc(d.phone||'')+' · долг: '+money(debtOf(d.id)):'Дилер больше недоступен. Вернитесь к списку дилеров.')+'</span></div><button class="secondary" onclick="clearPayDealer()">Назад к выбору дилера</button></div>':'';
+}
+function selectPayDealer(id){
+ const d=state.dealers.find(x=>String(x.id)===String(id));if(!d)return;
+ if(String(selectedPayDealerId)!==String(d.id)){payAmount.value='';payMethod.value='';payNote.value='';}
+ selectedPayDealerId=d.id;selectedPayDealerName=d.name;renderPaymentSelection();
+ setTimeout(()=>{if(String(selectedPayDealerId)===String(d.id))payAmount.focus()},50);
+}
+function clearPayDealer(){selectedPayDealerId=null;selectedPayDealerName='';payAmount.value='';payMethod.value='';payNote.value='';renderPaymentSelection();setTimeout(()=>paymentDealerSearch.focus(),50)}
+function openPaymentForDealer(id){
+ if(!state.dealers.some(d=>String(d.id)===String(id)))return;
+ if(typeof closeDealerModal==='function')closeDealerModal();go('payments');selectPayDealer(id);
+}
+function makePayment(){
+ const dealerId=selectedPayDealerId;
+ const d=dealerId!==null?state.dealers.find(x=>String(x.id)===String(dealerId)):null;
+ const a=+payAmount.value,m=payMethod.value;
+ if(!d)return alert(dealerId===null?'Выбери дилера в списке':'Выбранный дилер больше недоступен. Вернитесь к списку дилеров.');
+ if(!Number.isFinite(a)||a<=0)return alert('Укажи сумму оплаты');if(!m)return alert('Выбери способ оплаты');
+ const beforeDebt=debtOf(d.id);
+ if(a>beforeDebt&&beforeDebt>0&&!confirm('Оплата больше текущего долга на '+money(a-beforeDebt)+'. Всё равно сохранить?'))return;
+ if(String(selectedPayDealerId)!==String(dealerId)||!state.dealers.some(x=>String(x.id)===String(dealerId)))return alert('Выбранный дилер изменился или больше недоступен. Проверь оплату перед сохранением.');
+ const op={id:window.nextEntityId(),ts:Date.now(),type:'payment',date:new Date().toLocaleString('ru-RU'),dealerId:d.id,dealer:d.name,total:a,method:m,note:payNote.value.trim(),beforeDebt:beforeDebt,afterDebt:beforeDebt-a};
+ state.ops.push(op);payAmount.value='';payMethod.value='';payNote.value='';save();showDebtReport(d.id,op.id);
+}
 
 let saleDealerCursor=0,saleProductCursor=0;
 function renderSaleDealers(){let q=(saleDealerSearch?.value||'').trim().toLowerCase();let arr=state.dealers.filter(d=>(d.name+' '+(d.phone||'')).toLowerCase().includes(q)).slice(0,40);saleDealerCursor=Math.min(saleDealerCursor,Math.max(0,arr.length-1));saleDealerList.innerHTML=arr.map((d,i)=>'<div class="choiceRow '+(i===saleDealerCursor?'active':'')+'" onmousedown="selectSaleDealer('+d.id+')"><div><b>'+esc(d.name)+'</b><div class="muted">'+esc(d.phone||'')+'</div></div><span>'+money(debtOf(d.id))+'</span></div>').join('')}
@@ -778,7 +808,7 @@ function render(){
  pgroup.innerHTML='<option value="">Выберите группу</option>'+state.groups.map(g=>'<option value="'+g.id+'">'+esc(g.name)+'</option>').join('');
  groupRows.innerHTML=state.groups.map(g=>'<tr data-group-id="'+esc(g.id)+'" class="clickable"><td><b>'+esc(g.name)+'</b></td><td>'+esc(g.note||'')+'</td><td>'+state.products.filter(p=>p.groupId==g.id&&!p.archived).length+'</td></tr>').join('');
  groupRows.querySelectorAll('tr[data-group-id]').forEach(row=>row.onclick=()=>{document.getElementById('productGroupFilter').value=row.dataset.groupId;productListSearch.value='';go('products')});
- let ds='<option value="">Выберите дилера</option>'+state.dealers.map(d=>'<option value="'+d.id+'">'+esc(d.name)+'</option>').join('');payDealer.innerHTML=ds;
+ renderPaymentSelection();
  const groupFilter=document.getElementById('productGroupFilter');const selectedGroup=groupFilter.value;groupFilter.innerHTML='<option value="">Все группы</option>'+state.groups.map(g=>'<option value="'+esc(g.id)+'">'+esc(g.name)+'</option>').join('');groupFilter.value=selectedGroup;
  renderDealers();renderDebts();renderProducts();renderSaleProductGroups();renderPaymentDealers();renderSaleDealers();renderSaleProducts();renderNewMatRosSettings();renderNewMatRosNotification();renderUpdateSettings();renderSyncSettings();
  renderHistory();

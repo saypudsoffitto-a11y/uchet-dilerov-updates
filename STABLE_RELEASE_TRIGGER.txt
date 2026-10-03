@@ -1,1 +1,1 @@
-Release 8.9.85: manual receipt journal flags, red-only receipt and home dealer rows, no journal column.
+Release 8.9.86: bind payment forms to the selected dealer ID across renders and sync; remove duplicate dealer dropdown.

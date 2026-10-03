@@ -52,7 +52,7 @@ const progress=message=>{events.push({check:message});console.log(message)};
  await converge(0);
  await evaluate(clients[0],`selectSaleDealer(1);cart=[{productId:1,name:'Тестовый товар',qty:1,price:120,buyPrice:70,total:120,profit:50,unit:'шт'}];saveSale();`);
  await pause(1100);assert.equal(store.state.ops.length,1);await converge(120);progress('Receipt created through saveSale on PC1 arrived on all three native clients');
- await evaluate(clients[1],`payDealer.value='1';payAmount.value='25';payMethod.value='Наличные';makePayment();`);
+ await evaluate(clients[1],`selectPayDealer(1);payAmount.value='25';payMethod.value='Наличные';makePayment();`);
  await pause(1100);assert.equal(store.state.ops.length,2);await converge(95);progress('Payment through makePayment on PC2 arrived everywhere; debt = 95');
  async function restartAll(){
   for(const win of clients){await win.webContents.session.flushStorageData();win.destroy();}
@@ -60,12 +60,12 @@ const progress=message=>{events.push({check:message});console.log(message)};
  }
  await restartAll();await converge(95);progress('All three profiles reopened with the same receipt, payment and debt');
  offline.add('qa-pc3');
- await evaluate(clients[2],`payDealer.value='1';payAmount.value='10';payMethod.value='Наличные';makePayment();`);await pause(1100);
+ await evaluate(clients[2],`selectPayDealer(1);payAmount.value='10';payMethod.value='Наличные';makePayment();`);await pause(1100);
  assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  await restartAll();assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  offline.clear();await converge(85);progress('Offline payment survived restart and was delivered exactly once');
  lostAck.add('qa-pc1');
- await evaluate(clients[0],`payDealer.value='1';payAmount.value='5';payMethod.value='Наличные';makePayment();`);await pause(1400);
+ await evaluate(clients[0],`selectPayDealer(1);payAmount.value='5';payMethod.value='Наличные';makePayment();`);await pause(1400);
  assert.equal(store.state.ops.length,4);await restartAll();lostAck.clear();await converge(80);
  assert.equal(store.state.ops.length,4);progress('Lost PUT acknowledgement followed by restart created no duplicate; debt = 80');
  for(let i=0;i<clients.length;i++)fs.writeFileSync(path.join(output,'pc'+(i+1)+'.png'),(await clients[i].webContents.capturePage()).toPNG());

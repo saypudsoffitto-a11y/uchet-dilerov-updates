@@ -114,6 +114,26 @@ async function main(){
     const folder=path.resolve('qa-interface');fs.mkdirSync(folder,{recursive:true});
     async function screenshot(name,width,height){await command('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});await sleep(200);const result=await command('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});fs.writeFileSync(path.join(folder,name+'.png'),Buffer.from(result.data,'base64'))}
     await screenshot('home',1440,1000);
+    const paymentFlow=await evaluate(`(()=>{
+      const before=JSON.parse(JSON.stringify(state));
+      try{
+        closeDealerModal();closeDebtReport();go('payments');
+        [...paymentDealerList.querySelectorAll('tr')].find(r=>r.getAttribute('onclick')==='selectPayDealer(1)').click();
+        payAmount.value='25';payMethod.value='Перевод';payNote.value='QA selected dealer';
+        render();save();state=norm(JSON.parse(JSON.stringify(state)));state.dealers.reverse();render();go('home');go('payments');
+        const selected={id:selectedPayDealerId,dropdown:!!document.getElementById('payDealer'),amount:payAmount.value,method:payMethod.value,note:payNote.value};
+        paymentSave.click();closeDebtReport();
+        const payment=state.ops.filter(o=>o.type==='payment').at(-1);
+        const saved={id:payment.dealerId,total:payment.total,method:payment.method,note:payment.note,selection:selectedPayDealerId,debt:debtOf(1),otherDebt:debtOf(2),formVisible:!paymentForm.classList.contains('hidden')};
+        clearPayDealer();const back={id:selectedPayDealerId,chooserVisible:!paymentChooser.classList.contains('hidden'),amount:payAmount.value};
+        openDealer(2);document.querySelector('#dealerModalBody .dealerPay8967').click();const card=selectedPayDealerId;
+        clearPayDealer();go('debts');[...debtRows.querySelectorAll('tr')].find(r=>r.getAttribute('onclick')==='openDealer(3)').querySelector('.debtPayBtn8951').click();const debts=selectedPayDealerId;
+        return {selected,saved,back,card,debts};
+      }finally{closeDebtReport();closeDealerModal();clearPayDealer();state=norm(before);save();go('home')}
+    })()`);
+    assert.deepEqual(paymentFlow,{selected:{id:1,dropdown:false,amount:'25',method:'Перевод',note:'QA selected dealer'},saved:{id:1,total:25,method:'Перевод',note:'QA selected dealer',selection:1,debt:275,otherDebt:0,formVisible:true},back:{id:null,chooserVisible:true,amount:''},card:2,debts:3});
+    console.log('PASS: payment dealer and draft survive render/save/navigation/state refresh; list, card and debts entry points select once and save to the correct ID');
+
     // Exercise the final 8.9.68 JPEG handler after every legacy layer has finished loading.
     const whatsappTemplate=await evaluate(`(()=>{
       const handler=sendWhatsApp.toString();
