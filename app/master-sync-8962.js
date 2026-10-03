@@ -282,7 +282,7 @@
       const incoming=(r.state?.products||[]).find(p=>C.id(p.id)===C.id(old.id));
       if(incoming&&Number(incoming.catalogRev||0)<Number(old.catalogRev||0))throw new Error('Сервер вернул старую карточку товара '+old.id+'. Локальная цена сохранена.');
     }
-    let merged=C.applyTransaction(r.state||{},changes||[],archives);
+    let merged=C.applyTransaction(r.state||{},C.rebaseJournalChanges(r.state||{},changes||[]),archives);
     if(productChanges?.length)merged=applyLocalProductChanges(merged,productChanges);
     if(nonProductOverlay)merged=applyLocalCatalog(merged,nonProductOverlay);
     const local=state;
@@ -353,7 +353,7 @@
     try{
       // Capture the exact local state used by the payload before any network await.
       const sentState=C.clone(state),sentOps=sentState.ops;
-      const base=readBaseline(),changes=C.diffOps(base.state.ops,sentOps),allProductChanges=diffProductChanges(base.state.products,sentState.products),archives=C.diffArchives(base.state,sentState);
+      const base=readBaseline();let changes=C.diffOps(base.state.ops,sentOps);const allProductChanges=diffProductChanges(base.state.products,sentState.products),archives=C.diffArchives(base.state,sentState);
       const expected=C.applyTransaction(base.state,changes,archives);
       const stockOverrides=(sentState.products||[]).flatMap(p=>{const old=base.state.products?.find(x=>C.id(x.id)===C.id(p.id)),e=expected.products?.find(x=>C.id(x.id)===C.id(p.id));return old&&e&&Number(p.stock)!==Number(e.stock)?[{id:C.id(p.id),before:Number(old.stock)||0,after:(Number(old.stock)||0)+Number(p.stock)-Number(e.stock)}]:[];});
       const r=await request('GET');
@@ -366,6 +366,7 @@
 
       const catalogChanges=freshCatalog(r.state,diffCatalog(base.state,sentState));
       applyLocalCatalog(r.state,catalogChanges);
+      changes=C.rebaseJournalChanges(r.state,changes);
       // Three-way operation conflict detection; no silent last-writer-wins.
       C.applyTransaction(r.state,changes,archives);
 

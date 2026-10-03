@@ -26,4 +26,4 @@ if(!state.ok)throw new Error('Packaged app failed launch check');
 console.log('Native packaged macOS launch passed:',JSON.stringify(state));
 
 const qa=path.resolve('qa-themes');fs.mkdirSync(qa,{recursive:true});
-for(const theme of ['standard','colorful','multicolor'])fs.copyFileSync(report+'.'+theme+'.png',path.join(qa,theme+'.png'));
+for(const theme of ['standard','colorful','multicolor','dark'])fs.copyFileSync(report+'.'+theme+'.png',path.join(qa,theme+'.png'));
