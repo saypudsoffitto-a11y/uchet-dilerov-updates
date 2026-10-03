@@ -46,7 +46,10 @@
   }
   function filterRows(){
     const q=C.normalize(el('warehouseSearch').value);
-    for(const row of el('warehouseDocumentRows').querySelectorAll('tr'))row.hidden=!C.normalize(row.cells[1].textContent).includes(q);
+    for(const row of el('warehouseDocumentRows').querySelectorAll('tr')){
+      const product=(state.products||[]).find(p=>String(p.id)===row.dataset.productId);
+      row.hidden=!C.normalize([product?.name,product?.article].filter(Boolean).join(' ')).includes(q);
+    }
   }
   function renderHistory(){
     const id=el('warehouseHistoryProduct').value,p=(state.products||[]).find(p=>String(p.id)===id);

@@ -79,6 +79,12 @@ const progress=message=>{events.push({check:message});console.log(message)};
  await evaluate(clients[0],`closeReceiptView();showReceiptFromHistory(${receiptId})`);await pause(100);
  assert.deepEqual(await evaluate(clients[0],`[...document.querySelector('#receiptViewBody .receipt table').tHead.rows[0].cells].map(h=>h.textContent)`),layout.headers);
  progress('Receipt columns reordered and resized through UI events; reopening retains order, width and item association');
+ await evaluate(clients[0],`closeReceiptView();go('warehouse');renderWarehouse();window.tableLayout.scan();const table=warehouseDocumentRows.closest('table'),keys=window.tableLayout.keys(table);window.tableLayout.reorder(table,keys.slice().reverse());warehouseSearch.value='Тестовый товар';warehouseSearch.dispatchEvent(new Event('input'));`);
+ assert.equal(await evaluate(clients[0],`warehouseDocumentRows.rows[0].hidden`),false);
+ await evaluate(clients[0],`warehouseSearch.value='несуществующий товар';warehouseSearch.dispatchEvent(new Event('input'));`);
+ assert.equal(await evaluate(clients[0],`warehouseDocumentRows.rows[0].hidden`),true);
+ await evaluate(clients[0],`warehouseSearch.value='';warehouseSearch.dispatchEvent(new Event('input'));`);
+ progress('Warehouse search keeps finding the correct product after columns are reordered');
  await evaluate(clients[1],`payDealer.value='1';payAmount.value='25';payMethod.value='Наличные';makePayment();`);
  await pause(1100);assert.equal(store.state.ops.length,2);await converge(95);progress('Payment through makePayment on PC2 arrived everywhere; debt = 95');
  async function restartAll(){
