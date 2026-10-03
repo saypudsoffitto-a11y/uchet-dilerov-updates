@@ -58,7 +58,7 @@
       const id=+m[1];
       const td=document.createElement('td');
       const btn=document.createElement('button');btn.type='button';btn.className='primary debtPayBtn';btn.textContent='Внести оплату';
-      btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();try{if(typeof go==='function')go('payments');if(typeof selectPayDealer==='function')setTimeout(()=>selectPayDealer(id),30)}catch(err){console.error(err)}});
+      btn.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();try{if(typeof openPaymentForDealer==='function')openPaymentForDealer(id)}catch(err){console.error(err)}});
       td.appendChild(btn);row.appendChild(td);
     });
     if(head&&!head.querySelector('[data-pay-col="1"]')){const th=document.createElement('th');th.dataset.payCol='1';th.textContent='Оплата';head.appendChild(th)}

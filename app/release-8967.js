@@ -78,11 +78,7 @@
     }
   };
   try{renderDebts=window.renderDebts}catch(_){}
-  window.openDebtPayment8967=id=>{
-    try{if(typeof closeDealerModal==='function')closeDealerModal()}catch(_){}
-    if(typeof go==='function')go('payments');
-    setTimeout(()=>{try{if(typeof selectPayDealer==='function')selectPayDealer(id)}catch(_){}},0);
-  };
+  window.openDebtPayment8967=id=>openPaymentForDealer(id);
 
   /* Правый клик по каждой операции в карточке дилера. */
   function dealerHistoryRows8967(ops,d){

@@ -139,7 +139,7 @@
       ]
     }
   },
-  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.85",
+  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.86",
   "devDependencies": {
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
@@ -159,5 +159,5 @@
     "prebuild:mac": "node ../scripts/run-all-tests.cjs release-8958 release-8959 release-8961 release-8962",
     "test": "node ../scripts/run-all-tests.cjs"
   },
-  "version": "8.9.85"
+  "version": "8.9.86"
 }

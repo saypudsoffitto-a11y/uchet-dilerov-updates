@@ -146,16 +146,5 @@
     };
   }
 
-  // После успешной оплаты закрываем форму выбора/ввода оплаты. Отчёт по долгу, если он открыт,
-  // остаётся отдельным окном и может быть закрыт пользователем самостоятельно.
-  const originalMakePayment=window.makePayment;
-  if(typeof originalMakePayment==='function'){
-    window.makePayment=function(){
-      const before=(state.ops||[]).length;
-      originalMakePayment();
-      if((state.ops||[]).length>before){
-        try{if(typeof clearPayDealer==='function')clearPayDealer()}catch(_){ }
-      }
-    };
-  }
+
 })();

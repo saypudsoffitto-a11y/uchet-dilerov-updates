@@ -5,7 +5,7 @@ const fs=require('node:fs'),path=require('node:path'),http=require('node:http'),
 const C=require('../app/sync-core-8962'),{update}=require('../server/master-protocol-8962');
 const output=path.resolve(process.env.UCHET_QA_DIR||'qa-sync-probe/journal-columns');
 fs.mkdirSync(output,{recursive:true});app.setPath('userData',path.join(output,'profile'));
-const fixture={dealers:[{id:1,name:'Тестовый дилер',phone:'79990000001'}],groups:[{id:1,name:'Тестовая группа'}],products:[{id:1,groupId:1,name:'Тестовый товар',article:'QA',unit:'шт',buyPrice:70,retailPrice:120,wholesalePrice:120,stock:100,inventoryVersion:2,warehouseOpening:100,catalogRev:1}],ops:[]};
+const fixture={dealers:[{id:1,name:'Тестовый дилер',phone:'79990000001'},{id:2,name:'Другой дилер',phone:'79990000002'}],groups:[{id:1,name:'Тестовая группа'}],products:[{id:1,groupId:1,name:'Тестовый товар',article:'QA',unit:'шт',buyPrice:70,retailPrice:120,wholesalePrice:120,stock:100,inventoryVersion:2,warehouseOpening:100,catalogRev:1}],ops:[]};
 let store={revision:10,state:C.clone(fixture),computers:{masterId:'qa-owner-00000001',devices:{}}};
 const offline=new Set(),lostAck=new Set(),events=[],errors=[];
 const server=http.createServer(async(req,res)=>{
@@ -113,7 +113,18 @@ const progress=message=>{events.push({check:message});console.log(message)};
  assert.equal(await evaluate(clients[0],`warehouseDocumentRows.rows[0].hidden`),true);
  await evaluate(clients[0],`warehouseSearch.value='';warehouseSearch.dispatchEvent(new Event('input'));`);
  progress('Warehouse search keeps finding the correct product after columns are reordered');
- await evaluate(clients[1],`payDealer.value='1';payAmount.value='25';payMethod.value='Наличные';makePayment();`);
+ async function paymentSelection(win,amount,method,note){
+  const actual=await evaluate(win,`({id:selectedPayDealerId,dropdown:!!document.getElementById('payDealer'),selects:paymentForm.querySelectorAll('select').length,visible:!paymentForm.classList.contains('hidden'),chooserHidden:paymentChooser.classList.contains('hidden'),amount:payAmount.value,method:payMethod.value,note:payNote.value})`);
+  assert.deepEqual(actual,{id:1,dropdown:false,selects:1,visible:true,chooserHidden:true,amount,method,note});
+ }
+ await evaluate(clients[1],`closeReceiptView();closeDealerModal();go('payments');[...paymentDealerList.querySelectorAll('tr')].find(r=>r.getAttribute('onclick')==='selectPayDealer(1)').click();payAmount.value='25';payMethod.value='Наличные';payNote.value='QA payment';render();save();go('home');go('payments');`);
+ await paymentSelection(clients[1],'25','Наличные','QA payment');
+ await evaluate(clients[0],`state.dealers.find(d=>d.id===2).city='Другой город';save()`);
+ await pause(1000);await converge(120);
+ await paymentSelection(clients[1],'25','Наличные','QA payment');
+ await evaluate(clients[1],`paymentSave.click()`);
+ await paymentSelection(clients[1],'','','');
+ progress('Payments list selects the dealer once: renders, save, navigation and synced catalog changes retain dealer ID and the full draft; successful save retains the same dealer');
  await pause(1100);assert.equal(store.state.ops.length,2);await converge(95);progress('Payment through makePayment on PC2 arrived everywhere; debt = 95');
  async function restartAll(){
   for(const win of clients){await win.webContents.session.flushStorageData();win.destroy();}
@@ -129,21 +140,30 @@ const progress=message=>{events.push({check:message});console.log(message)};
 
  offline.add('qa-pc3');
  await evaluate(clients[2],`window.receiptJournal.set(${receiptId},'unrecorded')`);
- await evaluate(clients[2],`payDealer.value='1';payAmount.value='10';payMethod.value='Наличные';makePayment();`);await pause(1100);
+ await evaluate(clients[2],`closeReceiptView();closeDebtReport();openDealer(1);document.querySelector('#dealerModalBody .dealerPay8967').click();payAmount.value='10';payMethod.value='Перевод';payNote.value='QA card';render();save()`);
+ await paymentSelection(clients[2],'10','Перевод','QA card');
+ await evaluate(clients[2],`paymentSave.click()`);await pause(1100);
+ await paymentSelection(clients[2],'','','');
  assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  await restartAll();assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  offline.clear();await converge(85);
  for(const win of clients){assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');const appearance=await journalAppearance(win);assert.equal(appearance.home.color,'rgb(246, 216, 221)');assert.equal(appearance.receipt.color,'rgb(246, 216, 221)');}
  progress('Offline payment survived restart and was delivered exactly once');
  lostAck.add('qa-pc1');
- await evaluate(clients[0],`payDealer.value='1';payAmount.value='5';payMethod.value='Наличные';makePayment();`);
+ await evaluate(clients[0],`closeReceiptView();closeDealerModal();closeDebtReport();go('debts');[...debtRows.querySelectorAll('tr')].find(r=>r.getAttribute('onclick')==='openDealer(1)').querySelector('.debtPayBtn8951').click();payAmount.value='5';payMethod.value='Наличные';payNote.value='QA debts';render()`);
+ await paymentSelection(clients[0],'5','Наличные','QA debts');
+ await evaluate(clients[0],`paymentSave.click()`);
+ await paymentSelection(clients[0],'','','');
  // Restart only after the server committed the PUT whose acknowledgement is lost.
  // Fixed delays can expire before the save timer on a busy CI runner.
  for(let attempt=0;attempt<40&&store.state.ops.length<4;attempt++){
   await evaluate(clients[0],'window.masterSync8962.push(false)');await pause(250);
  }
  assert.equal(store.state.ops.length,4,'The lost-ack payment must reach the server before restart');await restartAll();lostAck.clear();await converge(80);
- assert.equal(store.state.ops.length,4);progress('Lost PUT acknowledgement followed by restart created no duplicate; debt = 80');
+ assert.equal(store.state.ops.length,4);assert.ok(store.state.ops.filter(o=>o.type==='payment').every(o=>o.dealerId===1));
+ for(const win of clients)assert.equal(await evaluate(win,'debtOf(2)'),0);
+ progress('All payment entry points target the selected dealer only, with no repeated dealer dropdown');
+ progress('Lost PUT acknowledgement followed by restart created no duplicate; debt = 80');
  await evaluate(clients[0],`closeReceiptView();closeDealerModal();go('home');renderHomeDashboard()`);await pause(150);
  fs.writeFileSync(path.join(output,'journal-red-home.png'),(await clients[0].webContents.capturePage()).toPNG());
  await evaluate(clients[0],`openDealer(1)`);await pause(150);
