@@ -22,7 +22,7 @@
     const body=document.getElementById('homeDealerRows');if(!body)return;body.replaceChildren();
     for(const d of arr){
       const last=state.ops.filter(o=>o.type==='sale'&&o.dealerId==d.id).sort((a,b)=>opTime(b)-opTime(a))[0];
-      const tr=document.createElement('tr');tr.className='clickable';tr.tabIndex=0;
+      const tr=document.createElement('tr');tr.dataset.dealerId=String(d.id);tr.className='clickable'+(window.receiptJournal?.hasUnrecorded(d.id)?' journal-unrecorded':'');tr.tabIndex=0;
       const open=()=>openDealer(d.id);tr.onclick=open;tr.onkeydown=e=>{if(e.target===tr&&e.key==='Enter'){e.preventDefault();open()}};
       tr.innerHTML='<td><div class="homeDealer"><span class="homeAvatar">'+esc(String(d.name||'?').slice(0,2).toUpperCase())+'</span><div><b>'+esc(d.name)+'</b><small>'+esc(d.phone||'')+'</small></div></div></td><td>'+esc(d.city||'—')+'</td><td>'+esc(last?last.date:'—')+'</td><td class="'+(debtOf(d.id)>0?'danger':'ok')+'"><b>'+money(debtOf(d.id))+'</b></td><td><button class="secondary miniBtn">Открыть →</button></td>';
       tr.querySelector('button').onclick=e=>{e.stopPropagation();open()};body.appendChild(tr);

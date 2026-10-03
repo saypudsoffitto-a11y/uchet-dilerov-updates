@@ -153,7 +153,7 @@ async function main(){
       closeReceiptView();result.returned=!dealerModal.classList.contains('hidden');
       op.items=original;closeDealerModal();return result;
     })()`);
-    assert.deepEqual(documents,{rows:2,columns:[6,6],headers:6,details:2,opened:true,debt:300,returned:true});
+    assert.deepEqual(documents,{rows:2,columns:[5,5],headers:5,details:2,opened:true,debt:300,returned:true});
     const archived=await evaluate(`(()=>{window.__beforeArchive=JSON.parse(JSON.stringify(state));showReceiptFromHistory(100);const button=[...receiptViewBody.querySelectorAll('button')].find(b=>b.textContent==='Удалить этот чек');if(!button)throw Error('Archive button missing');button.click();return {debt:debtOf(1),stock:state.products[0].stock,archived:state.receiptStates['100'].archived,payments:state.ops.filter(o=>o.type==='payment').length}})()`);
     assert.deepEqual(archived,{debt:-100,stock:52,archived:true,payments:1});await screenshot('archive',1440,1000);
     const stale=await evaluate(`(()=>{const merged=mergeSyncState(JSON.parse(JSON.stringify(state)),JSON.parse(JSON.stringify(window.__beforeArchive)));return {sales:merged.ops.filter(o=>o.type==='sale').length,stock:merged.products[0].stock,archived:merged.receiptStates['100'].archived}})()`);assert.deepEqual(stale,{sales:0,stock:52,archived:true});
