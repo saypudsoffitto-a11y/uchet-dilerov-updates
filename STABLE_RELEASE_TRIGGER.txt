@@ -1,1 +1,1 @@
-Release 8.9.83: compact NewMatRos material names and one extra-corners total per receipt.
+Release 8.9.84: receipt journal, approved dark theme 4 and movable/resizable table columns.

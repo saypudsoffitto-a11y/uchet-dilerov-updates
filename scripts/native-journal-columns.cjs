@@ -27,6 +27,8 @@ const server=http.createServer(async(req,res)=>{
 app.on('browser-window-created',(_e,win)=>win.webContents.on('preload-error',(_e,_p,error)=>errors.push(String(error))));
 app.whenReady().then(()=>session.defaultSession.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(request,done)=>done({cancel:!request.url.startsWith('http://127.0.0.1:')})));
 require('../app/main-8948');
+// The QA runner owns shutdown while all three test windows are restarted.
+app.removeAllListeners('window-all-closed');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const evaluate=(win,code)=>win.webContents.executeJavaScript(code);
 const progress=message=>{events.push({check:message});console.log(message)};
