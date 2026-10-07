@@ -1,0 +1,26 @@
+name: Fast sync stability regression
+on:
+  pull_request:
+    paths:
+      - 'app/sync-health-8987.js'
+      - 'app/master-sync-8962.js'
+      - 'app/index.html'
+      - 'tests/release-8987/**'
+      - '.github/workflows/sync-stability-fast.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sync-stability:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run reconnect regression tests
+        run: node --test tests/release-8987/sync-health.test.cjs
+      - name: Syntax-check sync files
+        run: |
+          node --check app/sync-health-8987.js
+          node --check app/master-sync-8962.js
