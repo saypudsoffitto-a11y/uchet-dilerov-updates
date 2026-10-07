@@ -6,7 +6,7 @@
   'use strict';
 
   const transientStatuses=new Set([408,425,429,500,502,503,504]);
-  const transientText=/timeout|timed out|network|fetch failed|socket|econn|enet|dns|сервер не ответил|ошибка связи|нет ответа сервера|temporar|connection reset|connection refused/i;
+  const transientText=/timeout|timed out|network|fetch failed|socket|econn|enet|enotfound|etimedout|eai_again|dns|сервер не ответил|ошибка связи|нет ответа сервера|temporar|connection reset|connection refused/i;
 
   function isTransientMessage(message){
     return transientText.test(String(message||''));
