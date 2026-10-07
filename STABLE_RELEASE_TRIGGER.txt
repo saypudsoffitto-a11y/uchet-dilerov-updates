@@ -1,1 +1,2 @@
-Release 8.9.86: bind payment forms to the selected dealer ID across renders and sync; remove duplicate dealer dropdown.
+Release 8.9.87: sync connection stability fix
+Transient GET retries, offline hysteresis, preserved auth failure behavior.
