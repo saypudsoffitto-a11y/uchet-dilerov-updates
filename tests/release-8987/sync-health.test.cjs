@@ -41,3 +41,16 @@ test('retry backoff stays short for interactive reconnects',()=>{
   assert.equal(H.retryDelay(1),500);
   assert.equal(H.retryDelay(2),1200);
 });
+
+
+test('browser wiring loads health helper before master sync and retries reads only',()=>{
+  const fs=require('node:fs');
+  const path=require('node:path');
+  const index=fs.readFileSync(path.join(__dirname,'../../app/index.html'),'utf8');
+  const master=fs.readFileSync(path.join(__dirname,'../../app/master-sync-8962.js'),'utf8');
+  assert.ok(index.indexOf('sync-health-8987.js')<index.indexOf('master-sync-8962.js'));
+  assert.equal(index.includes('</script>\\n<script src="master-sync-8962.js">'),false);
+  assert.match(master,/const read=String\(method\|\|'GET'\)\.toUpperCase\(\)==='GET'/);
+  assert.match(master,/const transient=read&&window\.SyncHealth8987\?\.isTransientResult\(r\)/);
+  assert.match(master,/handleSyncError\(e\)/);
+});
