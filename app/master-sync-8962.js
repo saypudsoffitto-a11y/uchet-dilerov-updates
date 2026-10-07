@@ -16,6 +16,8 @@
   try{device=JSON.parse(localStorage.getItem(DEVICE)||'null')}catch(_){}
   if(!device?.id){device={id:crypto.randomUUID(),name:'Компьютер '+crypto.randomUUID().slice(0,4)};localStorage.setItem(DEVICE,JSON.stringify(device));}
   let busy=false,meta=null,online=false,quarantinedThisRun=0;
+  const health=window.SyncHealth8987?.create({failureThreshold:3})||null;
+  const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   let queuedWrite=false,queuedManual=false,pushTimer=null;
   function queuePush(manual,conflictAttempt=0){
     queuedManual=queuedManual||!!manual;
@@ -43,6 +45,19 @@
     try{return JSON.parse(localStorage.getItem(key())||'null')}catch(_){return null}
   };
   const status=(text,connection=online?'online':'offline')=>{const el=document.getElementById('syncStatus');if(el){el.dataset.syncState=connection;el.textContent=text;}paint();};
+  function handleSyncError(error){
+    const message=String(error?.message||error||'Нет ответа сервера');
+    const transient=!!error?.syncTransient||!!window.SyncHealth8987?.isTransientMessage(message);
+    if(!transient){status(message,online?'online':'offline');return;}
+    const h=health?.failure(message)||{state:'offline',failures:1,failureThreshold:1};
+    if(h.state==='offline'){
+      online=false;
+      status('Нет связи: '+message,'offline');
+      return;
+    }
+    online=true;
+    status('Связь нестабильна · автоматическое переподключение '+h.failures+'/'+h.failureThreshold,'online');
+  }
   function paint(){
     const badge=document.getElementById('computerBadge8962');if(badge)badge.hidden=true;
     const master=document.getElementById('masterName8962');if(master)master.textContent='Одна общая база. Все подключённые компьютеры равноправны.';
@@ -54,16 +69,31 @@
     const recovery=document.getElementById('recovery8962');if(recovery)recovery.hidden=!localStorage.getItem(recoveryKey());
   }
   async function request(method,body){
-    const r=await syncRequest(method,body);
-    if(r?.conflict)return r;
-    if(!r?.ok){online=false;throw new Error(r?.message||'Нет ответа сервера');}
+    const read=String(method||'GET').toUpperCase()==='GET';
+    let r=null;
+    for(let attempt=0;attempt<3;attempt++){
+      try{r=await syncRequest(method,body)}
+      catch(e){r={ok:false,message:String(e&&e.message||e)}}
+      if(r?.conflict)return r;
+      if(r?.ok)break;
+      const transient=read&&window.SyncHealth8987?.isTransientResult(r);
+      if(transient&&attempt<2){
+        status('Связь нестабильна · повторяю подключение…','online');
+        await sleep(window.SyncHealth8987.retryDelay(attempt+1));
+        continue;
+      }
+      const error=new Error(r?.message||'Нет ответа сервера');
+      error.syncTransient=!!window.SyncHealth8987?.isTransientResult(r);
+      throw error;
+    }
+    online=true;
+    health?.success();
     if(r.protocol!==2)throw new Error('Сервер ещё не обновлён для общей базы. Данные сохранены локально.');
     if(r.storage!=='turso')throw new Error('Сервер ещё не подключён к постоянной базе Turso. Локальные данные не отправлены.');
     if(window.warehouseInstalled&&r.serverVersion&&(r.inventoryProtocol!==2||r.productRevisions!==true))throw new Error('Сервер ещё не обновлён для защищённых цен и склада. Все правки сохранены локально.');
     meta=r.computers;
     const serverName=meta?.devices?.[device.id]?.name;
     if(serverName&&serverName!==device.name){device.name=serverName;localStorage.setItem(DEVICE,JSON.stringify(device));const input=document.getElementById('computerName8962');if(input)input.value=device.name;}
-    online=true;
     return r;
   }
 
@@ -343,7 +373,7 @@
       }
       if(hasPending()&&syncCfg().enabled)queuePush(false);
       status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · получена серверная база; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(hasPending()?' · есть неотправленные изменения':''))+conflictNote());return true;
-    }catch(e){online=false;status(e.message);return false;}finally{finishExchange();}
+    }catch(e){handleSyncError(e);return false;}finally{finishExchange();}
   }
   async function push(manual,conflictAttempt=0){
     if(!syncCfg().url||(!manual&&!syncCfg().enabled))return false;
@@ -395,7 +425,7 @@
       // A save timer may have fired while busy; send retained edits again.
       if(productDuringFlight.length||duringFlight.length||catalogPending(nonProductDuringFlight)||Object.values(archivesDuringFlight).some(rows=>rows.length))queuePush(false);
       status('Синхронизировано · база '+result.revision+conflictNote());return true;
-    }catch(e){online=false;status(e.message);return false;}finally{finishExchange();}
+    }catch(e){handleSyncError(e);return false;}finally{finishExchange();}
   }
   const host=document.getElementById('sync');
   if(host){
