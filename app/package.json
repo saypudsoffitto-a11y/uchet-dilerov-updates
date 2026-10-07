@@ -159,5 +159,5 @@
     "prebuild:mac": "node ../scripts/run-all-tests.cjs release-8958 release-8959 release-8961 release-8962",
     "test": "node ../scripts/run-all-tests.cjs"
   },
-  "version": "8.9.86"
+  "version": "8.9.87"
 }
