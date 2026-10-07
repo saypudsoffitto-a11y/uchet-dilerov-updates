@@ -47,6 +47,7 @@
   const status=(text,connection=online?'online':'offline')=>{const el=document.getElementById('syncStatus');if(el){el.dataset.syncState=connection;el.textContent=text;}paint();};
   function handleSyncError(error){
     const message=String(error?.message||error||'Нет ответа сервера');
+    if(error?.syncFatal){online=false;status(message,'offline');return;}
     const transient=!!error?.syncTransient||!!window.SyncHealth8987?.isTransientMessage(message);
     if(!transient){status(message,online?'online':'offline');return;}
     const h=health?.failure(message)||{state:'offline',failures:1,failureThreshold:1};
@@ -84,6 +85,7 @@
       }
       const error=new Error(r?.message||'Нет ответа сервера');
       error.syncTransient=!!window.SyncHealth8987?.isTransientResult(r);
+      error.syncFatal=r?.code==='SYNC_AUTH_FAILED'||[401,403].includes(Number(r?.status||0));
       throw error;
     }
     online=true;
