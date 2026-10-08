@@ -68,7 +68,22 @@ const progress=message=>{events.push({check:message});console.log(message)};
  await evaluate(clients[0],`selectPayDealer(1);payAmount.value='5';payMethod.value='Наличные';makePayment();`);await pause(1400);
  assert.equal(store.state.ops.length,4);await restartAll();lostAck.clear();await converge(80);
  assert.equal(store.state.ops.length,4);progress('Lost PUT acknowledgement followed by restart created no duplicate; debt = 80');
+
+ // 8.9.88 regression: one PC has a stale local financial edit while the server
+ // already contains a different edit of the same payment. The stale edit must
+ // be quarantined and every client must converge to the server total.
+ const target=store.state.ops.find(op=>op.type==='payment'&&Number(op.total)===25);
+ assert.ok(target,'QA payment for convergence scenario is missing');
+ const targetId=String(target.id);
+ await evaluate(clients[2],`(()=>{const op=state.ops.find(x=>String(x.id)===${JSON.stringify(targetId)});op.total=30;localStorage.setItem(KEY,JSON.stringify(state));render();return debtOf(1)})()`);
+ const serverTarget=store.state.ops.find(op=>String(op.id)===targetId);
+ serverTarget.total=28;store.revision++;
+ await converge(77);
+ const conflictSaved=await evaluate(clients[2],`!!localStorage.getItem('uchet_operation_conflicts_8988:'+state.sync.url)`);
+ assert.equal(conflictSaved,true);
+ progress('Conflicting stale payment was quarantined; all three clients converged to server debt = 77');
+
  for(let i=0;i<clients.length;i++)fs.writeFileSync(path.join(output,'pc'+(i+1)+'.png'),(await clients[i].webContents.capturePage()).toPNG());
- fs.writeFileSync(path.join(output,'result.json'),JSON.stringify({ok:true,clientCount:3,realComputers:false,operations:store.state.ops.length,debt:80,events,errors},null,2));
+ fs.writeFileSync(path.join(output,'result.json'),JSON.stringify({ok:true,clientCount:3,realComputers:false,operations:store.state.ops.length,debt:77,events,errors},null,2));
  assert.deepEqual(errors,[]);server.close();app.exit(0);
 })().catch(error=>{fs.writeFileSync(path.join(output,'failure.txt'),String(error.stack));console.error(error);server.close();app.exit(1)});
