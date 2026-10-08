@@ -31,5 +31,19 @@
     return {safe,conflicts};
   }
 
-  return {rebase};
+  function rebaseMap(serverMap,changes){
+    const currentMap=serverMap&&typeof serverMap==='object'?serverMap:{};
+    const safe=[],conflicts=[];
+    for(const raw of changes||[]){
+      const change=clone(raw);
+      const key=String(change.key??'');
+      const current=Object.prototype.hasOwnProperty.call(currentMap,key)?currentMap[key]:null;
+      if(same(current,change.after))continue;
+      if(same(current,change.before)){safe.push(change);continue;}
+      conflicts.push({key,before:clone(change.before),local:clone(change.after),server:clone(current)});
+    }
+    return {safe,conflicts};
+  }
+
+  return {rebase,rebaseMap};
 });
