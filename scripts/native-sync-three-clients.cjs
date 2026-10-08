@@ -28,6 +28,11 @@ app.on('browser-window-created',(_e,win)=>win.webContents.on('preload-error',(_e
 app.whenReady().then(()=>session.defaultSession.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(request,done)=>done({cancel:!request.url.startsWith('http://127.0.0.1:')})));
 require('../app/main-8948');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function waitUntil(check,timeoutMs=10000,stepMs=100){
+ const started=Date.now();
+ while(Date.now()-started<timeoutMs){if(await check())return true;await pause(stepMs);}
+ return false;
+}
 const evaluate=(win,code)=>win.webContents.executeJavaScript(code);
 const progress=message=>{events.push({check:message});console.log(message)};
 (async()=>{
@@ -65,8 +70,11 @@ const progress=message=>{events.push({check:message});console.log(message)};
  await restartAll();assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  offline.clear();await converge(85);progress('Offline payment survived restart and was delivered exactly once');
  lostAck.add('qa-pc1');
- await evaluate(clients[0],`selectPayDealer(1);payAmount.value='5';payMethod.value='Наличные';makePayment();`);await pause(1400);
- assert.equal(store.state.ops.length,4);await restartAll();lostAck.clear();await converge(80);
+ await evaluate(clients[0],`selectPayDealer(1);payAmount.value='5';payMethod.value='Наличные';makePayment();`);
+ const lostAckReachedServer=await waitUntil(()=>store.state.ops.length===4,10000,100);
+ const lostAckClient=await evaluate(clients[0],`({debt:debtOf(1),status:document.getElementById('syncStatus').textContent,pending:!!window.masterSync8962})`);
+ assert.equal(lostAckReachedServer,true,'Lost-ack payment never reached server within 10s: '+JSON.stringify({ops:store.state.ops.length,client:lostAckClient,events:events.slice(-8)}));
+ await restartAll();lostAck.clear();await converge(80);
  assert.equal(store.state.ops.length,4);progress('Lost PUT acknowledgement followed by restart created no duplicate; debt = 80');
 
  // 8.9.88 regression: one PC has a stale local financial edit while the server
