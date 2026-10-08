@@ -303,15 +303,28 @@
     }
     return keep;
   }
+  function archiveOperationConflicts(kind,conflicts){
+    if(!conflicts?.length)return;
+    let previous=[];try{previous=JSON.parse(localStorage.getItem(operationConflictKey())||'[]');}catch(_){}
+    localStorage.setItem(operationConflictKey(),JSON.stringify([...previous,{at:new Date().toISOString(),kind,changes:conflicts}]));
+    quarantinedThisRun+=conflicts.length;
+  }
   function freshOperationChanges(serverState,changes){
     const rebased=C.rebaseJournalChanges(serverState||{},changes||[]);
     const result=window.SyncConvergence8988?.rebase(serverState?.ops||[],rebased)||{safe:rebased,conflicts:[]};
-    if(result.conflicts.length){
-      let previous=[];try{previous=JSON.parse(localStorage.getItem(operationConflictKey())||'[]');}catch(_){}
-      localStorage.setItem(operationConflictKey(),JSON.stringify([...previous,{at:new Date().toISOString(),changes:result.conflicts}]));
-      quarantinedThisRun+=result.conflicts.length;
-    }
+    archiveOperationConflicts('operations',result.conflicts);
     return result.safe;
+  }
+  function freshArchives(serverState,archives){
+    const out={},conflicts=[];
+    for(const field of ['receiptStates','receiptItemStates']){
+      const changes=archives?.[field]||[];
+      const result=window.SyncConvergence8988?.rebaseMap(serverState?.[field]||{},changes)||{safe:changes,conflicts:[]};
+      out[field]=result.safe;
+      for(const conflict of result.conflicts)conflicts.push({field,...conflict});
+    }
+    archiveOperationConflicts('archives',conflicts);
+    return out;
   }
   function pending(){const base=readBaseline();return base?C.diffOps(base.state.ops,state.ops):[];}
   function hasPending(){
@@ -370,7 +383,8 @@
       let changes=firstJoinExactMirror?[...new Map([...C.diffOps([],firstWarehouseChanges),...sessionOps].map(c=>[c.id,c])).values()]:pending();
       changes=freshOperationChanges(r.state,changes);
       const sessionArchives=C.diffArchives(pullStarted,state);
-      const archives=firstJoinExactMirror?Object.fromEntries(Object.entries(sessionArchives).map(([field,rows])=>[field,combineChanges(outbox?.archives?.[field],rows,'key')])):C.diffArchives(readBaseline()?.state||{},state);
+      let archives=firstJoinExactMirror?Object.fromEntries(Object.entries(sessionArchives).map(([field,rows])=>[field,combineChanges(outbox?.archives?.[field],rows,'key')])):C.diffArchives(readBaseline()?.state||{},state);
+      archives=freshArchives(r.state,archives);
       let sessionProductChanges=productChanges;
       if(firstJoinExactMirror){
         sessionProductChanges=freshProductChanges(r.state,combineChanges(outbox?.products,diffProductChanges(pullStarted.products,state.products)));
@@ -383,7 +397,7 @@
         const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});
         if(!registered.conflict){
           const b=readBaseline();
-          accept(registered,freshOperationChanges(registered.state,pending()),C.diffArchives(b?.state||{},state),b?diffProductChanges(b.state.products,state.products):[],freshCatalog(registered.state,diffCatalog(b?.state,state)));
+          accept(registered,freshOperationChanges(registered.state,pending()),freshArchives(registered.state,C.diffArchives(b?.state||{},state)),b?diffProductChanges(b.state.products,state.products):[],freshCatalog(registered.state,diffCatalog(b?.state,state)));
         }
       }
       if(hasPending()&&syncCfg().enabled)queuePush(false);
@@ -398,13 +412,14 @@
     try{
       // Capture the exact local state used by the payload before any network await.
       const sentState=C.clone(state),sentOps=sentState.ops;
-      const base=readBaseline();let changes=C.diffOps(base.state.ops,sentOps);const allProductChanges=diffProductChanges(base.state.products,sentState.products),archives=C.diffArchives(base.state,sentState);
+      const base=readBaseline();let changes=C.diffOps(base.state.ops,sentOps);const allProductChanges=diffProductChanges(base.state.products,sentState.products);let archives=C.diffArchives(base.state,sentState);
       const expected=C.applyTransaction(base.state,changes,archives);
       const stockOverrides=(sentState.products||[]).flatMap(p=>{const old=base.state.products?.find(x=>C.id(x.id)===C.id(p.id)),e=expected.products?.find(x=>C.id(x.id)===C.id(p.id));return old&&e&&Number(p.stock)!==Number(e.stock)?[{id:C.id(p.id),before:Number(old.stock)||0,after:(Number(old.stock)||0)+Number(p.stock)-Number(e.stock)}]:[];});
       const r=await request('GET');
       if(!meta?.shared&&!meta?.masterId)throw new Error('Подключите общую базу.');
       if(Number(r.revision)<Number(base.revision))throw new Error('Сервер вернул устаревшую базу. Отправка остановлена.');
       changes=freshOperationChanges(r.state,changes);
+      archives=freshArchives(r.state,archives);
       const productChanges=freshProductChanges(r.state,allProductChanges);
 
       // Проверяем локальные карточки против свежего сервера ДО отправки.
