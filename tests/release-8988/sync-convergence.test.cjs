@@ -36,6 +36,21 @@ test('deletion is sent only when server still matches the local baseline',()=>{
   assert.equal(conflict.conflicts.length,1);
 });
 
+test('archive state conflict is quarantined instead of replayed over server',()=>{
+  const before={archived:false,version:1},server={archived:true,version:2},local={archived:false,version:3};
+  const r=R.rebaseMap({'10':server},[{key:'10',before,after:local}]);
+  assert.equal(r.safe.length,0);
+  assert.equal(r.conflicts.length,1);
+  assert.equal(r.conflicts[0].server.archived,true);
+});
+
+test('safe archive transition is preserved when server still matches baseline',()=>{
+  const before={archived:false,version:1},local={archived:true,version:2};
+  const r=R.rebaseMap({'10':before},[{key:'10',before,after:local}]);
+  assert.equal(r.safe.length,1);
+  assert.equal(r.conflicts.length,0);
+});
+
 test('browser loads convergence helper before master sync',()=>{
   const fs=require('node:fs'),path=require('node:path');
   const index=fs.readFileSync(path.join(__dirname,'../../app/index.html'),'utf8');
@@ -44,4 +59,5 @@ test('browser loads convergence helper before master sync',()=>{
   assert.match(master,/freshOperationChanges/);
   assert.match(master,/SyncConvergence8988\?\.rebase/);
   assert.match(master,/operationConflictRecovery/);
+  assert.match(master,/freshArchives/);
 });
