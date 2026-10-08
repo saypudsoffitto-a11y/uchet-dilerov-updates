@@ -4,8 +4,10 @@ on:
     paths:
       - 'app/sync-health-8987.js'
       - 'app/master-sync-8962.js'
+      - 'app/sync-convergence-8988.js'
       - 'app/index.html'
       - 'tests/release-8987/**'
+      - 'tests/release-8988/**'
       - '.github/workflows/sync-stability-fast.yml'
   workflow_dispatch:
 permissions:
@@ -18,9 +20,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Run reconnect regression tests
-        run: node --test tests/release-8987/sync-health.test.cjs
+      - name: Run sync regression tests
+        run: node --test tests/release-8987/sync-health.test.cjs tests/release-8988/sync-convergence.test.cjs
       - name: Syntax-check sync files
         run: |
           node --check app/sync-health-8987.js
+          node --check app/sync-convergence-8988.js
           node --check app/master-sync-8962.js
