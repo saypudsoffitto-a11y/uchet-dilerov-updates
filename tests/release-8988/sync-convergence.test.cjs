@@ -42,6 +42,6 @@ test('browser loads convergence helper before master sync',()=>{
   const master=fs.readFileSync(path.join(__dirname,'../../app/master-sync-8962.js'),'utf8');
   assert.ok(index.indexOf('sync-convergence-8988.js')<index.indexOf('master-sync-8962.js'));
   assert.match(master,/freshOperationChanges/);
-  assert.match(master,/SyncConvergence8988\.rebase/);
+  assert.match(master,/SyncConvergence8988\?\.rebase/);
   assert.match(master,/operationConflictRecovery/);
 });
