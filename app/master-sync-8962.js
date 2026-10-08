@@ -35,7 +35,8 @@
   const key=()=> 'uchet_sync_baseline_8962:'+String(syncCfg().url||'');
   const staleKey=()=> 'uchet_stale_products:'+String(syncCfg().url||'');
   const catalogConflictKey=()=> 'uchet_catalog_conflicts_8981:'+String(syncCfg().url||'');
-  const conflictNote=()=>quarantinedThisRun?' · конфликтующие поля сохранены отдельно':'';
+  const operationConflictKey=()=> 'uchet_operation_conflicts_8988:'+String(syncCfg().url||'');
+  const conflictNote=()=>quarantinedThisRun?' · конфликтующие изменения сохранены отдельно':'';
   const recoveryKey=()=> 'uchet_before_master_8962:'+String(syncCfg().url||'');
   const readBaseline=()=>{
     // Visible data and its server baseline share one atomic localStorage write.
@@ -67,6 +68,7 @@
     const select=document.getElementById('computerTarget8962');if(select)select.hidden=true;
     const conflicts=document.getElementById('productConflictRecovery');if(conflicts)conflicts.hidden=!localStorage.getItem(staleKey());
     const catalogConflicts=document.getElementById('catalogConflictRecovery');if(catalogConflicts)catalogConflicts.hidden=!localStorage.getItem(catalogConflictKey());
+    const operationConflicts=document.getElementById('operationConflictRecovery');if(operationConflicts)operationConflicts.hidden=!localStorage.getItem(operationConflictKey());
     const recovery=document.getElementById('recovery8962');if(recovery)recovery.hidden=!localStorage.getItem(recoveryKey());
   }
   async function request(method,body){
@@ -301,6 +303,29 @@
     }
     return keep;
   }
+  function archiveOperationConflicts(kind,conflicts){
+    if(!conflicts?.length)return;
+    let previous=[];try{previous=JSON.parse(localStorage.getItem(operationConflictKey())||'[]');}catch(_){}
+    localStorage.setItem(operationConflictKey(),JSON.stringify([...previous,{at:new Date().toISOString(),kind,changes:conflicts}]));
+    quarantinedThisRun+=conflicts.length;
+  }
+  function freshOperationChanges(serverState,changes){
+    const rebased=C.rebaseJournalChanges(serverState||{},changes||[]);
+    const result=window.SyncConvergence8988?.rebase(serverState?.ops||[],rebased)||{safe:rebased,conflicts:[]};
+    archiveOperationConflicts('operations',result.conflicts);
+    return result.safe;
+  }
+  function freshArchives(serverState,archives){
+    const out={},conflicts=[];
+    for(const field of ['receiptStates','receiptItemStates']){
+      const changes=archives?.[field]||[];
+      const result=window.SyncConvergence8988?.rebaseMap(serverState?.[field]||{},changes)||{safe:changes,conflicts:[]};
+      out[field]=result.safe;
+      for(const conflict of result.conflicts)conflicts.push({field,...conflict});
+    }
+    archiveOperationConflicts('archives',conflicts);
+    return out;
+  }
   function pending(){const base=readBaseline();return base?C.diffOps(base.state.ops,state.ops):[];}
   function hasPending(){
     const base=readBaseline();
@@ -355,9 +380,11 @@
       // the user during this exchange are new work, never an old cache upload.
       const outbox=firstOutbox();
       const sessionOps=combineChanges(outbox?.changes,C.diffOps(pullStarted.ops,state.ops));
-      const changes=firstJoinExactMirror?[...new Map([...C.diffOps([],firstWarehouseChanges),...sessionOps].map(c=>[c.id,c])).values()]:pending();
+      let changes=firstJoinExactMirror?[...new Map([...C.diffOps([],firstWarehouseChanges),...sessionOps].map(c=>[c.id,c])).values()]:pending();
+      changes=freshOperationChanges(r.state,changes);
       const sessionArchives=C.diffArchives(pullStarted,state);
-      const archives=firstJoinExactMirror?Object.fromEntries(Object.entries(sessionArchives).map(([field,rows])=>[field,combineChanges(outbox?.archives?.[field],rows,'key')])):C.diffArchives(readBaseline()?.state||{},state);
+      let archives=firstJoinExactMirror?Object.fromEntries(Object.entries(sessionArchives).map(([field,rows])=>[field,combineChanges(outbox?.archives?.[field],rows,'key')])):C.diffArchives(readBaseline()?.state||{},state);
+      archives=freshArchives(r.state,archives);
       let sessionProductChanges=productChanges;
       if(firstJoinExactMirror){
         sessionProductChanges=freshProductChanges(r.state,combineChanges(outbox?.products,diffProductChanges(pullStarted.products,state.products)));
@@ -370,7 +397,7 @@
         const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});
         if(!registered.conflict){
           const b=readBaseline();
-          accept(registered,pending(),C.diffArchives(b?.state||{},state),b?diffProductChanges(b.state.products,state.products):[],freshCatalog(registered.state,diffCatalog(b?.state,state)));
+          accept(registered,freshOperationChanges(registered.state,pending()),freshArchives(registered.state,C.diffArchives(b?.state||{},state)),b?diffProductChanges(b.state.products,state.products):[],freshCatalog(registered.state,diffCatalog(b?.state,state)));
         }
       }
       if(hasPending()&&syncCfg().enabled)queuePush(false);
@@ -385,12 +412,14 @@
     try{
       // Capture the exact local state used by the payload before any network await.
       const sentState=C.clone(state),sentOps=sentState.ops;
-      const base=readBaseline();let changes=C.diffOps(base.state.ops,sentOps);const allProductChanges=diffProductChanges(base.state.products,sentState.products),archives=C.diffArchives(base.state,sentState);
+      const base=readBaseline();let changes=C.diffOps(base.state.ops,sentOps);const allProductChanges=diffProductChanges(base.state.products,sentState.products);let archives=C.diffArchives(base.state,sentState);
       const expected=C.applyTransaction(base.state,changes,archives);
       const stockOverrides=(sentState.products||[]).flatMap(p=>{const old=base.state.products?.find(x=>C.id(x.id)===C.id(p.id)),e=expected.products?.find(x=>C.id(x.id)===C.id(p.id));return old&&e&&Number(p.stock)!==Number(e.stock)?[{id:C.id(p.id),before:Number(old.stock)||0,after:(Number(old.stock)||0)+Number(p.stock)-Number(e.stock)}]:[];});
       const r=await request('GET');
       if(!meta?.shared&&!meta?.masterId)throw new Error('Подключите общую базу.');
       if(Number(r.revision)<Number(base.revision))throw new Error('Сервер вернул устаревшую базу. Отправка остановлена.');
+      changes=freshOperationChanges(r.state,changes);
+      archives=freshArchives(r.state,archives);
       const productChanges=freshProductChanges(r.state,allProductChanges);
 
       // Проверяем локальные карточки против свежего сервера ДО отправки.
@@ -398,8 +427,8 @@
 
       const catalogChanges=freshCatalog(r.state,diffCatalog(base.state,sentState));
       applyLocalCatalog(r.state,catalogChanges);
-      changes=C.rebaseJournalChanges(r.state,changes);
-      // Three-way operation conflict detection; no silent last-writer-wins.
+      // Financial conflicts were quarantined above. Only changes still based on the
+      // current server version can proceed, so one stale PC cannot block convergence.
       C.applyTransaction(r.state,changes,archives);
 
       const payload={protocol:2,action:'changes',device,baseRevision:r.revision,changes,archives,productChanges};
@@ -438,6 +467,8 @@
     const info=box.querySelector('.muted');if(info)info.textContent='Документы и справочники синхронизируются с любого компьютера. Сервер хранит общую базу; конфликтующие правки сохраняются отдельно. Старые продажи и чеки сохраняют прежние цены.';
     const catalogRecovery=document.createElement('button');catalogRecovery.id='catalogConflictRecovery';catalogRecovery.hidden=true;catalogRecovery.textContent='Скачать конфликтующие правки дилеров и групп';box.querySelector('.actions').appendChild(catalogRecovery);
     catalogRecovery.onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(catalogConflictKey())||'[]'],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-catalog-conflicts.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+    const operationRecovery=document.createElement('button');operationRecovery.id='operationConflictRecovery';operationRecovery.hidden=true;operationRecovery.textContent='Скачать конфликтующие продажи и оплаты';box.querySelector('.actions').appendChild(operationRecovery);
+    operationRecovery.onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(operationConflictKey())||'[]'],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-operation-conflicts.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
     document.getElementById('productConflictRecovery').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(staleKey())||'[]'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Uchet-product-conflicts.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
     document.getElementById('recovery8962').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(recoveryKey())],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-before-master.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   }
