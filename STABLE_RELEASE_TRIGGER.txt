@@ -1,2 +1,2 @@
-Release 8.9.87: sync connection stability fix
-Transient GET retries, offline hysteresis, preserved auth failure behavior.
+Release 8.9.88: financial totals convergence repair
+Verified three-client convergence for sales, payments, offline recovery, lost acknowledgements, and stale conflicting totals.
