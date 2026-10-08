@@ -305,7 +305,7 @@
   }
   function freshOperationChanges(serverState,changes){
     const rebased=C.rebaseJournalChanges(serverState||{},changes||[]);
-    const result=window.SyncConvergence8988?.rebase(serverState?.ops||[],rebased)||{safe:rebased,conflicts:[]};
+    const result=window.SyncConvergence8988.rebase(serverState?.ops||[],rebased);
     if(result.conflicts.length){
       let previous=[];try{previous=JSON.parse(localStorage.getItem(operationConflictKey())||'[]');}catch(_){}
       localStorage.setItem(operationConflictKey(),JSON.stringify([...previous,{at:new Date().toISOString(),changes:result.conflicts}]));
