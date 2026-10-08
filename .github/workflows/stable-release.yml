@@ -38,6 +38,8 @@ jobs:
         if: runner.os == 'macOS'
         working-directory: app
         run: npm run build:mac -- --publish never
+      - name: Verify three-client totals convergence
+        run: node app/node_modules/electron/cli.js scripts/native-sync-three-clients.cjs
       - name: Check macOS signed bundle and launch
         if: runner.os == 'macOS'
         shell: bash
