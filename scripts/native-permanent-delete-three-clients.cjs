@@ -89,6 +89,8 @@ const progress=message=>{events.push({check:message});console.log(message);};
   await evaluate(clients[index],`window.__qaConfirm=${confirm};openDealer(1);(()=>{const b=[...document.querySelectorAll('#dealerModalBody button')].find(b=>b.textContent===${JSON.stringify(text)});if(!b)throw Error('QA button missing: '+${JSON.stringify(text)});b.click();})()`);
  }
  async function addNotebook(index,amount){
+  // A new document must be created from the server generation after the clear.
+  await until(()=>evaluate(clients[index],'window.masterSync8962.pull(false)'),'Pull before creating a new notebook entry failed');
   await evaluate(clients[index],`addInitialDebt(1);initialDebtAmount.value=${JSON.stringify(String(amount))};initialDebtNote.value='QA после очистки';confirmInitialDebt();`);
   await until(()=>store.state.ops.some(o=>o.dealerId===1&&o.type==='initial_debt'&&o.total===amount),'New notebook operation did not reach server');
  }
