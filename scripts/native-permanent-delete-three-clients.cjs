@@ -41,6 +41,7 @@ const server=http.createServer(async(req,res)=>{
 app.on('browser-window-created',(_e,win)=>win.webContents.on('preload-error',(_e,_p,error)=>errors.push(String(error))));
 app.whenReady().then(()=>session.defaultSession.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(request,done)=>done({cancel:!request.url.startsWith('http://127.0.0.1:')})));
 require('../app/main-8948');
+app.removeAllListeners('window-all-closed');
 // The actual contextBridge method and IPC channel remain in use, while this
 // harmless handler replaces the save dialog and disk backup for fixture data.
 ipcMain.removeHandler('update:saveBackup');
@@ -50,7 +51,11 @@ async function until(check,message,timeout=15000){
  const started=Date.now();while(Date.now()-started<timeout){if(await check())return;await pause(100);}
  throw Error(message+'; recent events: '+JSON.stringify(events.slice(-12)));
 }
-const evaluate=(win,code)=>win.webContents.executeJavaScript(code);
+const rendererLog=[];
+async function evaluate(win,code){
+ try{return await win.webContents.executeJavaScript(code)}
+ catch(error){throw Error(String(error.message)+'\nRenderer expression: '+code+'\nRecent renderer messages: '+JSON.stringify(rendererLog.slice(-15)))}
+}
 const progress=message=>{events.push({check:message});console.log(message);};
 (async()=>{
  await app.whenReady();await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
@@ -58,9 +63,12 @@ const progress=message=>{events.push({check:message});console.log(message);};
  async function client(index,initial){
   const win=new BrowserWindow({show:false,width:1400,height:900,webPreferences:{partition:'persist:permanent-delete-pc'+index,preload:path.join(root,'app/preload.js'),contextIsolation:true,nodeIntegration:false}});
   win.webContents.session.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(request,done)=>done({cancel:!request.url.startsWith(url+'/')}));
+  win.webContents.on('console-message',(_event,level,message,line,source)=>{rendererLog.push({index,level,message,line,source});if(level>=2)console.log('Renderer '+index+': '+message)});
   await win.loadFile(path.join(root,'app/index.html'));
   await until(()=>evaluate(win,'!!window.permanentDeleteUI8989&&!!window.masterSync8962?.queueDeletion&&document.documentElement.dataset.uchetRuntime==="8.9.68"'),'Deletion UI not loaded');
   await evaluate(win,`window.__qaConfirm=true;window.__qaPrompts=[];window.__qaAlerts=[];window.confirm=text=>(window.__qaPrompts.push(String(text)),window.__qaConfirm);window.alert=text=>window.__qaAlerts.push(String(text));void 0;`);
+  await evaluate(win,'newmatrosAPI.setWatch(false)');
+  await evaluate(win,`window.__pinLock8948.isConfigured()?window.__pinLock8948.unlock('1234'):window.__pinLock8948.setInitialPin('1234')`);
   if(initial)await evaluate(win,`state=norm(${JSON.stringify(fixture)});state.sync={url:${JSON.stringify(url)},token:'qa-pc${index}',enabled:true,interval:60,revision:0};render();localStorage.setItem(KEY,JSON.stringify(state));window.masterSync8962.markSaved();`);
   return win;
  }
@@ -83,7 +91,9 @@ const progress=message=>{events.push({check:message});console.log(message);};
   await evaluate(clients[index],`addInitialDebt(1);initialDebtAmount.value=${JSON.stringify(String(amount))};initialDebtNote.value='QA после очистки';confirmInitialDebt();`);
   await until(()=>store.state.ops.some(o=>o.dealerId===1&&o.type==='initial_debt'&&o.total===amount),'New notebook operation did not reach server');
  }
+ progress('Three renderer profiles initialized');
  await converge(320);
+ progress('Initial balances converged');
  // Exercise the exact lists shown in the supplied dark-theme regression video.
  await evaluate(clients[0],`uiThemeSelect.value='dark';uiThemeSelect.dispatchEvent(new Event('change',{bubbles:true}));show('sales',document.querySelector('nav button[data-section="sales"]'));renderSaleDealers();renderSaleProducts();`);
  const palette=await evaluate(clients[0],`(()=>{const selectors=['#saleDealerSearch','#saleDealerList','#saleProductList','.selectedBox','#saleDealerList .choiceRow.active','#saleProductList .choiceRow','#sales h2'];return selectors.map(selector=>{const el=document.querySelector(selector);if(!el)throw Error('Missing theme target '+selector);const style=getComputedStyle(el);return {selector,background:style.backgroundColor,color:style.color}})})()`);
@@ -94,9 +104,9 @@ const progress=message=>{events.push({check:message});console.log(message);};
  fs.writeFileSync(path.join(output,'theme-dealer.png'),(await clients[0].webContents.capturePage()).toPNG());
  fs.writeFileSync(path.join(output,'theme-palette.json'),JSON.stringify(palette,null,2));
  progress('Graphite theme has readable dealer/product lists, selected rows and inputs with no white panels');
- const beforeCancel=JSON.stringify(store.state),beforeCancelRevision=store.revision;
+ const beforeCancel=JSON.stringify(store.state),beforeCancelRevision=store.revision,beforeCancelBackups=backupCount;
  await click(0,'Удалить сумму из тетради',false);await pause(500);
- assert.equal(JSON.stringify(store.state),beforeCancel);assert.equal(store.revision,beforeCancelRevision);assert.equal(backupCount,3,'Cancel must not save deletion backup');
+ assert.equal(JSON.stringify(store.state),beforeCancel);assert.equal(store.revision,beforeCancelRevision);assert.equal(backupCount,beforeCancelBackups,'Cancel must not save deletion backup');
  assert.equal(await evaluate(clients[0],'debtOf(1)'),320);
  await click(0,'Удалить сумму из тетради');
  await until(()=>!store.state.ops.some(o=>o.id===101),'Notebook delete did not reach server');
@@ -145,4 +155,4 @@ const progress=message=>{events.push({check:message});console.log(message);};
  assert.deepEqual(errors,[]);
  fs.writeFileSync(path.join(output,'result.json'),JSON.stringify({ok:true,clientCount:3,realComputers:false,stock:97,deletedDealer:1,otherDealerDebt:200,backupCount,events,errors},null,2));
  server.close();app.exit(0);
-})().catch(error=>{fs.writeFileSync(path.join(output,'failure.txt'),String(error.stack));console.error(error);server.close();app.exit(1);});
+})().catch(error=>{fs.writeFileSync(path.join(output,'failure.txt'),String(error.stack)+'\nEvents: '+JSON.stringify(events)+'\nRenderer log: '+JSON.stringify(rendererLog));console.error(error);server.close();app.exit(1);});
