@@ -86,7 +86,7 @@
       const common=(o.type==='sale'?' data-receipt-id="'+h(o.id)+'"':'')+' data-document-row="true" data-op-id="'+h(o.id)+'" data-op-type="'+h(o.type||'')+'" oncontextmenu="showDealerOpMenu8967(event,'+Number(o.id)+','+Number(d.id)+')"';
       if(o.type==='sale')return '<tr class="clickable'+window.receiptJournal.rowClass(o)+'"'+common+' ondblclick="showReceiptFromHistory('+Number(o.id)+')"><td>'+h(o.date||'')+'</td><td>Накладная № '+h(o.receiptNo||'')+'</td><td>'+((o.items||[]).length)+' поз.</td><td>'+rub(o.total)+'</td><td><button class="secondary miniBtn" type="button" onclick="showReceiptFromHistory('+Number(o.id)+')">Открыть чек</button></td></tr>';
       if(o.type==='payment')return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>Оплата</td><td>'+h(o.method||'Оплата')+(o.note?' · '+h(o.note):'')+'</td><td>'+rub(o.total)+'</td><td><button class="secondary miniBtn" type="button" onclick="showDebtReport('+Number(d.id)+','+Number(o.id)+')">Отчёт по долгу</button></td></tr>';
-      if(o.type==='initial_debt')return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>Начальный долг</td><td>'+h(o.note||'Перенесено из прежнего учёта')+'</td><td>'+rub(o.total)+'</td><td></td></tr>';
+      if(o.type==='initial_debt')return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>Начальный долг</td><td>'+h(o.note||'Перенесено из прежнего учёта')+'</td><td>'+rub(o.total)+'</td><td><button class="secondary miniBtn" type="button" onclick="editOp8967('+Number(o.id)+')">Изменить сумму</button> <button class="secondary miniBtn" type="button" onclick="permanentDeleteUI8989.operation('+Number(o.id)+','+Number(d.id)+')">Удалить сумму из тетради</button></td></tr>';
       return '<tr'+common+'><td>'+h(o.date||'')+'</td><td>'+h(o.type||'Операция')+'</td><td>'+h(o.note||'')+'</td><td>'+rub(o.total)+'</td><td></td></tr>';
     }).join('');
   }
@@ -126,6 +126,8 @@
     document.getElementById('opEditNote8967').value=op.note||'';
     document.getElementById('opEditMethodWrap8967').classList.toggle('hidden',op.type!=='payment');
     if(op.type==='payment')document.getElementById('opEditMethod8967').value=op.method||'Наличные';
+    modal.querySelector('.deleteNotebook8989')?.remove();
+    if(op.type==='initial_debt'){const b=document.createElement('button');b.type='button';b.className='secondary deleteNotebook8989';b.textContent='Удалить сумму из тетради';b.onclick=()=>window.permanentDeleteUI8989.operation(op.id,op.dealerId);modal.querySelector('.actions:last-child').prepend(b);}
     modal.classList.remove('hidden');
     setTimeout(()=>document.getElementById('opEditAmount8967')?.focus(),0);
   };
@@ -169,6 +171,7 @@
       add('Удалить оплату',()=>window.deletePayment8967(op.id),'dangerMenuItem');
     }else if(op.type==='initial_debt'){
       add('Изменить начальный долг',()=>window.editOp8967(op.id));
+      add('Удалить сумму из тетради',()=>window.permanentDeleteUI8989.operation(op.id,op.dealerId),'dangerMenuItem');
     }
     if(menu.children.length)document.body.appendChild(menu);
   };

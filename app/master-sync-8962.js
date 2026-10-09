@@ -1,6 +1,7 @@
 (()=>{
   'use strict';
   const C=window.SyncCore8962;
+  const D=window.PermanentDelete8989;
   const DEVICE='uchet_device_8962';
   const OLD_SERVER='https://uchet-dilerov-sync.onrender.com';
   const TURSO_SERVER='https://uchet-dilerov-sync-8963-test.onrender.com';
@@ -150,6 +151,7 @@
     for(const [field,changes] of [['dealers',patch.dealers],['groups',patch.groupChanges]]){
       const rows=new Map((next[field]||[]).map(row=>[C.id(row.id),row]));
       for(const ch of changes){
+        if(field==='dealers'&&server.permanentDeletions?.dealers?.[ch.id])continue;
         const current=rows.get(ch.id)||null;
         if(C.same(current,ch.after))continue;
         if(!C.same(current,ch.before))throw new Error('Карточка '+field+' '+ch.id+' изменена на другом компьютере. Правка сохранена.');
@@ -170,6 +172,7 @@
   function freshCatalog(server,patch){
     const kept={dealers:[],groupChanges:[],mapChanges:{}},conflicts=[];
     for(const [field,key] of [['dealers','dealers'],['groups','groupChanges']])for(const ch of patch[key]){
+      if(field==='dealers'&&server.permanentDeletions?.dealers?.[ch.id])continue;
       const current=(server[field]||[]).find(row=>C.id(row.id)===ch.id)||null;
       if(C.same(current,ch.after))continue;
       const deleted=field==='dealers'&&server.deletedDealers?.[ch.id];
@@ -204,6 +207,8 @@
     return kept;
   }
   let lastSaved=C.clone(state);
+  const createdEntities=new Map();
+  function recordCreatedEntity(id){createdEntities.set(C.id(id),C.clone(state.permanentDeletions?.history||{}));}
   function combineChanges(previous,changes,field='id'){
     const rows=new Map((previous||[]).map(ch=>[ch[field],C.clone(ch)]));
     for(const ch of changes||[]){const old=rows.get(ch[field]);rows.set(ch[field],old?{...ch,before:old.before}:C.clone(ch));}
@@ -211,6 +216,10 @@
   }
   const firstOutbox=()=>state._syncPending8981?.url===String(syncCfg().url||'')?state._syncPending8981:null;
   function recordSave(){
+    for(const op of state.ops||[]){
+      const epochs=createdEntities.get(C.id(op.id));
+      if(epochs){op.historyEpoch8989=epochs[C.id(op.dealerId)]||0;createdEntities.delete(C.id(op.id));}
+    }
     if(readBaseline())return;
     const previous=firstOutbox()||{},catalog=diffCatalog(lastSaved,state);
     const archives=C.diffArchives(lastSaved,state);
@@ -310,12 +319,14 @@
     quarantinedThisRun+=conflicts.length;
   }
   function freshOperationChanges(serverState,changes){
+    changes=D?D.filterChanges(serverState||{},changes):changes;
     const rebased=C.rebaseJournalChanges(serverState||{},changes||[]);
     const result=window.SyncConvergence8988?.rebase(serverState?.ops||[],rebased)||{safe:rebased,conflicts:[]};
     archiveOperationConflicts('operations',result.conflicts);
     return result.safe;
   }
   function freshArchives(serverState,archives){
+    archives=D?D.filterArchives(serverState||{},archives):archives;
     const out={},conflicts=[];
     for(const field of ['receiptStates','receiptItemStates']){
       const changes=archives?.[field]||[];
@@ -327,22 +338,26 @@
     return out;
   }
   function pending(){const base=readBaseline();return base?C.diffOps(base.state.ops,state.ops):[];}
+  const deletionQueue=()=>state._purgeQueue8989?.url===String(syncCfg().url||'')?state._purgeQueue8989.commands||[]:[];
   function hasPending(){
     const base=readBaseline();
-    return !!base&&(pending().length||diffProductChanges(base.state.products,state.products).length||
+    return !!base&&(deletionQueue().length||pending().length||diffProductChanges(base.state.products,state.products).length||
       nonProductChanged(base.state,state)||Object.values(C.diffArchives(base.state,state)).some(rows=>rows.length));
   }
-  function accept(r,changes,archives,productChanges,nonProductOverlay){
+  function accept(r,changes,archives,productChanges,nonProductOverlay,acknowledgedDeletion){
     const known=readBaseline();
     if(known&&Number(r.revision)<Number(known.revision))throw new Error('Получен устаревший ответ сервера. Локальные данные сохранены.');
     for(const old of known?.state?.products||[]){
       const incoming=(r.state?.products||[]).find(p=>C.id(p.id)===C.id(old.id));
       if(incoming&&Number(incoming.catalogRev||0)<Number(old.catalogRev||0))throw new Error('Сервер вернул старую карточку товара '+old.id+'. Локальная цена сохранена.');
     }
+    if(D){changes=D.filterChanges(r.state||{},changes);archives=D.filterArchives(r.state||{},archives);}
     let merged=C.applyTransaction(r.state||{},C.rebaseJournalChanges(r.state||{},changes||[]),archives);
     if(productChanges?.length)merged=applyLocalProductChanges(merged,productChanges);
     if(nonProductOverlay)merged=applyLocalCatalog(merged,nonProductOverlay);
+    if(D)merged=D.sanitize(merged);
     const local=state;
+    if(local._purgeQueue8989)merged._purgeQueue8989={...C.clone(local._purgeQueue8989),commands:(local._purgeQueue8989.commands||[]).filter(c=>c.requestId!==acknowledgedDeletion)};
     merged.sync={...local.sync,revision:r.revision};merged.update=local.update;merged.newmatros=local.newmatros;
     if(local._syncPending8981&&local._syncPending8981.url!==String(syncCfg().url||''))merged._syncPending8981=C.clone(local._syncPending8981);
     // Baseline is always the exact server snapshot. Local unsent edits live only in visible state.
@@ -355,6 +370,7 @@
     // baseline independently from the saved visible database.
     try{localStorage.setItem(key(),JSON.stringify(merged._syncBaseline8981.baseline));}catch(_){}
     render();paint();
+    if(!C.same(known?.state?.permanentDeletions,r.state?.permanentDeletions))window.permanentDeleteUI8989?.refresh();
   }
   async function backup(){
     const data=JSON.stringify(state);
@@ -404,12 +420,39 @@
       status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · получена серверная база; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(hasPending()?' · есть неотправленные изменения':''))+conflictNote());return true;
     }catch(e){handleSyncError(e);return false;}finally{finishExchange();}
   }
+  async function queueDeletion(command){
+    if(!syncCfg().url)throw new Error('Для полного удаления подключите общую базу на сервере.');
+    const next=C.clone(state),url=String(syncCfg().url||'');
+    const commands=deletionQueue();
+    next._purgeQueue8989={url,commands:[...commands,C.clone(command)]};
+    commitState(next);
+    await push(true);
+    return {ok:!deletionQueue().some(c=>c.requestId===command.requestId)};
+  }
+  async function flushDeletions(manual,attempt){
+    for(const command of [...deletionQueue()]){
+      const r=await request('GET');
+      if(r.permanentDeletionProtocol!==1)throw new Error('Сервер ещё не обновлён для полного удаления. Команда сохранена и ожидает обновления.');
+      const result=await request('PUT',{protocol:2,action:'purge',device,baseRevision:r.revision,deletion:command});
+      if(result.conflict){
+        if(attempt<3)queuePush(manual,attempt+1);
+        status('Удаление ожидает повторной отправки: база изменилась на другом компьютере.');
+        return false;
+      }
+      const acknowledged=result.state?.permanentDeletions?.requests?.[command.requestId];
+      if(!acknowledged)throw new Error('Сервер не подтвердил полное удаление. Команда сохранена для повторной отправки.');
+      const b=readBaseline();
+      accept(result,freshOperationChanges(result.state,pending()),freshArchives(result.state,C.diffArchives(b?.state||{},state)),freshProductChanges(result.state,diffProductChanges(b?.state?.products,state.products)),freshCatalog(result.state,diffCatalog(b?.state,state)),command.requestId);
+    }
+    return true;
+  }
   async function push(manual,conflictAttempt=0){
     if(!syncCfg().url||(!manual&&!syncCfg().enabled))return false;
     if(busy){queuedWrite=true;queuedManual=queuedManual||!!manual;return false;}
     if(!readBaseline()){await pull(true);return false;}
     busy=true;quarantinedThisRun=0;
     try{
+      if(!await flushDeletions(manual,conflictAttempt))return false;
       // Capture the exact local state used by the payload before any network await.
       const sentState=C.clone(state),sentOps=sentState.ops;
       const base=readBaseline();let changes=C.diffOps(base.state.ops,sentOps);const allProductChanges=diffProductChanges(base.state.products,sentState.products);let archives=C.diffArchives(base.state,sentState);
@@ -472,6 +515,6 @@
     document.getElementById('productConflictRecovery').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(staleKey())||'[]'],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='Uchet-product-conflicts.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
     document.getElementById('recovery8962').onclick=()=>{const url=URL.createObjectURL(new Blob([localStorage.getItem(recoveryKey())],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Uchet-before-master.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
   }
-  window.masterSync8962={pull,push,device,recordSave,markSaved,commitState};paint();
+  window.masterSync8962={pull,push,device,recordSave,markSaved,commitState,queueDeletion,recordCreatedEntity};paint();
   setTimeout(()=>{try{if(syncCfg().enabled&&syncCfg().url)pull(false)}catch(_){}},500);
 })();

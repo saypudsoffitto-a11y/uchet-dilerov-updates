@@ -45,7 +45,7 @@ test('8.9.63 server blocks legacy full-state resurrection',async t=>{
   t.after(()=>{try{child.kill()}catch(_){};try{fs.rmSync(tmp,{recursive:true,force:true})}catch(_){}});
 
   const health=await waitForHealth(base);
-  assert.equal(health.serverVersion,'8.9.82-sync8',out);
+  assert.equal(health.serverVersion,'8.9.89-sync9',out);
   assert.equal(health.protocol,2);
   assert.equal(health.inventoryProtocol,2);
   assert.equal(health.productRevisions,true);
@@ -60,7 +60,7 @@ test('8.9.63 server blocks legacy full-state resurrection',async t=>{
 
   const current=await json(base,'GET');
   assert.equal(current.status,200);
-  assert.equal(current.data.serverVersion,'8.9.82-sync8');
+  assert.equal(current.data.serverVersion,'8.9.89-sync9');
   assert.equal(current.data.revision,0);
   assert.equal((current.data.state.dealers||[]).length,0,'legacy PC changed the protected server catalog');
 });

@@ -17,7 +17,7 @@ function harness(draft,api={}){
     localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},
     state:{dealers:[{id:1,name:'Тестовый дилер'},{id:2,name:'Другой дилер'}],products:[{id:11,name:'МАТ-303 PREMIUM 380-500',retailPrice:200}],groups:[],ops:[],receiptSeq:1,newmatros:{prices:{}}},
     save(){},confirm:()=>true,alert:s=>alerts.push(s),setTimeout(){}};
-  ctx.window=ctx;ctx.newmatrosAPI={...api,setIniHandler:fn=>handler=fn};vm.createContext(ctx);
+  ctx.nextEntityId=require('../../app/entity-id-8981')(require('node:crypto').webcrypto,ctx.localStorage,()=>ctx.state);ctx.window=ctx;ctx.newmatrosAPI={...api,setIniHandler:fn=>handler=fn};vm.createContext(ctx);
   const html=read('app/index.html');vm.runInContext(html.slice(html.indexOf('function nmNum('),html.indexOf('function showNewMatRosPreview(')),ctx);
   for(const file of ['final-fixes-8917.js','runtime-fixes-8924.js','runtime-fixes-8926.js'])vm.runInContext(read('app/'+file),ctx);
   return {ctx,storage,alerts,nodes,send:(text=ini(),name='order.ini')=>handler({text,name}),draft:()=>JSON.parse(storage.get(key)||'null')};

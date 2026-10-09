@@ -1,7 +1,7 @@
 (function(root,factory){
   if(typeof module==='object'&&module.exports)module.exports=factory;
-  else root.nextEntityId=factory(root.crypto,root.localStorage,()=>state);
-})(typeof window==='object'?window:globalThis,(crypto,storage,getState)=>{
+  else root.nextEntityId=factory(root.crypto,root.localStorage,()=>state,id=>root.masterSync8962?.recordCreatedEntity(id));
+})(typeof window==='object'?window:globalThis,(crypto,storage,getState,onCreated)=>{
   'use strict';
   const key='uchet_entity_ids_8981';
   let recent=[];try{recent=JSON.parse(storage.getItem(key)||'[]');}catch(_){}
@@ -19,7 +19,7 @@
       if(!id||known.has(String(id)))continue;
       const next=[...recent,id].slice(-4096);
       storage.setItem(key,JSON.stringify(next));
-      recent=next;issued.add(String(id));return id;
+      recent=next;issued.add(String(id));if(typeof onCreated==='function')onCreated(id);return id;
     }
     throw new Error('Не удалось создать уникальный номер записи. Данные не изменены; повторите сохранение.');
   };

@@ -154,7 +154,7 @@
       }
       if(d&&!sameDealer(d,ceil)){renderDraft(true);alert('Сейчас открыта продажа для «'+d.dealerName+'». Новая выгрузка относится к другому дилеру «'+ceil.dealerName+'» и не была добавлена. Сначала закрой текущую продажу.');return}
       if(options.recoverOnly&&!d&&!options.allowEmptyRecovery)return;
-      if(!d)d={version:1,createdAt:Date.now(),dealerId:ceil.dealerId,dealerName:ceil.dealerName,dealerPhone:ceil.dealerPhone,ceilings:[]};
+      if(!d)d={version:1,createdAt:Date.now(),dealerId:ceil.dealerId,dealerName:ceil.dealerName,dealerPhone:ceil.dealerPhone,historyEpoch8989:state.permanentDeletions?.history?.[String(ceil.dealerId)]||0,ceilings:[]};
       else{if(d.dealerId==null&&ceil.dealerId!=null)d.dealerId=ceil.dealerId;if(!d.dealerPhone&&ceil.dealerPhone)d.dealerPhone=ceil.dealerPhone;if((!d.dealerName||d.dealerName==='Дилер не определён')&&ceil.dealerName)d.dealerName=ceil.dealerName}
       const replace=d.ceilings.findIndex(c=>c.key===ceil.key&&ceilingHasErrors(c));
       if(replace>=0){backupDraft(d);d.ceilings[replace]=ceil;}else d.ceilings.push(ceil);
@@ -198,6 +198,7 @@
 
   function finishDraft(){
     const d=loadDraft();if(!d||!(d.ceilings||[]).length)return;
+    if(window.PermanentDelete8989?.draftBlocked(state,d))return alert('Дилер удалён или его история очищена на другом компьютере. Старый черновик нельзя провести; создайте новую продажу.');
     if(draftHasErrors(d))return alert('Не все потолки рассчитаны правильно. Проверь цену и сумму перед закрытием продажи.');
     if(!confirm('Закрыть продажу для «'+d.dealerName+'»?\nПотолков: '+d.ceilings.length+'\nИтого: '+m(draftTotal(d))+'\n\nПосле подтверждения будет создан один чек и долг дилера увеличится на общую сумму.'))return;
     try{
@@ -208,7 +209,7 @@
       const total=draftTotal(d),numReceipt=state.receiptSeq++,now=Date.now(),date=new Date().toLocaleString('ru-RU');
       const flat=[];d.ceilings.forEach((c,idx)=>(c.items||[]).forEach(i=>flat.push({...i,name:'Потолок '+(idx+1)+' · '+String(i.name||''),ceilingNo:idx+1,ceilingIndex:c.ceilingIndex,newmatrosKey:c.key})));
       const first=d.ceilings[0]||{};
-      const op={id:now+1,ts:now,type:'sale',date,dealerId:dealer.id,dealer:dealer.name,receiptNo:numReceipt,items:flat,total,profit:0,source:'NewMatRos',newmatrosKey:first.key||'',newmatrosKeys:d.ceilings.map(c=>c.key),newmatrosCeilings:d.ceilings.map((c,idx)=>({key:c.key,no:idx+1,number:c.number,ceilingIndex:c.ceilingIndex,material:c.material,color:c.color,width:c.width,area:c.area,perimeter:c.perimeter,total:c.total,plannedDate:c.plannedDate,drawing:c.drawing})),newmatros:{number:first.number||'',ceilingIndex:first.ceilingIndex||'',material:first.material||'',color:first.color||'',area:d.ceilings.reduce((s,c)=>s+(+c.area||0),0),perimeter:d.ceilings.reduce((s,c)=>s+(+c.perimeter||0),0),ceilingCount:d.ceilings.length}};
+      const op={id:window.nextEntityId(),ts:now,type:'sale',date,dealerId:dealer.id,dealer:dealer.name,receiptNo:numReceipt,items:flat,total,profit:0,source:'NewMatRos',newmatrosKey:first.key||'',newmatrosKeys:d.ceilings.map(c=>c.key),newmatrosCeilings:d.ceilings.map((c,idx)=>({key:c.key,no:idx+1,number:c.number,ceilingIndex:c.ceilingIndex,material:c.material,color:c.color,width:c.width,area:c.area,perimeter:c.perimeter,total:c.total,plannedDate:c.plannedDate,drawing:c.drawing})),newmatros:{number:first.number||'',ceilingIndex:first.ceilingIndex||'',material:first.material||'',color:first.color||'',area:d.ceilings.reduce((s,c)=>s+(+c.area||0),0),perimeter:d.ceilings.reduce((s,c)=>s+(+c.perimeter||0),0),ceilingCount:d.ceilings.length}};
       state.ops.push(op);save();saveDraft(null);clearOldPending();try{if(typeof clearNewMatRosNotification==='function')clearNewMatRosNotification()}catch(_){ }renderDraft(false);
       const s=document.getElementById('nmStatus');if(s)s.textContent='Продажа закрыта: '+dealer.name+' · потолков '+d.ceilings.length+' · чек № '+numReceipt+' · долг увеличен на '+m(total);
       if(typeof showReceiptFromHistory==='function')setTimeout(()=>showReceiptFromHistory(op.id),80);else alert('Продажа оформлена. Чек № '+numReceipt+' · '+m(total));

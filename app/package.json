@@ -83,7 +83,10 @@
       "receipt-display-8983.js",
       "receipt-journal.js",
       "table-layout.js",
-      "interface-8984.css"
+      "interface-8984.css",
+      "permanent-delete-8989.js",
+      "permanent-delete-ui-8989.js",
+      "interface-dark-8989.css"
     ],
     "nsis": {
       "allowToChangeInstallationDirectory": true,
@@ -141,7 +144,7 @@
       ]
     }
   },
-  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.88",
+  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.89",
   "devDependencies": {
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
@@ -156,10 +159,10 @@
     "build:win": "electron-builder --win nsis portable --x64",
     "start": "electron .",
     "test:electron": "electron --version",
-    "prebuild:win": "node ../scripts/run-all-tests.cjs release-8958 release-8959 release-8961 release-8962",
+    "prebuild:win": "node ../scripts/run-all-tests.cjs release-8958 release-8959 release-8961 release-8962 release-8989",
     "build:mac": "electron-builder --mac dmg zip --arm64 -c.productName=UchetDilerov",
-    "prebuild:mac": "node ../scripts/run-all-tests.cjs release-8958 release-8959 release-8961 release-8962",
+    "prebuild:mac": "node ../scripts/run-all-tests.cjs release-8958 release-8959 release-8961 release-8962 release-8989",
     "test": "node ../scripts/run-all-tests.cjs"
   },
-  "version": "8.9.88"
+  "version": "8.9.89"
 }

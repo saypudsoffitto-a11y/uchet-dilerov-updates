@@ -24,7 +24,7 @@ test('Open NewMatRos sale prices three widths from cards and posts one receipt',
  const elements=new Map(),storage=new Map();let handler;
  const element=()=>({style:{},classList:{add(){},remove(){},toggle(){}},appendChild(){},addEventListener(){},remove(){},querySelector:()=>element()});
  const ctx={console,TextDecoder,Uint8Array,document:{head:{appendChild(){}},body:{appendChild(e){elements.set(e.id,e)}},documentElement:{dataset:{}},createElement:element,getElementById:id=>elements.get(id)||null},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},state:{dealers:[{id:1,name:'Тестовый дилер',phone:'79990000000'}],products:[{id:11,name:'МАТ-303 PREMIUM 380-500',retailPrice:200},{id:12,name:'МАТ-303 PREMIUM до 360',retailPrice:100},{id:13,name:'МАТ-303 PREMIUM 580',retailPrice:300}],groups:[],ops:[],receiptSeq:1,newmatros:{prices:{}}},save(){},confirm:()=>true,alert:()=>{},setTimeout(){},KEY:'state'};
- ctx.window=ctx;ctx.newmatrosAPI={setIniHandler:fn=>handler=fn};vm.createContext(ctx);
+ ctx.nextEntityId=require('../../app/entity-id-8981')(require('node:crypto').webcrypto,ctx.localStorage,()=>ctx.state);ctx.window=ctx;ctx.newmatrosAPI={setIniHandler:fn=>handler=fn};vm.createContext(ctx);
  vm.runInContext(section(html,'function nmNum(','function showNewMatRosPreview('),ctx);
  for(const file of ['final-fixes-8917.js','runtime-fixes-8924.js','runtime-fixes-8926.js'])vm.runInContext(read('app/'+file),ctx);
  for(const [i,w] of [360,380,580].entries())handler({text:`[Заказ]\nНомерРасчета=100\nИндексПотолка=${i+1}\nКонтрагент=Тестовый дилер\nМатериалМатериал=МАТ-303 PREMIUM\nКоличествоПродукция=10\nШиринаПолотна=${w}\n[Контрагент]\nНаименование=Тестовый дилер`,name:'test.ini'});

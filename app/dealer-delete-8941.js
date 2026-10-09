@@ -109,6 +109,7 @@
         try{alert('Выбранная строка изменилась. Удаление отменено, чтобы не удалить другого дилера.')}catch(_){}
         return false;
       }
+      if(window.permanentDeleteUI8989)return window.permanentDeleteUI8989.dealer(lockedId,expectedName);
       const related=(state.ops||[]).filter(o=>String(o.dealerId)===lockedId);
       if(!confirm('Удалить карточку дилера «'+(d.name||'')+'»?'))return false;
       const detail=related.length
