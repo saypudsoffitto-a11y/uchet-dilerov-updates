@@ -13,7 +13,7 @@
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui header {
     background:#282e32!important;border-color:#4a565c!important;color:#f0f4f5!important;
   }
-  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(h1,h2,h3,h4,.brand,.big,.homeHeading h2) {
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(h1,h2,h3,h4,.brand,.big,.homeHeading h2,#pageTitle) {
     color:#f0f4f5!important;
   }
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.muted,.sectionHint,.navLabel,.dealerMeta div,.dealerSheetMeta,.receiptEditHelp) {
