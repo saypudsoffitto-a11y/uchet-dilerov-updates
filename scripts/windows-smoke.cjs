@@ -109,30 +109,35 @@ async function main(){
   assert.equal(lockCheck.lockedAfter,lockCheck.deleteId,'dealer ID changed after table re-render');
   console.log('PASS: dealer context-menu lock survives table re-render');
 
-  const deletion=await evaluate(`(()=>{
+  const deletion=await evaluate(`(async()=>{
     const x=window.__smokeDealer8963;
     if(!x)return {error:'smoke dealer state missing'};
-    const original=window.confirm;let confirmations=0,removed=false;
+    const original=window.confirm;let confirmations=0,cancelled=false;
+    const before=JSON.stringify(state);
     try{
-      window.confirm=()=>{confirmations++;return true};
-      removed=!!window.__dealerDelete8941.removeDealerNow(x.deleteId,x.name);
+      window.confirm=()=>{confirmations++;return false};
+      cancelled=(await window.__dealerDelete8941.removeDealerNow(x.deleteId,x.name))===false&&JSON.stringify(state)===before;
     }finally{window.confirm=original}
+    // The native three-client suite verifies confirmed UI/IPC/server deletion.
+    // Here verify the packaged deletion module with a fictional acknowledged
+    // server result, without opening a native backup dialog in unattended CI.
+    state=window.PermanentDelete8989.apply(state,{requestId:crypto.randomUUID(),target:'dealer',dealerId:x.deleteId,confirmed:true,preserveStock:true});
+    localStorage.setItem(KEY,JSON.stringify(state));render();
     const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
     const remote={dealers:[{id:x.deleteId,name:x.name,phone:'+79990000111',updatedAt:Date.now()+60000}],groups:[],products:[],ops:[],deletedDealers:{},deletedDealerKeys:{},receiptSeq:1,update:state.update,newmatros:state.newmatros,sync:state.sync};
     const merged=mergeSyncState(remote,JSON.parse(JSON.stringify(state)));
     return {
-      confirmations,
-      removed,
+      confirmations,cancelled,
       deleted:!state.dealers.some(d=>String(d.id)===String(x.deleteId)),
       survivor:state.dealers.some(d=>String(d.id)===String(x.keepId)),
       persisted:!(saved.dealers||[]).some(d=>String(d.id)===String(x.deleteId)),
-      history:(saved.ops||[]).some(o=>String(o.dealerId)===String(x.deleteId)&&o.dealer===x.name),
-      tombstone:!!saved.deletedDealers?.[String(x.deleteId)],
+      historyPurged:!(saved.ops||[]).some(o=>String(o.dealerId)===String(x.deleteId)),
+      tombstone:!!saved.permanentDeletions?.dealers?.[String(x.deleteId)],
       noResurrection:!(merged.dealers||[]).some(d=>String(d.id)===String(x.deleteId))
     };
   })()`);
   assert.ok(!deletion?.error,deletion?.error||'dealer deletion smoke failed');
-  assert.deepEqual(deletion,{confirmations:2,removed:true,deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true});
+  assert.deepEqual(deletion,{confirmations:1,cancelled:true,deleted:true,survivor:true,persisted:true,historyPurged:true,tombstone:true,noResurrection:true});
   await sleep(600);
   const debtTable=await evaluate(`(()=>{
     const table=document.querySelector('#debts table');
