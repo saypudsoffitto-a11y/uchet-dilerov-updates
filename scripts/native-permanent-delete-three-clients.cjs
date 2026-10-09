@@ -12,12 +12,13 @@ assert.equal(fs.existsSync(path.join(output,'profile')),false,'Use a fresh isola
 app.setPath('userData',path.join(output,'profile'));
 const old=Date.now()-86400000;
 const sale=(id,dealerId,qty,ts=old+id)=>({id,ts,type:'sale',date:'QA',dealerId,dealer:dealerId===1?'QA Удаляемый дилер':'QA Другой дилер',receiptNo:id,total:qty*120,profit:qty*50,items:[{productId:1,name:'QA Товар',qty,price:120,buyPrice:70,total:qty*120,profit:qty*50,unit:'шт'}]});
+const archivedItem=id=>({key:id+':0',receiptId:id,receiptNo:id,dealerId:1,dealer:'QA Удаляемый дилер',lineId:'r'+id+'-i0',originalIndex:0,item:sale(id,1,1).items[0],version:1,archived:true,at:old+id+1});
 const fixture={dealers:[{id:1,name:'QA Удаляемый дилер',phone:'79990000001'},{id:2,name:'QA Другой дилер',phone:'79990000002'}],groups:[{id:1,name:'QA Группа'}],products:[{id:1,groupId:1,name:'QA Товар',article:'QA',unit:'шт',buyPrice:70,retailPrice:120,wholesalePrice:120,stock:97,inventoryVersion:2,warehouseOpening:100,catalogRev:1}],ops:[
  {id:101,ts:old+101,type:'initial_debt',dealerId:1,dealer:'QA Удаляемый дилер',date:'QA',total:100,note:'Из тетради'},sale(102,1,2),
  {id:103,ts:old+103,type:'payment',dealerId:1,dealer:'QA Удаляемый дилер',date:'QA',total:20,beforeDebt:340,afterDebt:320,method:'Наличные'},
  {id:201,ts:old+201,type:'initial_debt',dealerId:2,dealer:'QA Другой дилер',date:'QA',total:90},sale(202,2,1),
  {id:203,ts:old+203,type:'payment',dealerId:2,dealer:'QA Другой дилер',date:'QA',total:10,beforeDebt:210,afterDebt:200,method:'Наличные'}
-],receiptStates:{104:{receipt:sale(104,1,4),archived:true,at:old+105}},receiptItemStates:{'104:0':{receiptId:104,dealerId:1,index:0,archived:true,at:old+105}}};
+],receiptStates:{104:{receipt:sale(104,1,4),archived:true,at:old+105}},receiptItemStates:{'104:0':archivedItem(104)}};
 let store={revision:10,state:C.clone(fixture),computers:{masterId:'qa-owner-00000001',devices:{}}};
 const untouched=C.clone({dealer:fixture.dealers[1],ops:fixture.ops.filter(o=>o.dealerId===2)});
 const offline=new Set(),losePurgeAck=new Set(),events=[],errors=[];
@@ -116,7 +117,7 @@ const progress=message=>{events.push({check:message});console.log(message);};
  // An offline client contains additional old, never-sent documents as well as
  // the now-stale notebook and archive. None may restore cleared history.
  offline.add('qa-pc3');
- await evaluate(clients[2],`state.ops.push(${JSON.stringify(sale(501,1,1))});state.receiptStates['502']={receipt:${JSON.stringify(sale(502,1,1))},archived:true,at:${old+503}};state.receiptItemStates['502:0']={receiptId:502,dealerId:1,index:0,archived:true,at:${old+503}};localStorage.setItem(KEY,JSON.stringify(state));render();`);
+ await evaluate(clients[2],`state.ops.push(${JSON.stringify(sale(501,1,1))});state.receiptStates['502']={receipt:${JSON.stringify(sale(502,1,1))},archived:true,at:${old+503}};state.receiptItemStates['502:0']=${JSON.stringify(archivedItem(502))};localStorage.setItem(KEY,JSON.stringify(state));render();`);
  await click(0,'Очистить всю историю');
  await until(()=>!store.state.ops.some(o=>o.dealerId===1),'History deletion did not reach server');
  assert.ok(store.state.dealers.some(d=>d.id===1));assert.deepEqual(store.state.receiptStates,{});assert.deepEqual(store.state.receiptItemStates,{});assert.equal(store.state.products[0].stock,97);

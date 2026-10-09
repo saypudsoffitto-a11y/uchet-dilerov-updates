@@ -82,6 +82,8 @@
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,.finalMenu,.dealerLineMenu8951,#dealerOpMenu8967) button {background:transparent!important;color:#f0f4f5!important}
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,.finalMenu,.dealerLineMenu8951,#dealerOpMenu8967) button:is(:hover,:focus-visible) {background:#345053!important;outline-color:#39d3d3!important}
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) button:is(.dangerMenuItem,.journalMenuUnrecorded) {color:#ffb4b9!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #homeDealerRows tr.journal-unrecorded {background:#482d34!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #homeDealerRows tr.journal-unrecorded :is(td,td b,td .muted) {background:transparent!important;color:#ffd1d5!important}
   /* Missing journal marks retain a red cue without a bright pink panel. */
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptViewBody,#dealerModalBody) table tbody tr.journal-unrecorded {background:#482d34!important}
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptViewBody,#dealerModalBody) table tbody tr.journal-unrecorded:is(:hover,:focus) td {background:#603b43!important}

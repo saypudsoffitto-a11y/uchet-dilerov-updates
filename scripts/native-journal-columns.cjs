@@ -85,7 +85,7 @@ const progress=message=>{events.push({check:message});console.log(message)};
  await chooseJournal(clients[0],'Не внесено в журнал');await pause(1000);await converge(120);
  for(const win of clients){
   assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');
-  const appearance=await journalAppearance(win);assert.equal(appearance.home.marked,true);assert.equal(appearance.home.color,'rgb(246, 216, 221)');assert.equal(appearance.receipt.color,'rgb(246, 216, 221)');
+  const appearance=await journalAppearance(win);assert.equal(appearance.home.marked,true);const dark=await evaluate(win,`document.documentElement.dataset.uiTheme==='dark'`),red=dark?'rgb(72, 45, 52)':'rgb(246, 216, 221)';assert.equal(appearance.home.color,red);assert.equal(appearance.receipt.color,red);
  }
  fs.writeFileSync(path.join(output,'journal-red-home.png'),(await clients[0].webContents.capturePage()).toPNG());
  await chooseJournal(clients[0],'Внесено в журнал');await pause(1000);await converge(120);
@@ -147,7 +147,7 @@ const progress=message=>{events.push({check:message});console.log(message)};
  assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  await restartAll();assert.equal(await evaluate(clients[2],'debtOf(1)'),85);
  offline.clear();await converge(85);
- for(const win of clients){assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');const appearance=await journalAppearance(win);assert.equal(appearance.home.color,'rgb(246, 216, 221)');assert.equal(appearance.receipt.color,'rgb(246, 216, 221)');}
+ for(const win of clients){assert.equal(await evaluate(win,`state.ops.find(o=>o.type==='sale').journalStatus`),'unrecorded');const appearance=await journalAppearance(win);const dark=await evaluate(win,`document.documentElement.dataset.uiTheme==='dark'`),red=dark?'rgb(72, 45, 52)':'rgb(246, 216, 221)';assert.equal(appearance.home.color,red);assert.equal(appearance.receipt.color,red);}
  progress('Offline payment survived restart and was delivered exactly once');
  lostAck.add('qa-pc1');
  await evaluate(clients[0],`closeReceiptView();closeDealerModal();closeDebtReport();go('debts');[...debtRows.querySelectorAll('tr')].find(r=>r.getAttribute('onclick')==='openDealer(1)').querySelector('.debtPayBtn8951').click();payAmount.value='5';payMethod.value='Наличные';payNote.value='QA debts';render()`);
