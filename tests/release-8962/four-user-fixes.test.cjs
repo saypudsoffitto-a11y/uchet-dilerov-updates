@@ -7,17 +7,17 @@ const path=require('node:path');
 const root=path.resolve(__dirname,'../..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 
-test('8.9.62 ships all four requested changes',()=>{
+test('8.9.63 preserves all four requested 8.9.62 changes',()=>{
   const pkg=JSON.parse(read('app/package.json'));
   const preload=read('app/preload.js');
   const patch=read('app/release-8962.js');
-  assert.equal(pkg.version,'8.9.62');
+  assert.equal(pkg.version,'8.9.63');
   assert.ok(pkg.build.files.includes('release-8962.js'));
   assert.match(pkg.scripts['prebuild:mac'],/release-8962/);
   assert.match(pkg.scripts['prebuild:win'],/release-8962/);
   assert.match(preload,/release-8962\.js/);
-  assert.match(preload,/runtime=8962/);
-  assert.match(preload,/uchetRuntime='8\.9\.62'/);
+  assert.match(preload,/runtime=8963/);
+  assert.match(preload,/uchetRuntime='8\.9\.63'/);
   assert.doesNotThrow(()=>new Function(patch));
 });
 

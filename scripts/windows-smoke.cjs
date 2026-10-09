@@ -87,33 +87,65 @@ async function main(){
   assert.equal(groupRepair.allLinked,true,JSON.stringify(groupRepair));
   console.log('PASS: 8.9.41 repairs shifted/duplicate product groups from bundled stock catalogue');
 
-  const deletion=await evaluate(`(async()=>{
+  const lockCheck=await evaluate(`(()=>{
     const base=Date.now()-30000,keepId=base,deleteId=base+1;
     const name='Windows locked dealer';
+    window.__smokeDealer8963={base,keepId,deleteId,name};
     state.dealers.push({id:keepId,name:'Other dealer',phone:'+70000000001',city:'Keep'},{id:deleteId,name,phone:'+79990000111',city:'Delete'});
     state.ops.push({id:base+10,dealerId:deleteId,type:'sale',date:new Date().toLocaleString('ru-RU'),total:100,items:[]});
     localStorage.setItem(KEY,JSON.stringify(state));renderDealers();window.__dealerDelete8941.tagRows();
     const row=[...document.querySelectorAll('#dealerRows tr')].find(tr=>String(tr.dataset.dealerId||'')===String(deleteId));
     if(!row)return {error:'target dealer row not rendered'};
-    const original=window.confirm;let confirmations=0;window.confirm=()=>{confirmations++;return true};
-    try{
-      row.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:160,clientY:160,button:2}));
-      await new Promise(r=>setTimeout(r,40));
-      const lockedBefore=window.__dealerDelete8941.getLocked();
-      const menu=document.getElementById('dealerContextMenu8941');
-      const button=menu&&[...menu.querySelectorAll('button')].find(b=>/Удалить именно/.test(b.textContent||''));
-      if(!button)return {error:'locked delete item missing'};
-      state.dealers.reverse();renderDealers();window.__dealerDelete8941.tagRows();
-      const lockedAfter=window.__dealerDelete8941.getLocked();
-      button.click();await new Promise(r=>setTimeout(r,300));
-      const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
-      const remote={dealers:[{id:deleteId,name,phone:'+79990000111',updatedAt:Date.now()+60000}],groups:[],products:[],ops:[],deletedDealers:{},deletedDealerKeys:{},receiptSeq:1,update:state.update,newmatros:state.newmatros,sync:state.sync};
-      const merged=mergeSyncState(remote,JSON.parse(JSON.stringify(state)));
-      return {confirmations,lockedBefore:lockedBefore?.id,lockedAfter:lockedAfter?.id,deleted:!state.dealers.some(d=>String(d.id)===String(deleteId)),survivor:state.dealers.some(d=>String(d.id)===String(keepId)),persisted:!(saved.dealers||[]).some(d=>String(d.id)===String(deleteId)),history:(saved.ops||[]).some(o=>String(o.dealerId)===String(deleteId)&&o.dealer===name),tombstone:!!saved.deletedDealers?.[String(deleteId)],noResurrection:!(merged.dealers||[]).some(d=>String(d.id)===String(deleteId))};
-    }finally{window.confirm=original}
+    row.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:160,clientY:160,button:2}));
+    const lockedBefore=window.__dealerDelete8941.getLocked();
+    state.dealers.reverse();renderDealers();window.__dealerDelete8941.tagRows();
+    const lockedAfter=window.__dealerDelete8941.getLocked();
+    return {deleteId:String(deleteId),lockedBefore:lockedBefore?.id||null,lockedAfter:lockedAfter?.id||null};
   })()`);
-  assert.deepEqual(deletion,{confirmations:2,lockedBefore:String(deletion.lockedBefore),lockedAfter:String(deletion.lockedAfter),deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true});
-  assert.equal(deletion.lockedBefore,deletion.lockedAfter,'dealer ID changed after table re-render');
+  assert.ok(!lockCheck?.error,lockCheck?.error||'dealer lock check failed');
+  assert.equal(lockCheck.lockedBefore,lockCheck.deleteId,'dealer lock did not capture the intended row');
+  assert.equal(lockCheck.lockedAfter,lockCheck.deleteId,'dealer ID changed after table re-render');
+  console.log('PASS: dealer context-menu lock survives table re-render');
+
+  const deletion=await evaluate(`(()=>{
+    const x=window.__smokeDealer8963;
+    if(!x)return {error:'smoke dealer state missing'};
+    const original=window.confirm;let confirmations=0,removed=false;
+    try{
+      window.confirm=()=>{confirmations++;return true};
+      removed=!!window.__dealerDelete8941.removeDealerNow(x.deleteId,x.name);
+    }finally{window.confirm=original}
+    const saved=JSON.parse(localStorage.getItem(KEY)||'{}');
+    const remote={dealers:[{id:x.deleteId,name:x.name,phone:'+79990000111',updatedAt:Date.now()+60000}],groups:[],products:[],ops:[],deletedDealers:{},deletedDealerKeys:{},receiptSeq:1,update:state.update,newmatros:state.newmatros,sync:state.sync};
+    const merged=mergeSyncState(remote,JSON.parse(JSON.stringify(state)));
+    return {
+      confirmations,
+      removed,
+      deleted:!state.dealers.some(d=>String(d.id)===String(x.deleteId)),
+      survivor:state.dealers.some(d=>String(d.id)===String(x.keepId)),
+      persisted:!(saved.dealers||[]).some(d=>String(d.id)===String(x.deleteId)),
+      history:(saved.ops||[]).some(o=>String(o.dealerId)===String(x.deleteId)&&o.dealer===x.name),
+      tombstone:!!saved.deletedDealers?.[String(x.deleteId)],
+      noResurrection:!(merged.dealers||[]).some(d=>String(d.id)===String(x.deleteId))
+    };
+  })()`);
+  assert.ok(!deletion?.error,deletion?.error||'dealer deletion smoke failed');
+  assert.deepEqual(deletion,{confirmations:2,removed:true,deleted:true,survivor:true,persisted:true,history:true,tombstone:true,noResurrection:true});
+  // Exercise observers and the legacy 250ms patch timer after rendering debts.
+  // A duplicate-column add/remove loop must fail here, not be hidden by mocks.
+  await sleep(600);
+  const debtTable=await evaluate(`(()=>{
+    const table=document.querySelector('#debts table');
+    const heads=[...table.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+    const rows=[...table.querySelectorAll('#debtRows tr')];
+    return {heads,rows:rows.length,aligned:rows.every(row=>row.children.length===heads.length),onePayment:rows.every(row=>row.querySelectorAll('.debtPayBtn8951, .debtPayBtn').length===1)};
+  })()`);
+  assert.ok(debtTable.rows>0,'surviving dealer must remain in debts');
+  assert.equal(debtTable.heads.filter(text=>text==='Действие').length,1);
+  assert.ok(!debtTable.heads.includes('Оплата'),'legacy payment column returned');
+  assert.equal(debtTable.aligned,true,'debt cells no longer match headings');
+  assert.equal(debtTable.onePayment,true,'each dealer needs exactly one payment action');
+  console.log('PASS: debt payment observers settle after deletion with one payment action');
   socket.close();
   console.log('PASS: '+expectedRuntime+' keeps right-click dealer ID locked and blocks sync resurrection through final merge guard');
  }finally{spawnSync('taskkill',['/PID',String(child.pid),'/T','/F']);}

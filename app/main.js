@@ -142,14 +142,8 @@ ipcMain.handle('stock:loadBundledProducts', async () => {
 });
 
 ipcMain.handle('clients:loadBundledNewMatRos', async () => {
-  try {
-    const candidates=[path.join(__dirname,'newmatros_clients.json'),path.join(process.resourcesPath,'app.asar.unpacked','newmatros_clients.json')];
-    const filePath=candidates.find(fs.existsSync);
-    if(!filePath)return {canceled:true,error:'Встроенный список клиентов NewMatRos не найден'};
-    return {canceled:false,name:'newmatros_clients.json',path:filePath,clients:JSON.parse(fs.readFileSync(filePath,'utf8'))};
-  } catch(e) { return {canceled:true,error:e.message}; }
+  return {canceled:true,error:'Старый встроенный список клиентов отключён. Используйте актуальные карточки дилеров.'};
 });
-
 ipcMain.handle('app:info',()=>({version:app.getVersion(),platform:process.platform,arch:process.arch,userData:app.getPath('userData')}));
 
 ipcMain.handle('whatsapp:send', async (_e, payload) => {
