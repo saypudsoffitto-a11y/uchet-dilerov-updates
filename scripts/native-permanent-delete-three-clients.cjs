@@ -60,7 +60,7 @@ const progress=message=>{events.push({check:message});console.log(message);};
   win.webContents.session.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(request,done)=>done({cancel:!request.url.startsWith(url+'/')}));
   await win.loadFile(path.join(root,'app/index.html'));
   await until(()=>evaluate(win,'!!window.permanentDeleteUI8989&&!!window.masterSync8962?.queueDeletion&&document.documentElement.dataset.uchetRuntime==="8.9.68"'),'Deletion UI not loaded');
-  await evaluate(win,`window.__qaConfirm=true;window.__qaPrompts=[];window.__qaAlerts=[];window.confirm=text=>(window.__qaPrompts.push(String(text)),window.__qaConfirm);window.alert=text=>window.__qaAlerts.push(String(text));`);
+  await evaluate(win,`window.__qaConfirm=true;window.__qaPrompts=[];window.__qaAlerts=[];window.confirm=text=>(window.__qaPrompts.push(String(text)),window.__qaConfirm);window.alert=text=>window.__qaAlerts.push(String(text));void 0;`);
   if(initial)await evaluate(win,`state=norm(${JSON.stringify(fixture)});state.sync={url:${JSON.stringify(url)},token:'qa-pc${index}',enabled:true,interval:60,revision:0};render();localStorage.setItem(KEY,JSON.stringify(state));window.masterSync8962.markSaved();`);
   return win;
  }
