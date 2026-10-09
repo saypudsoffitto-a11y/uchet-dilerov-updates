@@ -1,2 +1,1 @@
-Release 8.9.88: financial totals convergence repair
-Verified three-client convergence for sales, payments, offline recovery, lost acknowledgements, and stale conflicting totals.
+Release 8.9.89: permanent dealer deletion, notebook clearing and graphite dark theme
