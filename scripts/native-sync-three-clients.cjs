@@ -71,7 +71,9 @@ const progress=message=>{events.push({check:message});console.log(message)};
  offline.clear();await converge(85);progress('Offline payment survived restart and was delivered exactly once');
  lostAck.add('qa-pc1');
  await evaluate(clients[0],`selectPayDealer(1);payAmount.value='5';payMethod.value='Наличные';makePayment();`);
- const lostAckReachedServer=await waitUntil(()=>store.state.ops.length===4,10000,100);
+ // Hidden Windows renderers throttle timers during long CI runs. Drive the
+ // existing sync API explicitly and still require the server commit before restart.
+ const lostAckReachedServer=await waitUntil(async()=>{if(store.state.ops.length===4)return true;await evaluate(clients[0],'window.masterSync8962.push(false)');return store.state.ops.length===4;},10000,100);
  const lostAckClient=await evaluate(clients[0],`({debt:debtOf(1),status:document.getElementById('syncStatus').textContent,pending:!!window.masterSync8962})`);
  assert.equal(lostAckReachedServer,true,'Lost-ack payment never reached server within 10s: '+JSON.stringify({ops:store.state.ops.length,client:lostAckClient,events:events.slice(-8)}));
  await restartAll();lostAck.clear();await converge(80);
