@@ -1,0 +1,96 @@
+/* Graphite surfaces and turquoise accents from the supplied video reference. */
+@media screen {
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui {
+    --bg:#202427;--card:#2b3135;--text:#f0f4f5;--muted:#b8c5ca;--line:#4a565c;
+    --blue:#39d3d3;--blue2:#254547;--red:#ffb4b9;--green:#9ce5b6;
+    --ui-accent:#39d3d3;--ui-soft:#254547;--ui-border:#4a565c;
+    --ui-danger:#ffb4b9;--ui-danger-bg:#482d34;--ui-menu-text:#f0f4f5;
+    background:var(--bg)!important;color:var(--text)!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,nav) {
+    background:#202427!important;border-color:#4a565c!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui header {
+    background:#282e32!important;border-color:#4a565c!important;color:#f0f4f5!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(h1,h2,h3,h4,.brand,.big,.homeHeading h2,#pageTitle) {
+    color:#f0f4f5!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.muted,.sectionHint,.navLabel,.dealerMeta div,.dealerSheetMeta,.receiptEditHelp) {
+    color:#b8c5ca!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.card,.modalBox,.dealerSheet,.dealerSummary,.receipt,.negativeDialog) {
+    background:#2b3135!important;border-color:#4a565c!important;color:#f0f4f5!important;box-shadow:none!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.modalBox>.actions:first-child,.nmDraftHead,.nmReviewHead,.nmDraftActions,.nmReviewActions,.historyTrail8967) {
+    background:#2b3135!important;border-color:#4a565c!important;color:#f0f4f5!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.modal,.negativeOverlay) {background:#101416b8!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(nav button[data-section],.quick button) {
+    background:#2b3135!important;border-color:#46535a!important;color:#f0f4f5!important;box-shadow:none!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui nav button[data-section]:hover {background:#354145!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui nav button[data-section].active {
+    background:#254547!important;border-color:#39d3d3!important;color:#90f4ef!important;box-shadow:inset 3px 0 #39d3d3!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(input,select,textarea) {
+    background:#232a2e!important;border-color:#65757c!important;color:#f0f4f5!important;caret-color:#90f4ef!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(input,textarea)::placeholder {color:#acbcc3!important;opacity:1}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(input,select,textarea):focus {
+    background:#232a2e!important;border-color:#39d3d3!important;box-shadow:0 0 0 2px #39d3d34d!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(input,textarea)::selection {background:#396368;color:#fff}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(select option,select optgroup) {background:#232a2e!important;color:#f0f4f5!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.choiceList,#saleDealerList,#saleProductList,#paymentDealerList,.selectedBox,#saleDealerSelected,#paymentDealerSelected) {
+    background:#2b3135!important;border-color:#4a565c!important;color:#f0f4f5!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.choiceList,#saleDealerList,#saleProductList,#paymentDealerList) .choiceRow {
+    background:#2b3135!important;border-color:#4a565c!important;color:#f0f4f5!important;box-shadow:none!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.choiceList,#saleDealerList,#saleProductList,#paymentDealerList) .choiceRow:is(:hover,.active,:focus-within) {
+    background:#345053!important;color:#fff!important;box-shadow:inset 3px 0 #39d3d3!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.choiceList,#saleDealerList,#saleProductList,#paymentDealerList) .choiceRow :is(b,span) {color:inherit!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(table,.tableWrap,.paymentTableWrap) {background:#2b3135!important;border-color:#4a565c!important;color:#f0f4f5!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table th {
+    background:#353e43!important;border-color:#526168!important;color:#dce6e9!important;font-weight:700!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table tbody tr {background:#2b3135!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table td {
+    background:transparent!important;border-color:#4a565c!important;color:#f0f4f5!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table tbody tr:is(:hover,:focus,.selectedRow,.dealerDeleteSelected8941) td {
+    background:#345053!important;color:#fff!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table td :is(b,a) {color:inherit!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.primary,button.primary) {
+    background:#39d3d3!important;border-color:#39d3d3!important;color:#102d30!important;font-weight:750!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.primary,button.primary):hover {background:#75e5df!important;border-color:#75e5df!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.secondary,button.initialDebt,.dealerPhotoUpload,.photoLabel,.statusPill,.tag,.connectionIndicator,#dealerModalBody label) {
+    background:#333d42!important;border-color:#607279!important;color:#e6eef0!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui button.secondary:hover {background:#3b4b50!important;border-color:#39d3d3!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(a,.appearanceStatus,.metricIcon) {color:#90f4ef!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.danger,.dangerBtn,.dangerMenuItem) {color:#ffb4b9!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui .dangerBtn {background:#482d34!important;border-color:#97616a!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.ok,.connectionIndicator[data-sync-state="online"]) {color:#9ce5b6!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,.finalMenu,.dealerLineMenu8951,#dealerOpMenu8967) {
+    background:#2b3135!important;border-color:#65757c!important;box-shadow:0 12px 36px #0006!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,.finalMenu,.dealerLineMenu8951,#dealerOpMenu8967) button {background:transparent!important;color:#f0f4f5!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,.finalMenu,.dealerLineMenu8951,#dealerOpMenu8967) button:is(:hover,:focus-visible) {background:#345053!important;outline-color:#39d3d3!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.uiContextMenu,#dealerOpMenu8967) button:is(.dangerMenuItem,.journalMenuUnrecorded) {color:#ffb4b9!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #homeDealerRows tr.journal-unrecorded {background:#482d34!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #homeDealerRows tr.journal-unrecorded :is(td,td b,td .muted) {background:transparent!important;color:#ffd1d5!important}
+  /* Missing journal marks retain a red cue without a bright pink panel. */
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptViewBody,#dealerModalBody) table tbody tr.journal-unrecorded {background:#482d34!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptViewBody,#dealerModalBody) table tbody tr.journal-unrecorded:is(:hover,:focus) td {background:#603b43!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptViewBody,#dealerModalBody) table tbody tr.journal-unrecorded :is(td,td b,td .muted) {color:#ffd1d5!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(button,input,select,textarea,[tabindex]):focus-visible {outline:2px solid #90f4ef!important;outline-offset:2px}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(button,input,select,textarea):disabled {color:#aab7bd!important;opacity:1}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui * {scrollbar-color:#71868e #232a2e}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table td.danger {color:#ffb4b9!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table td.ok {color:#9ce5b6!important}
+}

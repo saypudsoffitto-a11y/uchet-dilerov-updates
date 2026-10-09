@@ -1,5 +1,6 @@
 'use strict';
 const C=require('./sync-core-8962');
+const D=require('./permanent-delete-8989');
 const {applySharedPatch}=require('./catalog-patch-8975');
 const fail=message=>{throw new Error(message);};
 
@@ -194,10 +195,16 @@ function update(current,body){
     if(meta.devices[body.targetId])meta.devices[body.targetId].name='Компьютер '+(meta.devices[body.targetId].ordinal||2)+' · Главный';
     return next;
   }
+  if(body.action==='purge'){
+    next.state=D.apply(current.state,body.deletion);
+    return next;
+  }
   if(body.action!=='changes')fail('Неизвестная команда синхронизации');
   const transactionBase=C.clone(current.state);
   if(body.inventoryProtocol===2)C.enableInventory(transactionBase);
-  next.state=C.applyTransaction(transactionBase,body.changes||[],body.archives);
+  const changes=D.filterChanges(transactionBase,body.changes);
+  const archives=D.filterArchives(transactionBase,body.archives);
+  next.state=D.markOperationDeletes(C.applyTransaction(transactionBase,changes,archives),changes,archives);
 
   // 8.9.78: товары изменяются точечно на любом компьютере.
   // Сервер сравнивает "before" с текущей карточкой и сам повышает catalogRev.
@@ -237,9 +244,11 @@ function update(current,body){
   if(body.inventoryProtocol===2)C.enableInventory(next.state);
   C.recalcInventory(next.state);
   C.remap(next.state);
-  for(const change of body.changes||[]){
+  next.state=D.sanitize(next.state);
+  for(const change of changes){
     if(!change.after)continue;
     const op=next.state.ops.find(o=>C.id(o.id)===change.id);
+    if(!op)continue;
     if(C.warehouseTypes.includes(op.type)){
       if(op.type==='stock_opening'){
         for(const item of op.items||[]){

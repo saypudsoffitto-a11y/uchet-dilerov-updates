@@ -8,7 +8,7 @@
     theme=valid(value);root.dataset.uiTheme=theme;root.dataset.uiCompact='true';
     const select=document.getElementById('uiThemeSelect');if(select)select.value=theme;
     const status=document.getElementById('uiThemeStatus');
-    if(status)status.textContent=({standard:'Стандартная тема',colorful:'Современная зелёная тема',multicolor:'Цветное меню',dark:'Тёмная (современная) — тема № 4'})[theme];
+    if(status)status.textContent=({standard:'Стандартная тема',colorful:'Современная зелёная тема',multicolor:'Цветное меню',dark:'Тёмная графитовая — тема № 4'})[theme];
   }
   // Apply the stored appearance before the page is painted. No business state is read.
   apply(theme);
@@ -27,7 +27,7 @@
     const settings=document.getElementById('settings');
     if(settings&&!document.getElementById('uiAppearanceCard')){
       const card=document.createElement('div');card.id='uiAppearanceCard';card.className='card appearanceCard';
-      card.innerHTML='<div class="appearanceHeading"><h3>Оформление</h3><span class="themeSwatches" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div><label for="uiThemeSelect">Тема интерфейса</label><select id="uiThemeSelect" aria-describedby="uiThemeHelp"><option value="standard">Стандартная</option><option value="colorful">Современная зелёная</option><option value="multicolor">Цветное меню</option><option value="dark">Тёмная (современная) — № 4</option></select><p id="uiThemeHelp" class="muted">Применяется сразу и сохраняется на этом компьютере после перезапуска.</p><p id="uiThemeStatus" class="appearanceStatus" role="status" aria-live="polite"></p>';
+      card.innerHTML='<div class="appearanceHeading"><h3>Оформление</h3><span class="themeSwatches" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div><label for="uiThemeSelect">Тема интерфейса</label><select id="uiThemeSelect" aria-describedby="uiThemeHelp"><option value="standard">Стандартная</option><option value="colorful">Современная зелёная</option><option value="multicolor">Цветное меню</option><option value="dark">Тёмная графитовая — № 4</option></select><p id="uiThemeHelp" class="muted">Применяется сразу и сохраняется на этом компьютере после перезапуска.</p><p id="uiThemeStatus" class="appearanceStatus" role="status" aria-live="polite"></p>';
       settings.insertBefore(card,settings.querySelector('.card'));apply(theme);
       card.querySelector('select').addEventListener('change',event=>{
         apply(event.target.value);

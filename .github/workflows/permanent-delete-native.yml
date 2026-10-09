@@ -1,0 +1,41 @@
+name: Permanent deletion regression checks
+on:
+  pull_request:
+    paths:
+      - 'app/**'
+      - 'server/**'
+      - 'tests/**'
+      - 'scripts/native-permanent-delete-three-clients.cjs'
+      - '.github/workflows/permanent-delete-native.yml'
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install server dependencies
+        working-directory: server
+        run: npm install --no-audit --no-fund
+      - name: Install app dependencies
+        working-directory: app
+        run: npm ci --no-audit --no-fund
+      - name: Run complete regression suite
+        working-directory: app
+        run: npm test
+      - name: Verify deletion in three real renderer profiles
+        run: node app/node_modules/electron/cli.js scripts/native-permanent-delete-three-clients.cjs
+      - name: Upload deletion diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: permanent-delete-${{ runner.os }}
+          path: qa-sync-probe/native-permanent-delete
+          if-no-files-found: warn

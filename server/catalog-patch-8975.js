@@ -35,6 +35,7 @@ module.exports.applySharedPatch=function(state,patch){
   const changes=field==='groups'?patch.groupChanges:patch.dealers;
   for(const ch of changes||[]){
    if(!ch?.id||ch.after&&C.id(ch.after.id)!==C.id(ch.id))throw Error('Неверная карточка '+field);
+   if(field==='dealers'&&next.permanentDeletions?.dealers?.[C.id(ch.id)])continue;
    const i=(next[field]||[]).findIndex(row=>C.id(row.id)===C.id(ch.id)),current=i<0?null:next[field][i];
    if(C.same(current,ch.after))continue;
    if(!C.same(current,ch.before))throw Error('Карточка '+field+' '+ch.id+' изменена на другом компьютере');
@@ -50,7 +51,7 @@ module.exports.applySharedPatch=function(state,patch){
     }
     if(i<0)next[field].push(C.clone(ch.after));else next[field][i]=C.clone(ch.after);
    }else if(i>=0){
-    if(field==='dealers'&&(next.ops||[]).some(o=>C.id(o.dealerId)===C.id(ch.id)))throw Error('У дилера остались документы. Удаление не выполнено.');
+    if(field==='dealers'&&(next.ops||[]).some(o=>C.id(o.dealerId)===C.id(ch.id)))throw Error('Обновите программу до 8.9.89 и подтвердите полное удаление дилера вместе с его документами.');
     next[field].splice(i,1);
     if(field==='dealers'){
      next.deletedDealers={...next.deletedDealers,[ch.id]:Date.now()};

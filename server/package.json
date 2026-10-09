@@ -1,6 +1,6 @@
 {
   "name": "uchet-dilerov-sync-server",
-  "version": "8.9.82",
+  "version": "8.9.89",
   "private": true,
   "description": "Общий сервер Учёт дилеров: равноправные компьютеры, проверяемые изменения и постоянная база Turso",
   "main": "server.js",
