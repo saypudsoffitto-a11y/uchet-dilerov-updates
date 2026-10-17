@@ -74,7 +74,9 @@ window.addEventListener('DOMContentLoaded',()=>{
       './release-8961.js',
       './release-8962.js',
       './release-8967.js',
-      './release-8968.js'
+      './release-8968.js',
+      './product-delete-8990.js',
+      './receipt-edit-8987.js'
     ];
     for(const src of files){
       await new Promise((resolve,reject)=>{

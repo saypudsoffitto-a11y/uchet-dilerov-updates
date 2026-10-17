@@ -1,1 +1,1 @@
-Release 8.9.89: permanent dealer deletion, notebook clearing and graphite dark theme
+Release 8.9.90: verified product deletion, editable receipt fields and native sync checks

@@ -69,6 +69,12 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Windows interface failed' }
           node scripts/windows-newmatros-smoke.cjs "$exe"
           if ($LASTEXITCODE -ne 0) { throw 'Windows NewMatRos failed' }
+      - name: Verify product deletion and receipt synchronization in native clients
+        run: node app/node_modules/electron/cli.js scripts/native-product-delete-8990.cjs
+      - name: Verify editable receipt fields and persistence
+        run: node app/node_modules/electron/cli.js scripts/native-receipt-edit-8990.cjs
+      - name: Verify journal, payment selection and table layout
+        run: node app/node_modules/electron/cli.js scripts/native-journal-columns.cjs
       - name: Upload interface screenshots
         uses: actions/upload-artifact@v4
         with:

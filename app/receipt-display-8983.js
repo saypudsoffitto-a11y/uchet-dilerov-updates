@@ -6,7 +6,7 @@
 
   function itemName(op,item){
     const original=String(item.name||'');
-    if(!isNewMatRos(op,item))return original;
+    if(item.receiptNameEdited||!isNewMatRos(op,item))return original;
     let name=original.replace(/^\s*Потолок\s*\d+\s*(?:[·•|:;—–-]\s*)?/iu,'').trim();
     if(item.article==='NM-MAT'){
       name=name.replace(/^\s*(?:Полотно|Каталог)\s*:\s*/iu,'');
@@ -22,7 +22,7 @@
     const result=[],corners=[];
     for(const [index,item] of (op.items||[]).entries()){
       const view={...item,name:itemName(op,item),_receiptItemIndex:index};
-      if(isNewMatRos(op,item)&&item.article==='NM-CORNER')corners.push(view);
+      if(isNewMatRos(op,item)&&item.article==='NM-CORNER'&&!item.receiptNameEdited)corners.push(view);
       else result.push(view);
     }
     if(corners.length){

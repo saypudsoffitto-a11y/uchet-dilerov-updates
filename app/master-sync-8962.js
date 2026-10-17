@@ -285,7 +285,7 @@
     const keep=[],stale=[];
     for(const change of changes){
       const current=(serverState.products||[]).find(p=>C.id(p.id)===change.id)||null;
-      const cacheRollback=Number(change.after?.catalogRev||0)<Number(change.before?.catalogRev||0);
+      const cacheRollback=!!change.after&&Number(change.after.catalogRev||0)<Number(change.before?.catalogRev||0);
       const newerServer=Number(current?.catalogRev||0)>Number(change.before?.catalogRev||0);
       if(cacheRollback){stale.push(change);continue;}
       if(newerServer&&current&&change.before&&change.after){

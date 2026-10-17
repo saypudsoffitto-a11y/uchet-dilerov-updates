@@ -41,3 +41,19 @@ test('real WhatsApp renderer uses shortened material and exactly one corner row'
  assert.doesNotMatch(html,/Полотно:|Потолок \d|узкая плёнка|цена из карточки/);
  assert.match(html,/>10 шт</);assert.match(html,/500&nbsp;₽/);assert.match(html,/10.500&nbsp;₽/);
 });
+test('manually renamed NewMatRos lines retain names in print display and actual JPEG export',()=>{
+ const edit=require('../../app/receipt-edit-8987').edit;
+ let state={products:[],ops:[order()]};
+ state=edit(state,100,0,'name','Потолок 1 · Полотно: Особое имя клиента').state;
+ state=edit(state,100,1,'name','Углы особой формы').state;
+ const op=JSON.parse(JSON.stringify(state)).ops[0];
+ const printRows=display.rows(op,{cornerDetails:true});
+ assert.equal(printRows[0].name,'Потолок 1 · Полотно: Особое имя клиента');
+ assert.ok(printRows.some(i=>i.name==='Углы особой формы'&&!i._receiptCornerSummary));
+ const source=fs.readFileSync(require.resolve('../../app/release-8968'),'utf8');
+ const ctx={window:{receiptDisplay8983:display}};vm.createContext(ctx);
+ vm.runInContext(source.slice(source.indexOf('  const esc8968='),source.indexOf('  async function sendReceipt'))+';this.render=receiptJpegHtml8968;',ctx);
+ const html=ctx.render(op,{name:'Тест'});
+ assert.match(html,/Потолок 1 · Полотно: Особое имя клиента/);assert.match(html,/Углы особой формы/);
+ assert.equal(op.total,10500);
+});
