@@ -18,15 +18,18 @@ const server=http.createServer(async(req,res)=>{
    const payload=JSON.parse(body);
    if(payload.baseRevision!==store.revision){res.writeHead(409);res.end(JSON.stringify({revision:store.revision}));return;}
    store=update(store,payload);store.revision++;
-   events.push({pc:token,action:payload.action,revision:store.revision,operations:store.state.ops.length});
+   events.push({pc:token,action:payload.action,revision:store.revision,operations:store.state.ops.length,productChanges:payload.productChanges});
+   assert.deepEqual(store.state.products.map(p=>String(p.id)),['1'],'Unexpected non-fixture catalog write: '+JSON.stringify(payload.productChanges));
    if(lostAck.has(token)){req.socket.destroy();return;}
   }
   res.setHeader('Content-Type','application/json');res.end(JSON.stringify({...store,ok:true,protocol:2,storage:'turso',inventoryProtocol:2,productRevisions:true,serverVersion:'8.9.79-sync6'}));
- }catch(error){res.writeHead(400);res.end(JSON.stringify({message:error.message}));}
+ }catch(error){events.push({error:String(error),body});res.writeHead(400);res.end(JSON.stringify({message:error.message}));}
 });
 app.on('browser-window-created',(_e,win)=>win.webContents.on('preload-error',(_e,_p,error)=>errors.push(String(error))));
 app.whenReady().then(()=>session.defaultSession.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(request,done)=>done({cancel:!request.url.startsWith('http://127.0.0.1:')})));
 require('../app/main-8948');
+require('./isolate-native-fixtures.cjs')();
+app.removeAllListeners('window-all-closed');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitUntil(check,timeoutMs=10000,stepMs=100){
  const started=Date.now();
@@ -42,6 +45,8 @@ const progress=message=>{events.push({check:message});console.log(message)};
   const win=new BrowserWindow({show:false,width:1400,height:900,webPreferences:{partition:'persist:sync-pc'+index,preload:path.resolve('app/preload.js'),contextIsolation:true,nodeIntegration:false}});
   win.webContents.session.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(request,done)=>done({cancel:!request.url.startsWith(url+'/')}));
   await win.loadFile(path.resolve('app/index.html'));await pause(700);
+  await evaluate(win,'newmatrosAPI.setWatch(false)');
+  await evaluate(win,`window.__pinLock8948.isConfigured()?window.__pinLock8948.unlock('1234'):window.__pinLock8948.setInitialPin('1234')`);
   if(initial)await evaluate(win,`state=norm(${JSON.stringify(fixture)});state.sync={url:${JSON.stringify(url)},token:'qa-pc${index}',enabled:true,interval:3,revision:0};render();localStorage.setItem(KEY,JSON.stringify(state));window.masterSync8962.markSaved();`);
   return win;
  }
@@ -52,7 +57,8 @@ const progress=message=>{events.push({check:message});console.log(message)};
    for(let attempt=0;attempt<20&&!received;attempt++){received=await evaluate(win,'window.masterSync8962.pull(false)');if(!received)await pause(200);}
    assert.equal(received,true,await evaluate(win,'document.getElementById("syncStatus").textContent'));await pause(450);
   }
-  for(const win of clients){const value=await evaluate(win,'({debt:debtOf(1),ids:state.ops.map(o=>o.id),status:document.getElementById("syncStatus").dataset.syncState})');assert.equal(value.debt,debt);assert.equal(new Set(value.ids).size,value.ids.length);assert.equal(value.status,'online');}
+  assert.deepEqual(store.state.products.map(p=>String(p.id)),['1']);
+  for(const win of clients){assert.deepEqual(await evaluate(win,'state.products.map(p=>String(p.id))'),['1'],'Non-fixture products leaked into isolated renderer');const value=await evaluate(win,'({debt:debtOf(1),ids:state.ops.map(o=>o.id),status:document.getElementById("syncStatus").dataset.syncState})');assert.equal(value.debt,debt);assert.equal(new Set(value.ids).size,value.ids.length);assert.equal(value.status,'online');}
  }
  await converge(0);
  await evaluate(clients[0],`selectSaleDealer(1);cart=[{productId:1,name:'Тестовый товар',qty:1,price:120,buyPrice:70,total:120,profit:50,unit:'шт'}];saveSale();`);

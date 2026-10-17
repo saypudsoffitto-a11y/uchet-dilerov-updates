@@ -755,22 +755,26 @@ function postNewMatRosOrder(auto){
 if(window.newmatrosAPI&&window.newmatrosAPI.onIni){window.newmatrosAPI.onIni(payload=>{if(payload&&payload.text)showNewMatRosPreview(parseIni(payload.text),payload.name||'NewMatRos')})}
 
 async function autoImportBundledStockOnce(){
-  const importVersion=3;
-  if((state.stockMigrationVersion||0)>=importVersion||!window.stockAPI||!window.stockAPI.loadBundledProducts)return;
+  // The seed belongs only to a pristine offline installation. Its local marker
+  // survives server snapshots, unlike the legacy migration field in state.
+  const marker=KEY+':bundled-stock-seed-8990';
+  const pristine=()=>!(state.stockMigrationDone||state.stockMigrationVersion||state.sync?.url||state.sync?.enabled||state._syncBaseline8981||state._syncPending8981||state._purgeQueue8989)&&
+    ['products','groups','dealers','ops'].every(field=>!(state[field]||[]).length)&&
+    ['deletedProducts','deletedDealers','catalogDeletedKeys','productAliases','dealerAliases','receiptStates','receiptItemStates','permanentDeletions'].every(field=>!Object.keys(state[field]||{}).length);
+  if(!window.stockAPI?.loadBundledProducts)return;
   try{
-    let r=await window.stockAPI.loadBundledProducts();
-    if(r&&!r.canceled&&r.text){
-      // Исправляем ранний импорт v8.6.1. Если импортированные товары ещё не использовались в продажах,
-      // безопасно заменяем только их, не трогая вручную созданные товары, дилеров, долги и историю.
-      const soldIds=new Set();
-      (state.ops||[]).filter(o=>o.type==='sale'&&Array.isArray(o.items)).forEach(o=>o.items.forEach(i=>{if(i&&i.productId!=null)soldIds.add(i.productId)}));
-      const imported=(state.products||[]).filter(p=>p.source==='Склад CSV');
-      const canRepair=imported.length>0 && imported.every(p=>!soldIds.has(p.id));
-      if(canRepair)state.products=state.products.filter(p=>p.source!=='Склад CSV');
-      let res=importStockProductRows(parseSemicolonCsv(r.text));
-      state.stockMigrationDone=true;state.stockMigrationVersion=importVersion;save();
-      if(window.stockImportStatus)stockImportStatus.textContent=(canRepair?'Исправленный импорт из «Склад»: ':'Автоматически перенесено из «Склад»: ')+'добавлено '+res.added+', обновлено '+res.updated+'. Всего обработано '+res.total+'.';
-    }
+    if(localStorage.getItem(marker))return;
+    // Reserve the attempt before loading; parallel calls and a later restart
+    // must never run an old catalogue migration against live business data.
+    localStorage.setItem(marker,'attempted');
+    if(!pristine())return;
+    const initial=state;
+    const r=await window.stockAPI.loadBundledProducts();
+    if(state!==initial||!pristine()||!r||r.canceled||!r.text)return;
+    const res=importStockProductRows(parseSemicolonCsv(r.text));
+    state.stockMigrationDone=true;state.stockMigrationVersion=3;save();
+    localStorage.setItem(marker,'seeded');
+    if(window.stockImportStatus)stockImportStatus.textContent='Автоматически перенесено из «Склад»: добавлено '+res.added+', обновлено '+res.updated+'. Всего обработано '+res.total+'.';
   }catch(e){console.error('Stock auto import',e)}
 }
 

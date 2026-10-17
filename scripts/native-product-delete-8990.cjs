@@ -27,6 +27,7 @@ const server=http.createServer(async(req,res)=>{
 app.on('browser-window-created',(_e,win)=>win.webContents.on('preload-error',(_e,_p,error)=>errors.push(String(error))));
 app.whenReady().then(()=>session.defaultSession.webRequest.onBeforeRequest({urls:['http://*/*','https://*/*']},(request,done)=>done({cancel:!request.url.startsWith('http://127.0.0.1:')})));
 require('../app/main-8948');
+require('./isolate-native-fixtures.cjs')();
 app.removeAllListeners('window-all-closed');
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitUntil(check,timeoutMs=10000,stepMs=100){

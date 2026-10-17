@@ -1,1 +1,1 @@
-Release 8.9.90: verified product deletion, editable receipt fields and native sync checks
+Release 8.9.90: verified deletion, receipt editing and one-time isolated catalogue seed
