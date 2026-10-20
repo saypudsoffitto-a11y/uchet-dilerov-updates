@@ -52,13 +52,14 @@
     background:#345053!important;color:#fff!important;box-shadow:inset 3px 0 #39d3d3!important;
   }
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(.choiceList,#saleDealerList,#saleProductList,#paymentDealerList) .choiceRow :is(b,span) {color:inherit!important}
-  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(table,.tableWrap,.paymentTableWrap) {background:#2b3135!important;border-color:#4a565c!important;color:#f0f4f5!important}
+  /* Lighter table surfaces only; surrounding panels and controls keep their palette. */
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(table,.tableWrap,.paymentTableWrap) {background:#394247!important;border-color:#59666d!important;color:#f0f4f5!important}
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table th {
-    background:#353e43!important;border-color:#526168!important;color:#dce6e9!important;font-weight:700!important;
+    background:#48545b!important;border-color:#65737b!important;color:#f0f4f5!important;font-weight:700!important;
   }
-  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table tbody tr {background:#2b3135!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table tbody tr {background:#394247!important}
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table td {
-    background:transparent!important;border-color:#4a565c!important;color:#f0f4f5!important;
+    background:transparent!important;border-color:#59666d!important;color:#f0f4f5!important;
   }
   html[data-ui-theme="dark"][data-ui-compact] body.final-ui :is(main,.modalBox,#receiptArea,#receiptViewBody,#dealerModalBody) table tbody tr:is(:hover,:focus,.selectedRow,.dealerDeleteSelected8941) td {
     background:#345053!important;color:#fff!important;

@@ -1,1 +1,1 @@
-Release 8.9.90: publish verified macOS and Windows updates; use current receipt state and quantity field in Windows smoke
+Release 8.9.91: lighter dark-theme tables for macOS and Windows
