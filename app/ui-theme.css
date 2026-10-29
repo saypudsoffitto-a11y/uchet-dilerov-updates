@@ -1,5 +1,38 @@
 /* Appearance only. Printed receipts and generated document templates are excluded. */
 @media screen {
+  html body nav .brand.soffittoBrand {
+    display:block!important;flex-shrink:0;margin:0 0 6px!important;padding:6px!important;
+    background:#fff!important;border:1px solid #dce2ec;border-radius:10px;
+  }
+  html body nav .soffittoBrand img {
+    display:block;width:100%;height:112px;object-fit:contain;
+  }
+  html[data-ui-theme][data-ui-compact] body.final-ui #connectionIndicator[data-status="online"] {
+    background:#e8f6ee!important;color:#087447!important;border-color:#b6dec9!important;
+  }
+  html[data-ui-theme][data-ui-compact] body.final-ui #connectionIndicator[data-status="offline"] {
+    background:#fff1ec!important;color:#a63c23!important;border-color:#e8bdaf!important;
+  }
+  html[data-ui-theme][data-ui-compact] body.final-ui #connectionIndicator[data-status="degraded"] {
+    background:#fff4d6!important;color:#825300!important;border-color:#d9b965!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #connectionIndicator[data-status="online"] {
+    background:#203e32!important;color:#9ce5b6!important;border-color:#518c6c!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #connectionIndicator[data-status="offline"] {
+    background:#482d34!important;color:#ffb4b9!important;border-color:#97616a!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #connectionIndicator[data-status="degraded"] {
+    background:#443b25!important;color:#ffdb86!important;border-color:#9c8650!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #appPinLock8948 .pinCard8948 {
+    background:#2b3135!important;border-color:#65757c!important;color:#e6eef0!important;
+  }
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #appPinLock8948 h2 {color:#f1f5f6!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #appPinLock8948 :is(p,.pinHint8948) {color:#bdcbd0!important}
+  html[data-ui-theme="dark"][data-ui-compact] body.final-ui #appPinLock8948 .pinError8948 {color:#ffb4b9!important}
+}
+@media screen {
   html[data-ui-compact] body.final-ui {
     --ui-accent:#2463d6;--ui-soft:#edf4ff;--ui-border:#dce2ec;
     --ui-danger:#a92336;--ui-danger-bg:#fff0f2;--ui-menu-text:#202b3d;

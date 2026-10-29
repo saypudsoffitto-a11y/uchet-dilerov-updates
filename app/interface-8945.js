@@ -36,9 +36,10 @@
     const text=status?.textContent||'';
     const configured=!!state.sync?.url,enabled=!!state.sync?.enabled;
     const ok=configured&&(status?.dataset.syncState==='online'||!!status?.querySelector('.serverOk')),
-      bad=configured&&(status?.dataset.syncState==='offline'||!!status?.querySelector('.serverBad'));
-    indicator.dataset.status=ok?'online':bad?'offline':'idle';
-    indicator.textContent=!configured?'Сервер не настроен':bad?'Нет связи с сервером':ok?(enabled?'Сервер подключён':'Автосинхронизация выключена'):enabled?'Подключение к серверу…':'Автосинхронизация выключена';
+      bad=configured&&(status?.dataset.syncState==='offline'||!!status?.querySelector('.serverBad')),
+      degraded=configured&&status?.dataset.syncState==='degraded';
+    indicator.dataset.status=degraded?'degraded':bad?'offline':ok?'online':'idle';
+    indicator.textContent=!configured?'Сервер не настроен':degraded?'Переподключение к серверу…':bad?'Нет связи с сервером':ok?(enabled?'Сервер подключён':'Автосинхронизация выключена'):enabled?'Подключение к серверу…':'Автосинхронизация выключена';
     indicator.title=text||'Открыть настройки общего сервера';
   };
   if(status)new MutationObserver(updateStatus).observe(status,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['data-sync-state']});

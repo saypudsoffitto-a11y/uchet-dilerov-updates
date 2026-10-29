@@ -10,7 +10,7 @@ const TOKEN_SHA256 = String(process.env.SYNC_TOKEN_SHA256 || '').trim().toLowerC
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'state.json');
 const MAX_BODY = 25 * 1024 * 1024;
-const SERVER_VERSION = '8.9.89-sync9';
+const SERVER_VERSION = '8.9.93-sync10';
 const masterProtocol = require('./master-protocol-8962');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -279,6 +279,17 @@ function requestPath(req) {
   }
 }
 
+function knownRevision(req) {
+  try {
+    const values = new URL(String(req.url || '/'), 'http://localhost').searchParams.getAll('knownRevision');
+    if (values.length !== 1 || !/^(0|[1-9][0-9]*)$/.test(values[0])) return null;
+    const revision = Number(values[0]);
+    return Number.isSafeInteger(revision) ? revision : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const route = requestPath(req);
@@ -304,6 +315,9 @@ const server = http.createServer(async (req, res) => {
     if (!authorized(req)) return send(res, 401, { ok: false, message: 'Неверный секретный ключ' });
     if (req.method === 'GET') {
       const store = await readStore();
+      if (knownRevision(req) === store.revision) {
+        return send(res, 200, { ok: true, notModified: true, revision: store.revision, computers: store.computers || null, protocol: 2, serverVersion: SERVER_VERSION, storage: store.storage });
+      }
       return send(res, 200, { ok: true, revision: store.revision, state: store.state, computers: store.computers || null, protocol: 2, serverVersion: SERVER_VERSION, storage: store.storage });
     }
     if (req.method === 'PUT') {

@@ -17,6 +17,10 @@
   try{device=JSON.parse(localStorage.getItem(DEVICE)||'null')}catch(_){}
   if(!device?.id){device={id:crypto.randomUUID(),name:'Компьютер '+crypto.randomUUID().slice(0,4)};localStorage.setItem(DEVICE,JSON.stringify(device));}
   let busy=false,meta=null,online=false,quarantinedThisRun=0;
+  // Recheck the full snapshot after startup, URL changes and periodic recovery.
+  // Revision alone cannot identify a database restored outside the sync API.
+  const FULL_REFRESH_MS=5*60*1000;
+  let lastFullUrl='',lastFullAt=0;
   const health=window.SyncHealth8987?.create({failureThreshold:3})||null;
   const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
   let queuedWrite=false,queuedManual=false,pushTimer=null;
@@ -46,20 +50,31 @@
     if(embedded?.url===String(syncCfg().url||''))return embedded.baseline;
     try{return JSON.parse(localStorage.getItem(key())||'null')}catch(_){return null}
   };
+  function canonicalRevision(value){
+    if(typeof value!=='number'&&typeof value!=='string')return null;
+    const number=Number(value);
+    if(!Number.isSafeInteger(number)||number<0)return null;
+    const canonical=String(number);
+    return typeof value==='number'||value===canonical?canonical:null;
+  }
+  function conditionalBaseline(){
+    const baseline=readBaseline(),snapshot=baseline?.state;
+    return canonicalRevision(baseline?.revision)!==null&&snapshot&&typeof snapshot==='object'&&
+      ['dealers','products','groups','ops'].every(field=>Array.isArray(snapshot[field]))?baseline:null;
+  }
   const status=(text,connection=online?'online':'offline')=>{const el=document.getElementById('syncStatus');if(el){el.dataset.syncState=connection;el.textContent=text;}paint();};
   function handleSyncError(error){
     const message=String(error?.message||error||'Нет ответа сервера');
-    if(error?.syncFatal){online=false;status(message,'offline');return;}
     const transient=!!error?.syncTransient||!!window.SyncHealth8987?.isTransientMessage(message);
-    if(!transient){status(message,online?'online':'offline');return;}
     const h=health?.failure(message)||{state:'offline',failures:1,failureThreshold:1};
+    // A failed exchange is never a confirmed connection, even during retry grace.
+    online=false;
+    if(error?.syncFatal||!transient){status(message,'offline');return;}
     if(h.state==='offline'){
-      online=false;
       status('Нет связи: '+message,'offline');
       return;
     }
-    online=true;
-    status('Связь нестабильна · автоматическое переподключение '+h.failures+'/'+h.failureThreshold,'online');
+    status('Связь нестабильна · автоматическое переподключение '+h.failures+'/'+h.failureThreshold+' · '+message,'degraded');
   }
   function paint(){
     const badge=document.getElementById('computerBadge8962');if(badge)badge.hidden=true;
@@ -74,28 +89,47 @@
   }
   async function request(method,body){
     const read=String(method||'GET').toUpperCase()==='GET';
+    const requestUrl=String(syncCfg().url||'');
     let r=null;
     for(let attempt=0;attempt<3;attempt++){
       try{r=await syncRequest(method,body)}
       catch(e){r={ok:false,message:String(e&&e.message||e)}}
-      if(r?.conflict)return r;
+      if(r?.conflict){
+        if(!read)return r;
+        throw new Error('Сервер вернул конфликт вместо полной базы. Локальные данные сохранены.');
+      }
       if(r?.ok)break;
       const transient=read&&window.SyncHealth8987?.isTransientResult(r);
       if(transient&&attempt<2){
-        status('Связь нестабильна · повторяю подключение…','online');
+        status('Связь нестабильна · повторяю подключение…',online?'degraded':'offline');
         await sleep(window.SyncHealth8987.retryDelay(attempt+1));
         continue;
       }
       const error=new Error(r?.message||'Нет ответа сервера');
       error.syncTransient=!!window.SyncHealth8987?.isTransientResult(r);
-      error.syncFatal=r?.code==='SYNC_AUTH_FAILED'||[401,403].includes(Number(r?.status||0));
+      error.syncFatal=['SYNC_AUTH_FAILED','SYNC_SERVICE_SUSPENDED'].includes(r?.code)||[401,403].includes(Number(r?.status||0));
       throw error;
     }
-    online=true;
-    health?.success();
     if(r.protocol!==2)throw new Error('Сервер ещё не обновлён для общей базы. Данные сохранены локально.');
     if(r.storage!=='turso')throw new Error('Сервер ещё не подключён к постоянной базе Turso. Локальные данные не отправлены.');
     if(window.warehouseInstalled&&r.serverVersion&&(r.inventoryProtocol!==2||r.productRevisions!==true))throw new Error('Сервер ещё не обновлён для защищённых цен и склада. Все правки сохранены локально.');
+    if(String(syncCfg().url||'')!==requestUrl)throw new Error('Адрес сервера изменился во время подключения. Локальные данные сохранены; повторите синхронизацию.');
+    if(canonicalRevision(r.revision)===null)throw new Error('Сервер вернул неверную версию базы. Локальные данные сохранены.');
+    if(Object.hasOwn(r,'notModified')&&typeof r.notModified!=='boolean')throw new Error('Сервер вернул неверный признак изменения базы. Локальные данные сохранены.');
+    if(r.notModified===true){
+      const baseline=conditionalBaseline(),known=canonicalRevision(body?.knownRevision);
+      if(!Object.hasOwn(r,'notModified')||!read||known===null||!baseline||canonicalRevision(baseline.revision)!==known||canonicalRevision(r.revision)!==known){
+        throw new Error('Сервер не прислал подтверждённую базу. Локальные данные сохранены; повторите синхронизацию.');
+      }
+    }else{
+      const snapshot=r.state,prototype=snapshot&&typeof snapshot==='object'?Object.getPrototypeOf(snapshot):undefined;
+      if(!Object.hasOwn(r,'state')||!snapshot||typeof snapshot!=='object'||Array.isArray(snapshot)||
+        prototype!==null&&Object.getPrototypeOf(prototype)!==null){
+        throw new Error('Сервер не прислал полную базу. Локальные данные сохранены.');
+      }
+    }
+    online=true;
+    health?.success();
     meta=r.computers;
     const serverName=meta?.devices?.[device.id]?.name;
     if(serverName&&serverName!==device.name){device.name=serverName;localStorage.setItem(DEVICE,JSON.stringify(device));const input=document.getElementById('computerName8962');if(input)input.value=device.name;}
@@ -377,16 +411,36 @@
     localStorage.setItem(recoveryKey(),data);
     if(window.updateAPI?.saveBackup){const result=await window.updateAPI.saveBackup(data);if(!result?.ok)throw new Error('Не удалось сохранить резервную копию: '+(result?.message||''));}
   }
+  async function registerIfNeeded(revision){
+    if(meta.devices?.[device.id]&&meta.devices[device.id].name===device.name)return;
+    const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:revision});
+    if(!registered.conflict){
+      const b=readBaseline();
+      accept(registered,freshOperationChanges(registered.state,pending()),freshArchives(registered.state,C.diffArchives(b?.state||{},state)),b?diffProductChanges(b.state.products,state.products):[],freshCatalog(registered.state,diffCatalog(b?.state,state)));
+    }
+  }
   async function pull(manual){
     if(busy||!syncCfg().url)return false;busy=true;quarantinedThisRun=0;
-    const pullStarted=C.clone(state);
+    const url=String(syncCfg().url||''),age=Date.now()-lastFullAt;
+    const conditional=!manual&&lastFullUrl===url&&age>=0&&age<FULL_REFRESH_MS?conditionalBaseline():null;
+    // A conditional poll needs no copy of the entire database. If the server
+    // sends a changed snapshot, the existing baseline still preserves in-flight edits.
+    const pullStarted=conditional?null:C.clone(state);
     try{
-      const r=await request('GET');
+      const r=await request('GET',conditional?{knownRevision:conditional.revision}:undefined);
       if(!meta?.shared&&!meta?.masterId){status('Связь есть. Выберите главный компьютер. Отправка старых списков приостановлена.');if(manual)alert('Главный компьютер ещё не выбран. Нажмите «Сделать главным» на том компьютере, где данные верные.');return true;}
+      if(r.notModified===true){
+        await registerIfNeeded(r.revision);
+        const pendingChanges=hasPending();
+        if(pendingChanges&&syncCfg().enabled)queuePush(false);
+        status('Подключено · база '+readBaseline().revision+(pendingChanges?' · есть неотправленные изменения':''));
+        return true;
+      }
       const baseline=readBaseline();
       const productChanges=baseline?freshProductChanges(r.state,diffProductChanges(baseline.state.products,state.products)):[];
       let firstJoinExactMirror=false;
       if(!baseline){
+        if(!pullStarted)throw new Error('Локальная база изменилась во время подключения. Повторите синхронизацию.');
         if(!localStorage.getItem(recoveryKey()))await backup();
         localStorage.setItem(recoveryKey(),JSON.stringify(state));
         firstJoinExactMirror=true;
@@ -395,10 +449,10 @@
       // Old, unverified cache stays in recovery. Documents created or edited by
       // the user during this exchange are new work, never an old cache upload.
       const outbox=firstOutbox();
-      const sessionOps=combineChanges(outbox?.changes,C.diffOps(pullStarted.ops,state.ops));
+      const sessionOps=firstJoinExactMirror?combineChanges(outbox?.changes,C.diffOps(pullStarted.ops,state.ops)):[];
       let changes=firstJoinExactMirror?[...new Map([...C.diffOps([],firstWarehouseChanges),...sessionOps].map(c=>[c.id,c])).values()]:pending();
       changes=freshOperationChanges(r.state,changes);
-      const sessionArchives=C.diffArchives(pullStarted,state);
+      const sessionArchives=firstJoinExactMirror?C.diffArchives(pullStarted,state):{};
       let archives=firstJoinExactMirror?Object.fromEntries(Object.entries(sessionArchives).map(([field,rows])=>[field,combineChanges(outbox?.archives?.[field],rows,'key')])):C.diffArchives(readBaseline()?.state||{},state);
       archives=freshArchives(r.state,archives);
       let sessionProductChanges=productChanges;
@@ -409,13 +463,8 @@
       if(firstJoinExactMirror&&outbox?.catalog)catalogPatch={dealers:combineChanges(outbox.catalog.dealers,catalogPatch.dealers),groupChanges:combineChanges(outbox.catalog.groupChanges,catalogPatch.groupChanges),mapChanges:Object.fromEntries(Object.entries(catalogPatch.mapChanges).map(([field,rows])=>[field,combineChanges(outbox.catalog.mapChanges[field],rows,'key')]))};
       const catalogChanges=freshCatalog(r.state,catalogPatch);
       accept(r,changes,archives,sessionProductChanges,catalogChanges);
-      if(!meta.devices?.[device.id]||meta.devices[device.id].name!==device.name){
-        const registered=await request('PUT',{protocol:2,action:'register',device,baseRevision:r.revision});
-        if(!registered.conflict){
-          const b=readBaseline();
-          accept(registered,freshOperationChanges(registered.state,pending()),freshArchives(registered.state,C.diffArchives(b?.state||{},state)),b?diffProductChanges(b.state.products,state.products):[],freshCatalog(registered.state,diffCatalog(b?.state,state)));
-        }
-      }
+      lastFullUrl=url;lastFullAt=Date.now();
+      await registerIfNeeded(r.revision);
       if(hasPending()&&syncCfg().enabled)queuePush(false);
       status('Подключено · база '+state.sync.revision+(firstJoinExactMirror?' · получена серверная база; прежняя локальная база сохранена отдельно — доступна кнопка скачивания':(hasPending()?' · есть неотправленные изменения':''))+conflictNote());return true;
     }catch(e){handleSyncError(e);return false;}finally{finishExchange();}

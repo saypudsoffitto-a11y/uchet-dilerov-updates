@@ -14,6 +14,7 @@
 
   function isTransientResult(result){
     if(result?.ok)return false;
+    if(result?.code==='SYNC_SERVICE_SUSPENDED')return false;
     const status=Number(result?.status||0);
     return transientStatuses.has(status)||(!status&&isTransientMessage(result?.message));
   }
@@ -39,7 +40,7 @@
         consecutiveFailures++;
         lastError=String(message||'Нет ответа сервера');
         return {
-          state:consecutiveFailures>=failureThreshold?'offline':'degraded',
+          state:!lastSuccessAt||consecutiveFailures>=failureThreshold?'offline':'degraded',
           failures:consecutiveFailures,
           failureThreshold,
           lastSuccessAt,
