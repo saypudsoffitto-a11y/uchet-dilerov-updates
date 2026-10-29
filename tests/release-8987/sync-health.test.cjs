@@ -12,11 +12,18 @@ test('single transient failure does not declare the server offline',()=>{
 
 test('three consecutive failures are required before offline status',()=>{
   const health=H.create({failureThreshold:3});
+  health.success(1000);
   assert.equal(health.failure('fetch failed').state,'degraded');
   assert.equal(health.failure('fetch failed').state,'degraded');
   const third=health.failure('fetch failed');
   assert.equal(third.state,'offline');
   assert.equal(third.failures,3);
+});
+
+test('startup failure never suggests an established connection',()=>{
+  const health=H.create({failureThreshold:3});
+  assert.equal(health.failure('Service unavailable').state,'offline');
+  assert.equal(health.snapshot().lastSuccessAt,0);
 });
 
 test('successful reconnect immediately resets failure streak',()=>{
@@ -31,6 +38,7 @@ test('successful reconnect immediately resets failure streak',()=>{
 
 test('only transient read failures qualify for automatic retry',()=>{
   assert.equal(H.isTransientResult({ok:false,status:503,message:'Service unavailable'}),true);
+  assert.equal(H.isTransientResult({ok:false,status:503,code:'SYNC_SERVICE_SUSPENDED',message:'This service has been suspended'}),false);
   assert.equal(H.isTransientResult({ok:false,message:'Сервер не ответил за 12 секунд'}),true);
   assert.equal(H.isTransientResult({ok:false,status:401,message:'Неверный ключ'}),false);
   assert.equal(H.isTransientResult({ok:false,status:409,message:'Конфликт'}),false);

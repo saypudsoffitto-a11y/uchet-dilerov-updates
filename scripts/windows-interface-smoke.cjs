@@ -84,7 +84,8 @@ async function main(){
       const result=await evaluate("(async()=>{\n  go('settings');\n  const select=document.getElementById('uiThemeSelect');\n  if(!select)throw Error('Theme selector missing');\n  const before=JSON.stringify(state);\n  select.value=THEME;select.dispatchEvent(new Event('change',{bubbles:true}));\n  if(JSON.stringify(state)!==before)throw Error('Theme changed business data');\n  go('products');\n  await new Promise(resolve=>setTimeout(resolve,300));\n  const colors=[...document.querySelectorAll('nav button[data-section]')].map(b=>getComputedStyle(b).backgroundColor);\n  const row=document.querySelector('#products table tr');\n  return {theme:document.documentElement.dataset.uiTheme,stored:localStorage.getItem('uchet-ui-theme'),\n    options:[...select.options].map(o=>o.value),colors:new Set(colors).size,\n    rowHeight:row?.getBoundingClientRect().height,background:getComputedStyle(document.querySelector('main')).backgroundColor};\n})()".replace('THEME',JSON.stringify(theme)));
       assert.equal(result.theme,theme);assert.equal(result.stored,theme);
       assert.deepEqual(result.options,['standard','colorful','multicolor','dark']);
-      if(theme==='multicolor'){assert.ok(result.colors>=10);assert.equal(result.background,'rgb(241, 244, 246)')}
+      if(theme==='multicolor'){assert.ok(result.colors>=10);assert.equal(result.background,'rgb(243, 245, 250)')}
+      if(theme==='dark')assert.equal(result.background,'rgb(32, 39, 45)','Dark workspace must remain graphite');
       const shot=await command('Page.captureScreenshot',{format:'png'});
       fs.writeFileSync(path.join(themeFolder,theme+'.png'),Buffer.from(shot.data,'base64'));
     }

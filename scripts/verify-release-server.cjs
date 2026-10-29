@@ -1,6 +1,6 @@
 'use strict';
 // Stable sync repair requires the server which rejects full local catalog replacement.
-const compatibleServerVersion='8.9.89-sync9';
+const compatibleServerVersion='8.9.93-sync10';
 (async()=>{for(let attempt=0;attempt<60;attempt++){
  try{const r=await fetch('https://uchet-dilerov-sync-8963-test.onrender.com/health',{signal:AbortSignal.timeout(15000)});const h=await r.json();if(r.ok&&h.ok&&h.storage==='turso'&&h.inventoryProtocol===2&&h.productRevisions===true&&h.permanentDeletionProtocol===1&&h.serverVersion===compatibleServerVersion){console.log('Verified live server',h.serverVersion);return}}catch{}
  await new Promise(r=>setTimeout(r,15000));

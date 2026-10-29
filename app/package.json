@@ -9,6 +9,8 @@
     },
     "files": [
       "window-safety.js",
+      "assets/soffitto-logo.jpg",
+      "assets/soffitto-logo-3d.png",
       "package.json",
       "icon.ico",
       "runtime-fixes-8922.js",
@@ -88,7 +90,9 @@
       "permanent-delete-ui-8989.js",
       "interface-dark-8989.css",
       "product-delete-8990.js",
-      "receipt-edit-8987.js"
+      "receipt-edit-8987.js",
+      "soffitto-ui-8993.css",
+      "soffitto-nav-icons.js"
     ],
     "nsis": {
       "allowToChangeInstallationDirectory": true,
@@ -146,7 +150,7 @@
       ]
     }
   },
-  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.91",
+  "description": "Учёт дилеров, продаж, долгов и NewMatRos — Windows 10/11 и macOS Apple Silicon · релиз 8.9.93",
   "devDependencies": {
     "electron": "36.9.5",
     "electron-builder": "26.0.12"
@@ -166,5 +170,5 @@
     "prebuild:mac": "node ../scripts/run-all-tests.cjs release-8958 release-8959 release-8961 release-8962 release-8989",
     "test": "node ../scripts/run-all-tests.cjs"
   },
-  "version": "8.9.91"
+  "version": "8.9.93"
 }

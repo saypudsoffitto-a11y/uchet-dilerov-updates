@@ -389,7 +389,13 @@ async function syncFetch(url, options) {
   const errors=[];
   if(net&&typeof net.fetch==='function'){
     try{return await net.fetch(target,options)}
-    catch(e){errors.push('Electron net: '+String(e&&e.message||e))}
+    catch(e){
+      if(options?.signal?.aborted)throw e;
+      // A lost response does not prove a write failed. Only reads may be sent
+      // through the fallback stack; the sync caller reconciles pending writes.
+      if(String(options?.method||'GET').toUpperCase()!=='GET')throw e;
+      errors.push('Electron net: '+String(e&&e.message||e));
+    }
   }
   try{return await fetch(target,options)}
   catch(e){
@@ -399,34 +405,57 @@ async function syncFetch(url, options) {
 }
 
 ipcMain.handle('sync:request', async (_e, req) => {
+  let controller,timeout;
   try {
     const base = String(req && req.baseUrl || '').trim().replace(/\/+$/,'');
     const u = new URL(base + '/api/state');
     if (!/^https?:$/.test(u.protocol)) return {ok:false,message:'Адрес сервера должен начинаться с http:// или https://'};
     const method = String(req && req.method || 'GET').toUpperCase();
+    const knownRevision=req?.body?.knownRevision;
+    if(method==='GET'&&Number.isSafeInteger(knownRevision)&&knownRevision>=0)u.searchParams.set('knownRevision',String(knownRevision));
     const headers = {'Accept':'application/json'};
     const token = String(req && req.token || '').trim();
     if (token) headers['Authorization'] = 'Bearer ' + token;
-    const controller=new AbortController();
-    const timeout=setTimeout(()=>controller.abort(),12000);
+    controller=new AbortController();
+    timeout=setTimeout(()=>controller.abort(),12000);
     let options={method,headers,cache:'no-store',redirect:'follow',signal:controller.signal};
     if(method==='PUT' || method==='POST') { headers['Content-Type']='application/json'; options.body=JSON.stringify(req.body||{}); }
-    let r;
-    try{r=await syncFetch(u.toString(),options)}
-    catch(e){
-      if(e&&e.name==='AbortError')return {ok:false,message:'Сервер не ответил за 12 секунд. Проверь интернет/VPN на этом компьютере.'};
-      throw e;
-    }finally{clearTimeout(timeout)}
+    const r=await syncFetch(u.toString(),options);
+    if(r.status===503&&r.headers?.get?.('x-render-routing')==='suspend-by-user')return {
+      ok:false,code:'SYNC_SERVICE_SUSPENDED',status:r.status,
+      message:'Сервис сервера приостановлен хостингом. Проверьте состояние сервиса и лимиты Render. Локальные данные сохранены.'
+    };
+    // Keep the deadline active until the complete response body has arrived.
+    // Render/proxies can return HTML on a 503; preserve HTTP status for retries.
     let data=null;
-    try{data=await r.json()}catch(_){data={message:'Сервер вернул не JSON'}}
-    if(r.status===409) return {ok:false,conflict:true,revision:data&&data.revision,state:data&&data.state,message:data&&data.message||'Конфликт версии базы'};
+    try{data=await r.json()}catch(e){
+      if(controller.signal.aborted||e?.name!=='SyntaxError')throw e;
+    }
+    if(controller.signal.aborted)throw new Error('Sync deadline exceeded');
     if(r.status===401 || r.status===403) return {
       ok:false,code:'SYNC_AUTH_FAILED',status:r.status,
       message:'Сервер '+u.host+' отклонил ключ доступа. Синхронизация не выполнена; локальные данные сохранены. Проверьте, что на компьютерах сохранены одинаковые адрес сервера и ключ. Суммы долга могут различаться до успешной синхронизации.'
     };
-    if(!r.ok) return {ok:false,status:r.status,message:(data&&data.message)||('HTTP '+r.status)};
+    const validJson=data!==null&&typeof data==='object'&&!Array.isArray(data);
+    if(r.status===409&&validJson&&data.state&&Number.isFinite(Number(data.revision))) return {ok:false,conflict:true,status:r.status,revision:data.revision,state:data.state,message:'Конфликт версии базы'};
+    if(!r.ok){
+      const message=validJson&&data.ok===false&&typeof data.message==='string'?data.message.trim():'';
+      const safeMessage=message&&message.length<=400&&!/[<>\u0000-\u001f\u007f-\u009f]/.test(message)&&(!token||!message.includes(token))?message:'';
+      return {
+        ok:false,code:'SYNC_HTTP_ERROR',status:r.status,
+        message:safeMessage||('Сервер '+u.host+' вернул HTTP '+r.status+'. '+(r.status===503?'Сервис временно недоступен. ':'')+'Локальные данные сохранены.')
+      };
+    }
+    if(!validJson||typeof data.ok!=='boolean') return {
+      ok:false,code:'SYNC_INVALID_RESPONSE',status:r.status,
+      message:'Сервер '+u.host+' вернул неверный формат ответа (HTTP '+r.status+'). Ожидался JSON протокола синхронизации. Локальные данные сохранены.'
+    };
     return data;
-  } catch(e) { return {ok:false,message:'Ошибка связи с сервером: '+String(e&&e.message||e)}; }
+  } catch(e) {
+    if(controller?.signal.aborted||e?.name==='AbortError')return {ok:false,code:'SYNC_TIMEOUT',message:'Сервер не ответил за 12 секунд. Проверь интернет/VPN на этом компьютере.'};
+    // Network exceptions may contain complete URLs, credentials or proxy HTML.
+    return {ok:false,code:'SYNC_NETWORK_ERROR',message:'Ошибка связи с сервером. Проверь интернет/VPN и адрес общего сервера. Локальные данные сохранены.'};
+  } finally { if(timeout!==undefined)clearTimeout(timeout); }
 });
 
 ipcMain.handle('update:installFromFile', async () => {
